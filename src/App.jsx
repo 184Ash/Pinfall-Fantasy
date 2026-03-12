@@ -26,354 +26,354 @@ const DEFAULT_TEAMS = [
 // Full 33-man seedings for all 10 NCAA weight classes
 const DEFAULT_WRESTLERS = {
   125:[
-    {seed:1,name:"Patrick McKee",school:"Minnesota"},
-    {seed:2,name:"Drew Hildebrandt",school:"Central Michigan"},
-    {seed:3,name:"Luca Frinzi",school:"Virginia Tech"},
-    {seed:4,name:"Brandon Kaylor",school:"Oregon State"},
-    {seed:5,name:"Kyle Parco",school:"Arizona State"},
-    {seed:6,name:"Nic Bouzakis",school:"Virginia"},
-    {seed:7,name:"Tristan Lujan",school:"Michigan"},
-    {seed:8,name:"Matt Kazimir",school:"Rutgers"},
-    {seed:9,name:"Collin Gordon",school:"Iowa State"},
-    {seed:10,name:"Rayvon Foley",school:"Michigan State"},
-    {seed:11,name:"Michael Foy",school:"Notre Dame"},
-    {seed:12,name:"Jake Ferri",school:"Pittsburgh"},
-    {seed:13,name:"Yahya Thomas",school:"Northwestern"},
-    {seed:14,name:"Brock Bobzien",school:"Cal Poly"},
-    {seed:15,name:"Sam Colbray",school:"Oklahoma State"},
-    {seed:16,name:"Allan Hart",school:"Missouri"},
-    {seed:17,name:"Kyle Shoop",school:"Lock Haven"},
-    {seed:18,name:"Brandon Courtney",school:"Arizona State"},
-    {seed:19,name:"Dylan Ragusin",school:"Michigan"},
-    {seed:20,name:"Devin Schroder",school:"Purdue"},
-    {seed:21,name:"Zac Brindise",school:"Pittsburgh"},
-    {seed:22,name:"Jack Medley",school:"Purdue"},
-    {seed:23,name:"Garrett Funk",school:"Air Force"},
-    {seed:24,name:"Chris Cannon",school:"Northwestern"},
-    {seed:25,name:"Eric Barnett",school:"Wisconsin"},
-    {seed:26,name:"Spencer Moore",school:"Utah Valley"},
-    {seed:27,name:"Cole Mattin",school:"Indiana"},
-    {seed:28,name:"Joe Heilmann",school:"NITTANY"},
-    {seed:29,name:"Cael Happel",school:"Northern Iowa"},
-    {seed:30,name:"Michael McGee",school:"Arizona State"},
-    {seed:31,name:"Chance Rich",school:"Wyoming"},
-    {seed:32,name:"Jordan Titus",school:"Cornell"},
-    {seed:33,name:"Killian Cardinale",school:"Oklahoma State"},
+    {seed:1,name:"Luke Lilledahl",school:"Penn State"},
+    {seed:2,name:"Eddie Ventresca",school:"Virginia Tech"},
+    {seed:3,name:"Nic Bouzakis",school:"Ohio State"},
+    {seed:4,name:"Sheldon Seymour",school:"Lehigh"},
+    {seed:5,name:"Troy Spratley",school:"Oklahoma State"},
+    {seed:6,name:"Jore Volk",school:"Minnesota"},
+    {seed:7,name:"Nico Provo",school:"Stanford"},
+    {seed:8,name:"Dean Peterson",school:"Iowa"},
+    {seed:9,name:"Maximo Renteria",school:"Oregon State"},
+    {seed:10,name:"Marc-Anthony McGowan",school:"Princeton"},
+    {seed:11,name:"Tyler Klinsky",school:"Rider"},
+    {seed:12,name:"Vincent Robinson",school:"NC State"},
+    {seed:13,name:"Stevo Poulin",school:"Iowa State"},
+    {seed:14,name:"Jacob Moran",school:"Indiana"},
+    {seed:15,name:"Koda Holeman",school:"Cal Poly"},
+    {seed:16,name:"Ezekiel Witt",school:"North Dakota State"},
+    {seed:17,name:"Jett Strickenberger",school:"West Virginia"},
+    {seed:18,name:"Spencer Moore",school:"Illinois"},
+    {seed:19,name:"Kysen Terukina",school:"North Carolina"},
+    {seed:20,name:"Diego Sotelo",school:"Michigan"},
+    {seed:21,name:"Conrad Hendriksen",school:"Oklahoma"},
+    {seed:22,name:"Davis Motyka",school:"Penn"},
+    {seed:23,name:"Nicolar Rivera",school:"Wisconsin"},
+    {seed:24,name:"Ayden Smith",school:"Rutgers"},
+    {seed:25,name:"Kael Lauridsen",school:"Nebraska"},
+    {seed:26,name:"Cooper Flynn",school:"Chattanooga"},
+    {seed:27,name:"Brady Roark",school:"South Dakota State"},
+    {seed:28,name:"Andrew Binni",school:"Navy"},
+    {seed:29,name:"Tyler Chappell",school:"Pittsburgh"},
+    {seed:30,name:"Sulayman Bah",school:"Columbia"},
+    {seed:31,name:"Desmond Pleasant",school:"Drexel"},
+    {seed:32,name:"Mack Mauger",school:"Missouri"},
+    {seed:33,name:"Jace Schafer",school:"Bloomsburg"},
   ],
   133:[
-    {seed:1,name:"Roman Bravo-Young",school:"Penn State"},
-    {seed:2,name:"Ridge Lovett",school:"Nebraska"},
-    {seed:3,name:"Killian Cardinale",school:"Oklahoma State"},
-    {seed:4,name:"Michael McGee",school:"Arizona State"},
-    {seed:5,name:"Micky Phillippi",school:"Pittsburgh"},
-    {seed:6,name:"Dylan Ragusin",school:"Michigan"},
-    {seed:7,name:"Todd Small",school:"Iowa State"},
-    {seed:8,name:"Cael Happel",school:"Northern Iowa"},
-    {seed:9,name:"Vito Arujau",school:"Cornell"},
-    {seed:10,name:"Chance Rich",school:"Wyoming"},
-    {seed:11,name:"Jarrett Trombley",school:"Ohio State"},
-    {seed:12,name:"Sam Sasso",school:"Ohio State"},
-    {seed:13,name:"Anthony Molton",school:"Virginia"},
-    {seed:14,name:"Cole Mattin",school:"Indiana"},
-    {seed:15,name:"Kai Orine",school:"NC State"},
-    {seed:16,name:"Jakob Camacho",school:"Rutgers"},
-    {seed:17,name:"Kyle Cochran",school:"Maryland"},
-    {seed:18,name:"Brandon Courtney",school:"Arizona State"},
-    {seed:19,name:"Chris Cannon",school:"Northwestern"},
-    {seed:20,name:"Devin Schroder",school:"Purdue"},
-    {seed:21,name:"Eric Barnett",school:"Wisconsin"},
-    {seed:22,name:"Jack Medley",school:"Purdue"},
-    {seed:23,name:"Spencer Moore",school:"Utah Valley"},
-    {seed:24,name:"Joe Heilmann",school:"Penn State"},
-    {seed:25,name:"Kyle Shoop",school:"Lock Haven"},
-    {seed:26,name:"Michael Foy",school:"Notre Dame"},
-    {seed:27,name:"Jake Ferri",school:"Pittsburgh"},
-    {seed:28,name:"Brock Bobzien",school:"Cal Poly"},
-    {seed:29,name:"Sam Colbray",school:"Oklahoma State"},
-    {seed:30,name:"Allan Hart",school:"Missouri"},
-    {seed:31,name:"Yahya Thomas",school:"Northwestern"},
-    {seed:32,name:"Rayvon Foley",school:"Michigan State"},
-    {seed:33,name:"Collin Gordon",school:"Iowa State"},
+    {seed:1,name:"Jax Forrest",school:"Oklahoma State"},
+    {seed:2,name:"Ben Davino",school:"Ohio State"},
+    {seed:3,name:"Marcus Blaze",school:"Penn State"},
+    {seed:4,name:"Aaron Seidel",school:"Virginia Tech"},
+    {seed:5,name:"Kyler Larkin",school:"Arizona State"},
+    {seed:6,name:"Drake Ayala",school:"Iowa"},
+    {seed:7,name:"Lucas Byrd",school:"Illinois"},
+    {seed:8,name:"Markel Baker",school:"Northern Illinois"},
+    {seed:9,name:"Dominick Serrano",school:"Northern Colorado"},
+    {seed:10,name:"Maximilian Leete",school:"American"},
+    {seed:11,name:"Tyler Ferrara",school:"Cornell"},
+    {seed:12,name:"Evan Mougalian",school:"Penn"},
+    {seed:13,name:"Jacob Van Dee",school:"Nebraska"},
+    {seed:14,name:"Ethan Berginc",school:"Army"},
+    {seed:15,name:"Tyler Knox",school:"Stanford"},
+    {seed:16,name:"Zan Fugitt",school:"Wisconsin"},
+    {seed:17,name:"T.K. Davis",school:"George Washington"},
+    {seed:18,name:"Gunner Andrick",school:"West Virginia"},
+    {seed:19,name:"Gage Walker",school:"Missouri"},
+    {seed:20,name:"Julian Farber",school:"Northern Iowa"},
+    {seed:21,name:"Sean Spidle",school:"Northwestern"},
+    {seed:22,name:"Zach Redding",school:"NC State"},
+    {seed:23,name:"Braxton Brown",school:"Maryland"},
+    {seed:24,name:"Blake Boarman",school:"Purdue"},
+    {seed:25,name:"Will Betancourt",school:"Rider"},
+    {seed:26,name:"Dylan Shawver",school:"Rutgers"},
+    {seed:27,name:"Marcel Lopez",school:"SIU Edwardsville"},
+    {seed:28,name:"Garrett Grice",school:"Iowa State"},
+    {seed:29,name:"Luke Willochell",school:"Wyoming"},
+    {seed:30,name:"Gabe Whisenhunt",school:"Oregon State"},
+    {seed:31,name:"Gable Strickland",school:"Lock Haven"},
+    {seed:32,name:"Andrew Austin",school:"Central Michigan"},
+    {seed:33,name:"Carter Schmidt",school:"Oklahoma"},
   ],
   141:[
-    {seed:1,name:"Real Woods",school:"Iowa"},
-    {seed:2,name:"Jagger Condomitti",school:"Rutgers"},
-    {seed:3,name:"Beau Bartlett",school:"Penn State"},
-    {seed:4,name:"Korbin Myers",school:"Virginia Tech"},
-    {seed:5,name:"Cayden Rooks",school:"Oklahoma State"},
-    {seed:6,name:"Parker Filius",school:"Purdue"},
-    {seed:7,name:"Cody Chittum",school:"Virginia Tech"},
-    {seed:8,name:"Frankie Tal-Shahar",school:"Stanford"},
-    {seed:9,name:"Dustin Plott",school:"Oklahoma State"},
-    {seed:10,name:"Lenny Pinto",school:"Maryland"},
-    {seed:11,name:"Mitch Finesilver",school:"Duke"},
-    {seed:12,name:"Caleb Henson",school:"Virginia Tech"},
-    {seed:13,name:"Brady Berge",school:"Penn State"},
-    {seed:14,name:"Josh Ogunsanya",school:"Columbia"},
-    {seed:15,name:"Derek Spann",school:"Buffalo"},
-    {seed:16,name:"Trey Kibe",school:"Lehigh"},
-    {seed:17,name:"Sam Colbray",school:"Oklahoma State"},
-    {seed:18,name:"Collin Gordon",school:"Iowa State"},
-    {seed:19,name:"Allan Hart",school:"Missouri"},
-    {seed:20,name:"Vito Arujau",school:"Cornell"},
-    {seed:21,name:"Chance Rich",school:"Wyoming"},
-    {seed:22,name:"Anthony Molton",school:"Virginia"},
-    {seed:23,name:"Cole Mattin",school:"Indiana"},
-    {seed:24,name:"Jakob Camacho",school:"Rutgers"},
-    {seed:25,name:"Kyle Cochran",school:"Maryland"},
-    {seed:26,name:"Brandon Courtney",school:"Arizona State"},
-    {seed:27,name:"Michael Foy",school:"Notre Dame"},
-    {seed:28,name:"Jake Ferri",school:"Pittsburgh"},
-    {seed:29,name:"Brock Bobzien",school:"Cal Poly"},
-    {seed:30,name:"Michael McGee",school:"Arizona State"},
-    {seed:31,name:"Devin Schroder",school:"Purdue"},
-    {seed:32,name:"Eric Barnett",school:"Wisconsin"},
-    {seed:33,name:"Jack Medley",school:"Purdue"},
+    {seed:1,name:"Jesse Mendez",school:"Ohio State"},
+    {seed:2,name:"Sergio Vega",school:"Oklahoma State"},
+    {seed:3,name:"Brock Hardy",school:"Nebraska"},
+    {seed:4,name:"Anthony Echemendia",school:"Iowa State"},
+    {seed:5,name:"Luke Stanich",school:"Lehigh"},
+    {seed:6,name:"Vince Cornella",school:"Cornell"},
+    {seed:7,name:"Nasir Bailey",school:"Iowa"},
+    {seed:8,name:"Vance Vombaur",school:"Minnesota"},
+    {seed:9,name:"Joey Olivieri",school:"Rutgers"},
+    {seed:10,name:"Jack Consiglio",school:"Stanford"},
+    {seed:11,name:"CJ Composto",school:"Penn"},
+    {seed:12,name:"Luke Simcox",school:"North Carolina"},
+    {seed:13,name:"Wyatt Henson",school:"Lock Haven"},
+    {seed:14,name:"Braeden Davis",school:"Penn State"},
+    {seed:15,name:"Elijah Griffin",school:"Rider"},
+    {seed:16,name:"Ryan Jack",school:"NC State"},
+    {seed:17,name:"Caedyn Ricciardi",school:"Navy"},
+    {seed:18,name:"Carter Nogle",school:"Air Force"},
+    {seed:19,name:"Haiden Drury",school:"Utah Valley"},
+    {seed:20,name:"Julian Tagg",school:"South Dakota State"},
+    {seed:21,name:"Tyler Wells",school:"Oklahoma"},
+    {seed:22,name:"Lorenzo Frezza",school:"Columbia"},
+    {seed:23,name:"Dylan Chappell",school:"Bucknell"},
+    {seed:24,name:"Nash Singleton",school:"Oregon State"},
+    {seed:25,name:"Tom Crook",school:"Virginia Tech"},
+    {seed:26,name:"Braden Basile",school:"Army"},
+    {seed:27,name:"Gable Porter",school:"Virginia"},
+    {seed:28,name:"Pierson Manville",school:"Arizona State"},
+    {seed:29,name:"Jordan Titus",school:"West Virginia"},
+    {seed:30,name:"Dario Lemus",school:"Maryland"},
+    {seed:31,name:"Billy DeKraker",school:"Northwestern"},
+    {seed:32,name:"Matthew Martino",school:"Princeton"},
+    {seed:33,name:"Aldo Hernandez",school:"Appalachian State"},
   ],
   149:[
-    {seed:1,name:"Brock Hardy",school:"Nebraska"},
-    {seed:2,name:"Sammy Sasso",school:"Ohio State"},
-    {seed:3,name:"Kendall Coleman",school:"Purdue"},
-    {seed:4,name:"Josh Humphreys",school:"Lehigh"},
-    {seed:5,name:"Kanen Storr",school:"Michigan"},
-    {seed:6,name:"Abe Assad",school:"Iowa"},
-    {seed:7,name:"Kyle Langenderfer",school:"Air Force"},
-    {seed:8,name:"Austin Gomez",school:"Wisconsin"},
-    {seed:9,name:"Joey Lavallee",school:"Oklahoma"},
-    {seed:10,name:"Tyler Eischens",school:"Minnesota"},
-    {seed:11,name:"Layne Malczewski",school:"Michigan State"},
-    {seed:12,name:"AJ Ferrari",school:"Oklahoma State"},
-    {seed:13,name:"Andrew Alirez",school:"Northern Colorado"},
-    {seed:14,name:"Jarrett Trombley",school:"Ohio State"},
-    {seed:15,name:"Cody Chittum",school:"Virginia Tech"},
-    {seed:16,name:"Yahya Thomas",school:"Northwestern"},
-    {seed:17,name:"Collin Gordon",school:"Iowa State"},
-    {seed:18,name:"Jake Ferri",school:"Pittsburgh"},
-    {seed:19,name:"Sam Colbray",school:"Oklahoma State"},
-    {seed:20,name:"Michael Foy",school:"Notre Dame"},
-    {seed:21,name:"Brock Bobzien",school:"Cal Poly"},
-    {seed:22,name:"Allan Hart",school:"Missouri"},
-    {seed:23,name:"Chris Cannon",school:"Northwestern"},
-    {seed:24,name:"Rayvon Foley",school:"Michigan State"},
-    {seed:25,name:"Vito Arujau",school:"Cornell"},
-    {seed:26,name:"Chance Rich",school:"Wyoming"},
-    {seed:27,name:"Cole Mattin",school:"Indiana"},
-    {seed:28,name:"Brandon Courtney",school:"Arizona State"},
-    {seed:29,name:"Kyle Cochran",school:"Maryland"},
-    {seed:30,name:"Michael McGee",school:"Arizona State"},
-    {seed:31,name:"Devin Schroder",school:"Purdue"},
-    {seed:32,name:"Eric Barnett",school:"Wisconsin"},
-    {seed:33,name:"Jack Medley",school:"Purdue"},
+    {seed:1,name:"Shayne Van Ness",school:"Penn State"},
+    {seed:2,name:"Jaxon Joy",school:"Cornell"},
+    {seed:3,name:"Cross Wasilewski",school:"Penn"},
+    {seed:4,name:"Collin Gaj",school:"Virginia Tech"},
+    {seed:5,name:"Koy Buesgens",school:"NC State"},
+    {seed:6,name:"Caleb Tyus",school:"SIU Edwardsville"},
+    {seed:7,name:"Ethan Stiles",school:"Ohio State"},
+    {seed:8,name:"Casey Swiderski",school:"Oklahoma State"},
+    {seed:9,name:"David Evans",school:"Utah Valley"},
+    {seed:10,name:"Aden Valencia",school:"Stanford"},
+    {seed:11,name:"Lachlan McNeil",school:"Michigan"},
+    {seed:12,name:"Carter Young",school:"Maryland"},
+    {seed:13,name:"Joseph Zargo",school:"Wisconsin"},
+    {seed:14,name:"Caleb Rathjen",school:"Northern Iowa"},
+    {seed:15,name:"Ryder Block",school:"Iowa"},
+    {seed:16,name:"Jacob Frost",school:"Iowa State"},
+    {seed:17,name:"Lucas Kapusta",school:"Lock Haven"},
+    {seed:18,name:"Eugene Harney",school:"Morgan State"},
+    {seed:19,name:"Brock Herman",school:"Little Rock"},
+    {seed:20,name:"Chance Lamer",school:"Nebraska"},
+    {seed:21,name:"Gabe Willochell",school:"Wyoming"},
+    {seed:22,name:"Eligh Rivera",school:"Princeton"},
+    {seed:23,name:"Max Petersen",school:"North Dakota State"},
+    {seed:24,name:"Andrew Clark",school:"Rutgers"},
+    {seed:25,name:"Michael Gioffre",school:"Illinois"},
+    {seed:26,name:"Anderson Heap",school:"Davidson"},
+    {seed:27,name:"Andre Gonzales",school:"Cal Poly"},
+    {seed:28,name:"Kade Brown",school:"Pittsburgh"},
+    {seed:29,name:"Kaden Cassidy",school:"George Mason"},
+    {seed:30,name:"Dylan Layton",school:"Rider"},
+    {seed:31,name:"Ryan Michaels",school:"Edinboro"},
+    {seed:32,name:"Clayton Jones",school:"Michigan State"},
+    {seed:33,name:"Austin McBurney",school:"Brown"},
   ],
   157:[
-    {seed:1,name:"David Carr",school:"Iowa State"},
-    {seed:2,name:"Trent Hidlay",school:"NC State"},
-    {seed:3,name:"Peyton Robb",school:"Nebraska"},
-    {seed:4,name:"Hayden Hidlay",school:"NC State"},
-    {seed:5,name:"Jared Krattiger",school:"Arizona State"},
-    {seed:6,name:"Colton Schultz",school:"Arizona State"},
-    {seed:7,name:"Isaiah White",school:"Nebraska"},
-    {seed:8,name:"Ryan Kemp",school:"Minnesota"},
-    {seed:9,name:"Jake Marnell",school:"North Carolina"},
-    {seed:10,name:"Tommy Gantt",school:"North Carolina"},
-    {seed:11,name:"Alex Thomsen",school:"Nebraska"},
-    {seed:12,name:"Cameron Caffey",school:"Michigan State"},
-    {seed:13,name:"Cody Trybus",school:"Cornell"},
-    {seed:14,name:"Louie Hayes",school:"Wisconsin"},
-    {seed:15,name:"Lucas Byrd",school:"Illinois"},
-    {seed:16,name:"Bryce Andonian",school:"Virginia Tech"},
-    {seed:17,name:"Jared Simma",school:"Wisconsin"},
-    {seed:18,name:"Drew Lehrmann",school:"Texas"},
-    {seed:19,name:"Mekhi Lewis",school:"Virginia Tech"},
-    {seed:20,name:"Marcus Coleman",school:"Iowa State"},
-    {seed:21,name:"Jacob Cardenas",school:"Fresno State"},
-    {seed:22,name:"Kody Hamrah",school:"Cornell"},
-    {seed:23,name:"Joey Prata",school:"Virginia Tech"},
-    {seed:24,name:"Ryan Deakin",school:"Northwestern"},
-    {seed:25,name:"Markus Hartman",school:"Indiana"},
-    {seed:26,name:"Ben Freeman",school:"North Carolina"},
-    {seed:27,name:"Caleb Henson",school:"Virginia Tech"},
-    {seed:28,name:"Justin Thomas",school:"Missouri"},
-    {seed:29,name:"Garrett Model",school:"Wisconsin"},
-    {seed:30,name:"Ethan Smith",school:"Ohio State"},
-    {seed:31,name:"Vincenzo Joseph",school:"Penn State"},
-    {seed:32,name:"Kanen Storr",school:"Michigan"},
-    {seed:33,name:"Abe Assad",school:"Iowa"},
+    {seed:1,name:"PJ Duke",school:"Penn State"},
+    {seed:2,name:"Antrell Taylor",school:"Nebraska"},
+    {seed:3,name:"Meyer Shapiro",school:"Cornell"},
+    {seed:4,name:"Kaleb Larkin",school:"Arizona State"},
+    {seed:5,name:"Landon Robideau",school:"Oklahoma State"},
+    {seed:6,name:"Jude Swisher",school:"Penn"},
+    {seed:7,name:"Kannon Webster",school:"Illinois"},
+    {seed:8,name:"Brandon Cannon",school:"Ohio State"},
+    {seed:9,name:"Daniel Cardenas",school:"Stanford"},
+    {seed:10,name:"Logan Rozynski",school:"Lehigh"},
+    {seed:11,name:"Ty Watters",school:"West Virginia"},
+    {seed:12,name:"Vinny Zerban",school:"Iowa State"},
+    {seed:13,name:"Derek Raike",school:"Ohio"},
+    {seed:14,name:"Ethen Miller",school:"Virginia Tech"},
+    {seed:15,name:"Cameron Catrabone",school:"Michigan"},
+    {seed:16,name:"Cael Swensen",school:"South Dakota State"},
+    {seed:17,name:"Luke Mechler",school:"Wisconsin"},
+    {seed:18,name:"DJ McGee",school:"George Mason"},
+    {seed:19,name:"Kai Owen",school:"Columbia"},
+    {seed:20,name:"Jimmy Harrington",school:"Harvard"},
+    {seed:21,name:"Charlie Millard",school:"Minnesota"},
+    {seed:22,name:"Colton Washleski",school:"Virginia"},
+    {seed:23,name:"Kaleb Burgess",school:"Buffalo"},
+    {seed:24,name:"Jaivon Jones",school:"Little Rock"},
+    {seed:25,name:"Mason Shrader",school:"Central Michigan"},
+    {seed:26,name:"Jonathan Ley",school:"Navy"},
+    {seed:27,name:"Dylan Evans",school:"Pittsburgh"},
+    {seed:28,name:"Gavin Drexler",school:"North Dakota State"},
+    {seed:29,name:"Bryce Lowery",school:"Indiana"},
+    {seed:30,name:"Laird Root",school:"North Carolina"},
+    {seed:31,name:"Garrett McChesney",school:"Edinboro"},
+    {seed:32,name:"Jeb Prechtel",school:"Bellarmine"},
+    {seed:33,name:"Yannis Charles",school:"Morgan State"},
   ],
   165:[
-    {seed:1,name:"Vincenzo Joseph",school:"Penn State"},
-    {seed:2,name:"Ethan Smith",school:"Ohio State"},
-    {seed:3,name:"Ben Freeman",school:"North Carolina"},
-    {seed:4,name:"Caleb Henson",school:"Virginia Tech"},
-    {seed:5,name:"Justin Thomas",school:"Missouri"},
-    {seed:6,name:"Garrett Model",school:"Wisconsin"},
-    {seed:7,name:"Ryan Deakin",school:"Northwestern"},
-    {seed:8,name:"Markus Hartman",school:"Indiana"},
-    {seed:9,name:"Joey Prata",school:"Virginia Tech"},
-    {seed:10,name:"Tommy Gantt",school:"North Carolina"},
-    {seed:11,name:"Jacob Cardenas",school:"Fresno State"},
-    {seed:12,name:"Kody Hamrah",school:"Cornell"},
-    {seed:13,name:"Drew Lehrmann",school:"Texas"},
-    {seed:14,name:"Jared Simma",school:"Wisconsin"},
-    {seed:15,name:"Mekhi Lewis",school:"Virginia Tech"},
-    {seed:16,name:"Marcus Coleman",school:"Iowa State"},
-    {seed:17,name:"Bryce Andonian",school:"Virginia Tech"},
-    {seed:18,name:"Lucas Byrd",school:"Illinois"},
-    {seed:19,name:"Louie Hayes",school:"Wisconsin"},
-    {seed:20,name:"Cody Trybus",school:"Cornell"},
-    {seed:21,name:"Cameron Caffey",school:"Michigan State"},
-    {seed:22,name:"Alex Thomsen",school:"Nebraska"},
-    {seed:23,name:"Isaiah White",school:"Nebraska"},
-    {seed:24,name:"Ryan Kemp",school:"Minnesota"},
-    {seed:25,name:"Jake Marnell",school:"North Carolina"},
-    {seed:26,name:"Jared Krattiger",school:"Arizona State"},
-    {seed:27,name:"Colton Schultz",school:"Arizona State"},
-    {seed:28,name:"Hayden Hidlay",school:"NC State"},
-    {seed:29,name:"Peyton Robb",school:"Nebraska"},
-    {seed:30,name:"Trent Hidlay",school:"NC State"},
-    {seed:31,name:"David Carr",school:"Iowa State"},
-    {seed:32,name:"Tommy Gantt",school:"North Carolina"},
-    {seed:33,name:"Alex Thomsen",school:"Nebraska"},
+    {seed:1,name:"Mitchell Mesenbrink",school:"Penn State"},
+    {seed:2,name:"Joey Blaze",school:"Purdue"},
+    {seed:3,name:"Mikey Caliendo",school:"Iowa"},
+    {seed:4,name:"Nicco Ruiz",school:"Arizona State"},
+    {seed:5,name:"LaDarion Lockett",school:"Oklahoma State"},
+    {seed:6,name:"LJ Araujo",school:"Nebraska"},
+    {seed:7,name:"Max Brignola",school:"Lehigh"},
+    {seed:8,name:"Matty Bianchi",school:"Little Rock"},
+    {seed:9,name:"Bryce Hepner",school:"North Carolina"},
+    {seed:10,name:"Will Denny",school:"NC State"},
+    {seed:11,name:"Ryder Downey",school:"Northern Iowa"},
+    {seed:12,name:"Cesar Alvan",school:"Columbia"},
+    {seed:13,name:"Andrew Sparks",school:"Minnesota"},
+    {seed:14,name:"Andrew Barbosa",school:"Rutgers"},
+    {seed:15,name:"Connor Euton",school:"Iowa State"},
+    {seed:16,name:"Paddy Gallagher",school:"Ohio State"},
+    {seed:17,name:"Braeden Scoles",school:"Illinois"},
+    {seed:18,name:"Gunner Filipowicz",school:"Army"},
+    {seed:19,name:"Noah Mulvaney",school:"Bucknell"},
+    {seed:20,name:"Ty Whalen",school:"Princeton"},
+    {seed:21,name:"Brock Woodcock",school:"SIU Edwardsville"},
+    {seed:22,name:"Matthew Olguin",school:"Oregon State"},
+    {seed:23,name:"Chris Earnest",school:"Kent State"},
+    {seed:24,name:"Sean Seefeldt",school:"Penn"},
+    {seed:25,name:"Mac Church",school:"Virginia Tech"},
+    {seed:26,name:"Tyler Lillard",school:"Indiana"},
+    {seed:27,name:"EJ Parco",school:"Stanford"},
+    {seed:28,name:"Cody Goebel",school:"Wisconsin"},
+    {seed:29,name:"Ryan Burgos",school:"Edinboro"},
+    {seed:30,name:"Thomas Snipes",school:"The Citadel"},
+    {seed:31,name:"Jared Keslar",school:"Pittsburgh"},
+    {seed:32,name:"Cody Walsh",school:"Drexel"},
+    {seed:33,name:"Ryan Vigil",school:"VMI"},
   ],
   174:[
-    {seed:1,name:"Carter Starocci",school:"Penn State"},
-    {seed:2,name:"Myles Amine",school:"Michigan"},
-    {seed:3,name:"Keegan O'Toole",school:"Missouri"},
-    {seed:4,name:"Rocky Elam",school:"Missouri"},
-    {seed:5,name:"Quincy Monday",school:"Princeton"},
-    {seed:6,name:"Cameron Caffey",school:"Michigan State"},
-    {seed:7,name:"Levi Haines",school:"Penn State"},
-    {seed:8,name:"Nate Jackson",school:"North Carolina"},
-    {seed:9,name:"Logan Massa",school:"Michigan"},
-    {seed:10,name:"Ethan Laird",school:"Oklahoma State"},
-    {seed:11,name:"Garrett Model",school:"Wisconsin"},
-    {seed:12,name:"Jaxon Smith",school:"Oklahoma"},
-    {seed:13,name:"Marcus Coleman",school:"Iowa State"},
-    {seed:14,name:"Tanner Sloan",school:"South Dakota State"},
-    {seed:15,name:"Layne Malczewski",school:"Michigan State"},
-    {seed:16,name:"Will Formato",school:"Virginia"},
-    {seed:17,name:"Michael Beard",school:"Penn State"},
-    {seed:18,name:"Edmond Ruth",school:"Purdue"},
-    {seed:19,name:"Liam Cronin",school:"Nebraska"},
-    {seed:20,name:"Danny Braunagel",school:"Illinois"},
-    {seed:21,name:"Zach Braunagel",school:"Illinois"},
-    {seed:22,name:"Kaleb Romero",school:"Ohio State"},
-    {seed:23,name:"Bubba Wilson",school:"NC State"},
-    {seed:24,name:"Aaron Brooks",school:"Penn State"},
-    {seed:25,name:"Jake Woodley",school:"Oklahoma"},
-    {seed:26,name:"Parker Keckeisen",school:"Northern Iowa"},
-    {seed:27,name:"Marcus Baluda",school:"Rutgers"},
-    {seed:28,name:"Quinn Kinner",school:"Lehigh"},
-    {seed:29,name:"Nick South",school:"Boise State"},
-    {seed:30,name:"Rocky Elam",school:"Missouri"},
-    {seed:31,name:"Gavin Hoffman",school:"Indiana"},
-    {seed:32,name:"Nino Bonaccorsi",school:"Pittsburgh"},
-    {seed:33,name:"Jackson Turley",school:"Penn State"},
+    {seed:1,name:"Levi Haines",school:"Penn State"},
+    {seed:2,name:"Simon Ruiz",school:"Cornell"},
+    {seed:3,name:"Christopher Minto",school:"Nebraska"},
+    {seed:4,name:"Carson Kharchla",school:"Ohio State"},
+    {seed:5,name:"Patrick Kennedy",school:"Iowa"},
+    {seed:6,name:"Matty Singleton",school:"NC State"},
+    {seed:7,name:"Cam Steed",school:"Missouri"},
+    {seed:8,name:"Alex Facundo",school:"Oklahoma State"},
+    {seed:9,name:"Beau Mantanona",school:"Michigan"},
+    {seed:10,name:"Myles Takats",school:"Bucknell"},
+    {seed:11,name:"MJ Gaitan",school:"Iowa State"},
+    {seed:12,name:"Carter Schubert",school:"Oklahoma"},
+    {seed:13,name:"Carter Baer",school:"Binghamton"},
+    {seed:14,name:"Moses Espinoza-Owens",school:"South Dakota State"},
+    {seed:15,name:"Danny Wask",school:"Navy"},
+    {seed:16,name:"Nick Fine",school:"Columbia"},
+    {seed:17,name:"Jared Simma",school:"Northern Iowa"},
+    {seed:18,name:"Colin Kelly",school:"Illinois"},
+    {seed:19,name:"Logan Messer",school:"George Mason"},
+    {seed:20,name:"Daschle Lamer",school:"Oregon State"},
+    {seed:21,name:"Lenny Pinto",school:"Rutgers"},
+    {seed:22,name:"Brody Baumann",school:"Purdue"},
+    {seed:23,name:"Luca Augustine",school:"Pittsburgh"},
+    {seed:24,name:"Garrett Thompson",school:"Ohio"},
+    {seed:25,name:"Sergio Desiante",school:"Virginia Tech"},
+    {seed:26,name:"Derek Gilcher",school:"Indiana"},
+    {seed:27,name:"Collin Carrigan",school:"North Carolina"},
+    {seed:28,name:"Holden Garcia",school:"Princeton"},
+    {seed:29,name:"Avery Bassett",school:"Lock Haven"},
+    {seed:30,name:"Riley Davis",school:"Wyoming"},
+    {seed:31,name:"Cael Valencia",school:"Arizona State"},
+    {seed:32,name:"Luke Condon",school:"Wisconsin"},
+    {seed:33,name:"Grant O'Dell",school:"Bellarmine"},
   ],
   184:[
-    {seed:1,name:"Aaron Brooks",school:"Penn State"},
-    {seed:2,name:"Bubba Wilson",school:"NC State"},
-    {seed:3,name:"Tanner Sloan",school:"South Dakota State"},
-    {seed:4,name:"Kaleb Romero",school:"Ohio State"},
-    {seed:5,name:"Zach Braunagel",school:"Illinois"},
-    {seed:6,name:"Danny Braunagel",school:"Illinois"},
-    {seed:7,name:"Liam Cronin",school:"Nebraska"},
-    {seed:8,name:"Edmond Ruth",school:"Purdue"},
-    {seed:9,name:"Jake Woodley",school:"Oklahoma"},
-    {seed:10,name:"Parker Keckeisen",school:"Northern Iowa"},
-    {seed:11,name:"Marcus Baluda",school:"Rutgers"},
-    {seed:12,name:"Quinn Kinner",school:"Lehigh"},
-    {seed:13,name:"Nick South",school:"Boise State"},
-    {seed:14,name:"Rocky Elam",school:"Missouri"},
-    {seed:15,name:"Gavin Hoffman",school:"Indiana"},
-    {seed:16,name:"Nino Bonaccorsi",school:"Pittsburgh"},
-    {seed:17,name:"Michael Beard",school:"Penn State"},
-    {seed:18,name:"Cam Warner",school:"Michigan"},
-    {seed:19,name:"Nelson Brands",school:"Iowa"},
-    {seed:20,name:"Max Dean",school:"Penn State"},
-    {seed:21,name:"Emery Parker",school:"Illinois"},
-    {seed:22,name:"Jacob Warner",school:"Iowa"},
-    {seed:23,name:"Nino Bonaccorsi",school:"Pittsburgh"},
-    {seed:24,name:"Brandon Slater",school:"Virginia Tech"},
-    {seed:25,name:"Josh Heindselman",school:"Oklahoma State"},
-    {seed:26,name:"Zach Elam",school:"Missouri"},
-    {seed:27,name:"Willie Miklus",school:"Purdue"},
-    {seed:28,name:"Gavin Hoffman",school:"Indiana"},
-    {seed:29,name:"Jackson Turley",school:"Penn State"},
-    {seed:30,name:"Silas Allred",school:"Nebraska"},
-    {seed:31,name:"Greg Bulsak",school:"Clarion"},
-    {seed:32,name:"Derek Holschlag",school:"Northern Iowa"},
-    {seed:33,name:"Cam Caffey",school:"Michigan State"},
+    {seed:1,name:"Rocco Welsh",school:"Penn State"},
+    {seed:2,name:"Aeoden Sinclair",school:"Missouri"},
+    {seed:3,name:"Max McEnelly",school:"Minnesota"},
+    {seed:4,name:"James Conway",school:"Franklin & Marshall"},
+    {seed:5,name:"Brock Mantanona",school:"Michigan"},
+    {seed:6,name:"Eddie Neitenbach",school:"Wyoming"},
+    {seed:7,name:"Angelo Ferrari",school:"Iowa"},
+    {seed:8,name:"Silas Allred",school:"Nebraska"},
+    {seed:9,name:"Chris Moore",school:"Illinois"},
+    {seed:10,name:"Caleb Campos",school:"American"},
+    {seed:11,name:"Shane Cartagena-Walsh",school:"Rutgers"},
+    {seed:12,name:"Dylan Fishback",school:"Ohio State"},
+    {seed:13,name:"Isaac Dean",school:"Iowa State"},
+    {seed:14,name:"Jaden Bullock",school:"Virginia Tech"},
+    {seed:15,name:"Sal Perrine",school:"Ohio"},
+    {seed:16,name:"Rylan Rogers",school:"Lehigh"},
+    {seed:17,name:"Ian Bush",school:"West Virginia"},
+    {seed:18,name:"Jake Dailey",school:"North Carolina"},
+    {seed:19,name:"Jared McGill",school:"Edinboro"},
+    {seed:20,name:"Brian Soldano",school:"Oklahoma"},
+    {seed:21,name:"Tomas Brooker",school:"Appalachian State"},
+    {seed:22,name:"Zack Ryder",school:"Oklahoma State"},
+    {seed:23,name:"Ceasar Garza",school:"Cal Poly"},
+    {seed:24,name:"Joe Curtis",school:"Columbia"},
+    {seed:25,name:"Malachi DuVall",school:"George Mason"},
+    {seed:26,name:"Chase Kranitz",school:"Pittsburgh"},
+    {seed:27,name:"Aidan Brenot",school:"North Dakota State"},
+    {seed:28,name:"Abraham Wojcikiewicz",school:"Stanford"},
+    {seed:29,name:"Nick Fox",school:"Northern Iowa"},
+    {seed:30,name:"Tyler Bienus",school:"Bucknell"},
+    {seed:31,name:"Mahonri Rushton",school:"Northern Colorado"},
+    {seed:32,name:"Caleb Uhlenhopp",school:"Utah Valley"},
+    {seed:33,name:"Sam Goin",school:"Indiana"},
   ],
   197:[
-    {seed:1,name:"Max Dean",school:"Penn State"},
-    {seed:2,name:"Emery Parker",school:"Illinois"},
-    {seed:3,name:"Jacob Warner",school:"Iowa"},
-    {seed:4,name:"Nino Bonaccorsi",school:"Pittsburgh"},
-    {seed:5,name:"Tanner Sloan",school:"South Dakota State"},
-    {seed:6,name:"Zach Elam",school:"Missouri"},
-    {seed:7,name:"Brandon Slater",school:"Virginia Tech"},
-    {seed:8,name:"Josh Heindselman",school:"Oklahoma State"},
-    {seed:9,name:"Marcus Coleman",school:"Iowa State"},
-    {seed:10,name:"Willie Miklus",school:"Purdue"},
-    {seed:11,name:"Gavin Hoffman",school:"Indiana"},
-    {seed:12,name:"Jackson Turley",school:"Penn State"},
-    {seed:13,name:"Silas Allred",school:"Nebraska"},
-    {seed:14,name:"Greg Bulsak",school:"Clarion"},
-    {seed:15,name:"Derek Holschlag",school:"Northern Iowa"},
-    {seed:16,name:"Cam Caffey",school:"Michigan State"},
-    {seed:17,name:"Ben Goldin",school:"Lehigh"},
-    {seed:18,name:"Rocky Elam",school:"Missouri"},
-    {seed:19,name:"Nelson Brands",school:"Iowa"},
-    {seed:20,name:"Cam Warner",school:"Michigan"},
-    {seed:21,name:"Michael Beard",school:"Penn State"},
-    {seed:22,name:"Jake Woodley",school:"Oklahoma"},
-    {seed:23,name:"Parker Keckeisen",school:"Northern Iowa"},
-    {seed:24,name:"Marcus Baluda",school:"Rutgers"},
-    {seed:25,name:"Quinn Kinner",school:"Lehigh"},
-    {seed:26,name:"Nick South",school:"Boise State"},
-    {seed:27,name:"Edmond Ruth",school:"Purdue"},
-    {seed:28,name:"Liam Cronin",school:"Nebraska"},
-    {seed:29,name:"Danny Braunagel",school:"Illinois"},
-    {seed:30,name:"Zach Braunagel",school:"Illinois"},
-    {seed:31,name:"Kaleb Romero",school:"Ohio State"},
-    {seed:32,name:"Bubba Wilson",school:"NC State"},
-    {seed:33,name:"Aaron Brooks",school:"Penn State"},
+    {seed:1,name:"Josh Barr",school:"Penn State"},
+    {seed:2,name:"Rocky Elam",school:"Iowa State"},
+    {seed:3,name:"Stephen Little",school:"Little Rock"},
+    {seed:4,name:"Sonny Sasso",school:"Virginia Tech"},
+    {seed:5,name:"Joey Novak",school:"Wyoming"},
+    {seed:6,name:"Justin Rademacher",school:"Oregon State"},
+    {seed:7,name:"Cody Merrill",school:"Oklahoma State"},
+    {seed:8,name:"DJ Parker",school:"Oklahoma"},
+    {seed:9,name:"Angelo Posada",school:"Stanford"},
+    {seed:10,name:"Mac Stout",school:"Pittsburgh"},
+    {seed:11,name:"Camden McDanel",school:"Nebraska"},
+    {seed:12,name:"Luke Geog",school:"Ohio State"},
+    {seed:13,name:"Bennett Berge",school:"South Dakota State"},
+    {seed:14,name:"Gabe Sollars",school:"Indiana"},
+    {seed:15,name:"Remy Cotton",school:"Rutgers"},
+    {seed:16,name:"Branson John",school:"Maryland"},
+    {seed:17,name:"Dillon Bechtold",school:"Bucknell"},
+    {seed:18,name:"Andrew Reall",school:"Brown"},
+    {seed:19,name:"Zayne Lehman",school:"Ohio"},
+    {seed:20,name:"Wyatt Ingham",school:"Wisconsin"},
+    {seed:21,name:"Rune Lawrence",school:"West Virginia"},
+    {seed:22,name:"Devin Wasley",school:"North Dakota State"},
+    {seed:23,name:"Mikey Squires",school:"Binghamton"},
+    {seed:24,name:"Brock Zurawski",school:"Rider"},
+    {seed:25,name:"Evan Bates",school:"Missouri"},
+    {seed:26,name:"Ben Vanadia",school:"Purdue"},
+    {seed:27,name:"Gabe Arnold",school:"Iowa"},
+    {seed:28,name:"Kael Wisler",school:"Michigan State"},
+    {seed:29,name:"Colton Hawks",school:"Arizona State"},
+    {seed:30,name:"Kade Rule",school:"Chattanooga"},
+    {seed:31,name:"Kael Bennie",school:"Utah Valley"},
+    {seed:32,name:"Blake Schaffer",school:"Kent State"},
+    {seed:33,name:"Karson Tompkins",school:"Air Force"},
   ],
   285:[
-    {seed:1,name:"Mason Parris",school:"Michigan"},
-    {seed:2,name:"Tony Cassioppi",school:"Iowa"},
-    {seed:3,name:"Cohlton Schultz",school:"Arizona State"},
-    {seed:4,name:"Wyatt Hendrickson",school:"Air Force"},
-    {seed:5,name:"Christian Lance",school:"Nebraska"},
-    {seed:6,name:"Gable Steveson",school:"Minnesota"},
-    {seed:7,name:"Josh Heindselman",school:"Oklahoma State"},
-    {seed:8,name:"Derek Spann",school:"Buffalo"},
-    {seed:9,name:"Tate Orndorff",school:"Pittsburgh"},
-    {seed:10,name:"Yaraslav Slavikovskyy",school:"Illinois"},
-    {seed:11,name:"Kyle Cochran",school:"Maryland"},
-    {seed:12,name:"Tyrell Gordon",school:"North Dakota State"},
-    {seed:13,name:"Zach Elam",school:"Missouri"},
-    {seed:14,name:"Owen Trephan",school:"Penn State"},
-    {seed:15,name:"Thomas Penola",school:"Marquette"},
-    {seed:16,name:"Aiden Riggins",school:"Iowa"},
-    {seed:17,name:"Lucas Davison",school:"Northwestern"},
-    {seed:18,name:"Brian Andrews",school:"Ohio State"},
-    {seed:19,name:"Sam Schuyler",school:"Cornell"},
-    {seed:20,name:"Konner Doucet",school:"Oklahoma"},
-    {seed:21,name:"Trent Hillger",school:"Wisconsin"},
-    {seed:22,name:"Ethan Laird",school:"Oklahoma State"},
-    {seed:23,name:"Nathan Traxler",school:"Stanford"},
-    {seed:24,name:"Devin Skatzka",school:"Minnesota"},
-    {seed:25,name:"Ben Goldin",school:"Lehigh"},
-    {seed:26,name:"Colton McKiernan",school:"Oklahoma State"},
-    {seed:27,name:"Dylan Geer",school:"North Carolina"},
-    {seed:28,name:"Max Lyon",school:"Purdue"},
-    {seed:29,name:"Taye Harvey",school:"Iowa"},
-    {seed:30,name:"Hunter Catka",school:"Michigan"},
-    {seed:31,name:"Gregory Hartley",school:"Army"},
-    {seed:32,name:"Brendon Garcia",school:"Nebraska"},
-    {seed:33,name:"Jared Embree",school:"Penn State"},
+    {seed:1,name:"Yonger Bastida",school:"Iowa State"},
+    {seed:2,name:"Isaac Trumble",school:"NC State"},
+    {seed:3,name:"Taye Ghadiali",school:"Michigan"},
+    {seed:4,name:"AJ Ferrari",school:"Nebraska"},
+    {seed:5,name:"Nick Feldman",school:"Ohio State"},
+    {seed:6,name:"Nathan Taylor",school:"Lehigh"},
+    {seed:7,name:"Konner Doucet",school:"Oklahoma State"},
+    {seed:8,name:"Ben Kueter",school:"Iowa"},
+    {seed:9,name:"Cole Mirasola",school:"Penn State"},
+    {seed:10,name:"David Szuba",school:"Arizona State"},
+    {seed:11,name:"Devon Dawson",school:"Northern Illinois"},
+    {seed:12,name:"Braxton Amos",school:"Wisconsin"},
+    {seed:13,name:"Spencer Lanosga",school:"Navy"},
+    {seed:14,name:"Koy Hopke",school:"Minnesota"},
+    {seed:15,name:"Brady Colbert",school:"Army"},
+    {seed:16,name:"Jimmy Mullen",school:"Virginia Tech"},
+    {seed:17,name:"Vincent Mueller",school:"Columbia"},
+    {seed:18,name:"Christian Carroll",school:"Wyoming"},
+    {seed:19,name:"Nate Schon",school:"Drexel"},
+    {seed:20,name:"Dayton Pitzer",school:"Pittsburgh"},
+    {seed:21,name:"Juan Mora",school:"Oklahoma"},
+    {seed:22,name:"Trevor Tinker",school:"Cal Poly"},
+    {seed:23,name:"Stephan Monchery",school:"Appalachian State"},
+    {seed:24,name:"Connor Barket",school:"Duke"},
+    {seed:25,name:"Alex Semenenko",school:"Brown"},
+    {seed:26,name:"Luke Luffman",school:"Illinois"},
+    {seed:27,name:"Hunter Catka",school:"Rutgers"},
+    {seed:28,name:"Jarrett Stoner",school:"Missouri"},
+    {seed:29,name:"Luke Rasmussen",school:"South Dakota State"},
+    {seed:30,name:"Jack Forbes",school:"Utah Valley"},
+    {seed:31,name:"Brenan Morgan",school:"Virginia"},
+    {seed:32,name:"Emmanuel Ulrich",school:"American"},
+    {seed:33,name:"Mason Rebuck",school:"Bloomsburg"},
   ],
 };
 
@@ -765,13 +765,7 @@ export default function App(){
         {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
           setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers}/>}
         {activePage==="standings"&&<StandingsPage teamScores={teamScores} getColor={getColor} getRoster={getRoster}/>}
-        {activePage==="data"&&<DataPage wrestlers={wrestlers} setWrestlers={setWrestlers}
-          teams={teams} setTeams={setTeams} setPicks={setPicks} setPoints={setPoints}
-          picks={picks} points={points} bonusKeys={bonusKeys} setBonusKeys={setBonusKeys}
-          draftOrder={draftOrder} setDraftOrder={setDraftOrder}
-          rotationType={rotationType} setRotationType={setRotationType}
-          bonusPickEnabled={bonusPickEnabled} setBonusPickEnabled={setBonusPickEnabled}
-          showToast={showToast}/>}
+
         {activePage==="settings"&&<SettingsPage
           teams={teams} setTeams={setTeams}
           draftOrder={draftOrder} setDraftOrder={setDraftOrder}
@@ -930,7 +924,7 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 
       {/* Nav tabs */}
       <div style={{maxWidth:1600,margin:"0 auto",padding:"0 16px",display:"flex",gap:0,overflowX:"auto",marginBottom:-2}}>
-        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"data",label:"✏️ DATA"},{id:"settings",label:"⚙ SETTINGS",commissionerOnly:true}].map(tab=>{
+        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS",commissionerOnly:true}].map(tab=>{
           const isActive=activePage===tab.id;
           const preDraftLocked=!draftStarted&&tab.id!=="settings";
           const commLocked=tab.commissionerOnly&&!isCommissioner;
@@ -1762,288 +1756,6 @@ function StandingsPage({teamScores,getColor,getRoster}){
 }
 
 // ─── DATA PAGE ────────────────────────────────────────────────────────────────
-function DataPage({wrestlers,setWrestlers,teams,setTeams,setPicks,setPoints,
-  picks,points,bonusKeys,setBonusKeys,draftOrder,setDraftOrder,
-  rotationType,setRotationType,bonusPickEnabled,setBonusPickEnabled,showToast}){
-  const [selW,setSelW]=useState(125);
-  const [editRows,setEditRows]=useState(null);
-  const [jsonMode,setJsonMode]=useState(false);
-  const [jsonText,setJsonText]=useState("");
-  const [jsonErr,setJsonErr]=useState("");
-  const [csvPreview,setCsvPreview]=useState({rows:[],byWeight:{},skipped:0});
-
-  const parseCsvFile=(file)=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const text=ev.target.result;
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      const rows=[];let skipped=0;
-      lines.forEach((line,li)=>{
-        // Naive CSV split respecting quoted fields
-        const cols=[];let cur="";let inQ=false;
-        for(let ci=0;ci<line.length;ci++){
-          const ch=line[ci];
-          if(ch==='"'){inQ=!inQ;}
-          else if(ch===","&&!inQ){cols.push(cur.trim());cur="";}
-          else cur+=ch;
-        }
-        cols.push(cur.trim());
-        // Detect header row
-        if(li===0&&isNaN(parseInt(cols[0]))&&isNaN(parseInt(cols[3]))) return;
-        if(cols.length<4) return;
-        const seed=parseInt(cols[0]);
-        const name=cols[1].replace(/^"|"$/g,"").trim();
-        const school=cols[2].replace(/^"|"$/g,"").trim();
-        const weight=parseInt(cols[3]);
-        if(!seed||!name||!WEIGHT_CLASSES.includes(weight)){skipped++;return;}
-        rows.push({seed,name,school,weight});
-      });
-      const byWeight={};
-      rows.forEach(r=>{if(!byWeight[r.weight]) byWeight[r.weight]=[];byWeight[r.weight].push(r);});
-      setCsvPreview({rows,byWeight,skipped});
-      if(rows.length===0) showToast("No valid rows found — check column order: seed,name,school,weight","err");
-    };
-    reader.readAsText(file);
-  };
-
-  const applyCsv=()=>{
-    if(!csvPreview.rows.length) return;
-    const next={};
-    csvPreview.rows.forEach(r=>{
-      if(!next[r.weight]) next[r.weight]=[];
-      next[r.weight].push({seed:r.seed,name:r.name,school:r.school});
-    });
-    // Sort each weight by seed
-    Object.keys(next).forEach(w=>{next[w].sort((a,b)=>a.seed-b.seed);});
-    setWrestlers(prev=>({...prev,...next}));
-    setCsvPreview({rows:[],byWeight:{},skipped:0});
-    showToast(`Loaded ${csvPreview.rows.length} wrestlers across ${Object.keys(csvPreview.byWeight).length} weight classes`,"ok");
-  };
-
-  const startEdit=(w)=>{setSelW(w);setEditRows(JSON.parse(JSON.stringify(wrestlers[w]||[])));setJsonMode(false);};
-  const updRow=(i,f,v)=>setEditRows(rows=>rows.map((r,idx)=>idx===i?{...r,[f]:f==="seed"?parseInt(v)||v:v}:r));
-  const addRow=()=>setEditRows(rows=>[...rows,{seed:rows.length+1,name:"",school:""}]);
-  const rmRow=(i)=>setEditRows(rows=>rows.filter((_,idx)=>idx!==i));
-  const save=()=>{
-    if(!editRows) return;
-    const sorted=[...editRows].sort((a,b)=>parseInt(a.seed)-parseInt(b.seed));
-    setWrestlers(prev=>({...prev,[selW]:sorted}));
-    showToast(`Saved ${selW}lbs`,"ok");setEditRows(null);
-  };
-  const doExport=()=>{setJsonText(JSON.stringify({wrestlers,teams},null,2));setJsonMode(true);setJsonErr("");};
-  const doImport=()=>{
-    try{
-      const d=JSON.parse(jsonText);
-      if(d.wrestlers) setWrestlers(d.wrestlers);
-      if(d.teams) setTeams(d.teams);
-      setPicks({});setPoints({});setBonusKeys([]);
-      setJsonMode(false);setJsonText("");setJsonErr("");
-      showToast("Imported! Picks and scores cleared.","ok");
-    }catch(e){setJsonErr("Invalid JSON: "+e.message);}
-  };
-
-  return (
-    <div style={{maxWidth:900}}>
-      <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c"}}>EDIT WRESTLER DATA</h2>
-        <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>
-          Edit seeds, names, and schools. Export to JSON to save your setup year-to-year.
-          Add wrestlers beyond seed 16 here — they'll appear on the board and be searchable in the draft bar.
-        </p>
-      </div>
-      <div className="card" style={{padding:14,marginBottom:14}}>
-        <div className="sec-label" style={{marginBottom:10}}>SELECT WEIGHT CLASS</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {WEIGHT_CLASSES.map(w=>(
-            <button key={w} className="btn" onClick={()=>startEdit(w)}
-              style={{padding:"6px 14px",background:selW===w&&editRows?"#c9a84c":"#1a1f26",color:selW===w&&editRows?"#070a0e":"#c9a84c",borderRadius:5,fontSize:13,border:`1px solid ${selW===w?"#c9a84c":"#2a2f36"}`}}>
-              {w} lbs
-            </button>
-          ))}
-        </div>
-      </div>
-      {editRows&&(
-        <div className="card" style={{marginBottom:14}}>
-          <div style={{padding:"10px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span style={{fontSize:18,fontWeight:700,color:"#c9a84c"}}>{selW} lbs — {editRows.length} wrestlers</span>
-            <div style={{display:"flex",gap:7}}>
-              <button className="btn btn-ghost btn-sm" onClick={addRow}>+ ADD ROW</button>
-              <button className="btn btn-primary btn-sm" onClick={save}>SAVE</button>
-              <button className="undo-x" onClick={()=>setEditRows(null)} style={{fontSize:16,padding:"2px 6px"}}>✕</button>
-            </div>
-          </div>
-          <div style={{padding:12}}>
-            <div style={{display:"grid",gridTemplateColumns:"50px 1fr 1fr 30px",gap:6,marginBottom:6}}>
-              {["SEED","NAME","SCHOOL",""].map(h=><div key={h} style={{fontSize:9,color:"#4a4030",letterSpacing:".14em"}}>{h}</div>)}
-            </div>
-            {editRows.map((row,i)=>(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"50px 1fr 1fr 30px",gap:6,marginBottom:5}}>
-                <input className="inp inp-sm" type="number" value={row.seed} onChange={e=>updRow(i,"seed",e.target.value)} style={{textAlign:"center"}}/>
-                <input className="inp inp-sm" value={row.name} onChange={e=>updRow(i,"name",e.target.value)} placeholder="Name"/>
-                <input className="inp inp-sm" value={row.school} onChange={e=>updRow(i,"school",e.target.value)} placeholder="School"/>
-                <button className="undo-x" onClick={()=>rmRow(i)} style={{fontSize:14,alignSelf:"center"}}>✕</button>
-              </div>
-            ))}
-            <button className="btn btn-ghost btn-sm" style={{marginTop:8,width:"100%"}} onClick={addRow}>+ ADD WRESTLER</button>
-          </div>
-        </div>
-      )}
-      {/* ── FULL STATE SAVE / LOAD ── */}
-      <div className="card" style={{padding:16,marginBottom:14,border:"1px solid #c9a84c44"}}>
-        <div className="sec-label" style={{marginBottom:4,color:"#c9a84c"}}>💾 SAVE / LOAD DRAFT STATE</div>
-        <p style={{fontSize:12,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:14}}>
-          Saves everything — picks, scores, teams, bonus designations, draft order, and settings.
-          Load it back at any time to resume exactly where you left off.
-        </p>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <button className="btn btn-primary btn-md" onClick={()=>{
-            const state={
-              version:1,
-              savedAt:new Date().toISOString(),
-              wrestlers,teams,picks,points,
-              bonusKeys,draftOrder,rotationType,bonusPickEnabled,
-            };
-            const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-            const url=URL.createObjectURL(blob);
-            const a=document.createElement("a");
-            const ts=new Date().toISOString().slice(0,16).replace("T","_").replace(/:/g,"-");
-            a.href=url;a.download=`draft-state_${ts}.json`;a.click();
-            URL.revokeObjectURL(url);
-            showToast("Draft state saved!","ok");
-          }}>⬇ DOWNLOAD STATE</button>
-          <button className="btn btn-ghost btn-md" onClick={()=>{
-            const input=document.createElement("input");
-            input.type="file";input.accept=".json,application/json";
-            input.onchange=e=>{
-              const file=e.target.files[0];if(!file) return;
-              const reader=new FileReader();
-              reader.onload=ev=>{
-                try{
-                  const d=JSON.parse(ev.target.result);
-                  if(!d.version||!d.picks) throw new Error("Not a valid draft state file");
-                  if(!window.confirm(`Load saved state from ${d.savedAt?.slice(0,16)||"unknown time"}?\n\nThis will replace all current picks, scores, and settings.`)) return;
-                  if(d.wrestlers) setWrestlers(d.wrestlers);
-                  if(d.teams) setTeams(d.teams);
-                  if(d.picks) setPicks(d.picks);
-                  if(d.points) setPoints(d.points);
-                  if(d.bonusKeys) setBonusKeys(d.bonusKeys);
-                  if(d.draftOrder) setDraftOrder(d.draftOrder);
-                  if(d.rotationType) setRotationType(d.rotationType);
-                  if(typeof d.bonusPickEnabled==="boolean") setBonusPickEnabled(d.bonusPickEnabled);
-                  showToast("Draft state loaded!","ok");
-                }catch(err){showToast(`Load failed: ${err.message}`,"err");}
-              };
-              reader.readAsText(file);
-            };
-            input.click();
-          }}>⬆ LOAD STATE FILE</button>
-        </div>
-      </div>
-
-      {/* ── CSV IMPORT / EXPORT ── */}
-      <div className="card" style={{padding:16,marginBottom:14}}>
-        <div className="sec-label" style={{marginBottom:4}}>📋 WRESTLER CSV IMPORT / EXPORT</div>
-        <p style={{fontSize:12,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:14}}>
-          Import seedings from a CSV file with columns: <span style={{color:"#c9a84c",fontFamily:"monospace"}}>seed, name, school, weight</span>.
-          Header row optional. Weight must be one of the 10 NCAA classes.
-        </p>
-
-        {/* Drop zone */}
-        <div
-          onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#c9a84c";e.currentTarget.style.background="#0d1a0d";}}
-          onDragLeave={e=>{e.currentTarget.style.borderColor="#1e2a38";e.currentTarget.style.background="transparent";}}
-          onDrop={e=>{
-            e.preventDefault();
-            e.currentTarget.style.borderColor="#1e2a38";e.currentTarget.style.background="transparent";
-            const file=e.dataTransfer.files[0];
-            if(file) parseCsvFile(file);
-          }}
-          style={{border:"2px dashed #1e2a38",borderRadius:8,padding:"28px 20px",
-            textAlign:"center",marginBottom:12,transition:"all .15s",cursor:"pointer"}}
-          onClick={()=>{
-            const inp=document.createElement("input");
-            inp.type="file";inp.accept=".csv,text/csv";
-            inp.onchange=e=>{if(e.target.files[0]) parseCsvFile(e.target.files[0]);};
-            inp.click();
-          }}>
-          <div style={{fontSize:28,marginBottom:6}}>📂</div>
-          <div style={{fontSize:13,color:"#6a7060",fontFamily:"'Barlow Condensed',sans-serif"}}>
-            Drop a CSV file here, or click to browse
-          </div>
-          <div style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif",marginTop:4}}>
-            Columns: seed · name · school · weight
-          </div>
-        </div>
-
-        {/* Preview */}
-        {csvPreview.rows.length>0&&(
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,color:"#6a5a30",letterSpacing:".12em",fontFamily:"'Oswald',sans-serif",marginBottom:8}}>
-              PREVIEW — {csvPreview.rows.length} wrestlers across {Object.keys(csvPreview.byWeight).length} weight classes
-              {csvPreview.skipped>0&&<span style={{color:"#f59e0b",marginLeft:8}}>{csvPreview.skipped} rows skipped (invalid weight)</span>}
-            </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
-              {Object.entries(csvPreview.byWeight).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([w,wrs])=>(
-                <div key={w} style={{padding:"4px 10px",background:"#0d1219",border:"1px solid #1e2a38",
-                  borderRadius:5,fontSize:11,fontFamily:"'Barlow Condensed',sans-serif",color:"#c9a84c"}}>
-                  {w}lb <span style={{color:"#4a5040"}}>({wrs.length})</span>
-                </div>
-              ))}
-            </div>
-            {/* First 5 rows sample */}
-            <div style={{background:"#070a0e",border:"1px solid #1e2a38",borderRadius:6,overflow:"hidden",marginBottom:10}}>
-              {csvPreview.rows.slice(0,5).map((r,i)=>(
-                <div key={i} style={{display:"grid",gridTemplateColumns:"40px 40px 1fr 1fr",gap:8,
-                  padding:"6px 12px",borderBottom:i<4?"1px solid #0f1318":"none",
-                  fontSize:11,fontFamily:"'Barlow Condensed',sans-serif"}}>
-                  <span style={{color:"#c9a84c",fontWeight:700}}>{r.weight}lb</span>
-                  <span style={{color:"#4a5040"}}>#{r.seed}</span>
-                  <span style={{color:"#d0c8b4"}}>{r.name}</span>
-                  <span style={{color:"#4a5040"}}>{r.school}</span>
-                </div>
-              ))}
-              {csvPreview.rows.length>5&&(
-                <div style={{padding:"6px 12px",fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>
-                  …and {csvPreview.rows.length-5} more
-                </div>
-              )}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button className="btn btn-primary btn-md" onClick={applyCsv}>
-                APPLY — REPLACE WRESTLER DATA
-              </button>
-              <button className="btn btn-ghost btn-md" onClick={()=>setCsvPreview({rows:[],byWeight:{},skipped:0})}>
-                CANCEL
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Export CSV */}
-        <div style={{borderTop:"1px solid #1a1f26",paddingTop:12,marginTop:csvPreview.rows.length>0?0:4}}>
-          <button className="btn btn-ghost btn-md" onClick={()=>{
-            const rows=["seed,name,school,weight"];
-            WEIGHT_CLASSES.forEach(w=>(wrestlers[w]||[]).forEach(wr=>{
-              rows.push(`${wr.seed},"${wr.name}","${wr.school}",${w}`);
-            }));
-            const blob=new Blob([rows.join("\n")],{type:"text/csv"});
-            const url=URL.createObjectURL(blob);
-            const a=document.createElement("a");a.href=url;a.download="wrestlers.csv";a.click();
-            URL.revokeObjectURL(url);
-            showToast("CSV exported","ok");
-          }}>⬇ EXPORT WRESTLERS AS CSV</button>
-        </div>
-      </div>
-
-      <div className="card" style={{padding:16,border:"1px solid #3a1515"}}>
-        <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
-        <button className="btn btn-danger btn-md" onClick={()=>{if(window.confirm("Reset everything to defaults? This cannot be undone.")){{setWrestlers(DEFAULT_WRESTLERS);setTeams(DEFAULT_TEAMS);setPicks({});setPoints({});setBonusKeys([]);setDraftOrder(DEFAULT_TEAMS);showToast("Reset to defaults","info");}}}}>RESET TO DEFAULTS</button>
-      </div>
-    </div>
-  );
-}
-
-// ─── SETUP PAGE ───────────────────────────────────────────────────────────────
 function SetupPage({teams,setTeams,picks,setPicks,setPoints,getRoster,getColor,draftTeam,setDraftTeam,showToast}){
   const [newName,setNewName]=useState("");
   const add=()=>{if(newName.trim()&&!teams.includes(newName.trim())){setTeams(p=>[...p,newName.trim()]);setNewName("");showToast("Team added","ok");}};
