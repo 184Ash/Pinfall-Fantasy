@@ -547,15 +547,22 @@ textarea{resize:vertical;}
 // Picks per team: 10 weight slots + 1 bonus "dark horse" (can be toggled off)
 const PICKS_PER_TEAM_BASE = 10; // without bonus
 const PICKS_PER_TEAM_BONUS = 11; // with bonus
+const TEAM_SOFT_CAP = 20; // warn above this
+const TEAM_HARD_CAP = 30; // block above this
 
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App(){
   const [teams,setTeams]=useState(DEFAULT_TEAMS);
+  // TODO: replace with real auth — true = commissioner has full control
+  const [isCommissioner,setIsCommissioner]=useState(true);
+  const [draftStarted,setDraftStarted]=useState(false);
   const [wrestlers,setWrestlers]=useState(DEFAULT_WRESTLERS);
   const [picks,setPicks]=useState({});
   const [bonusKeys,setBonusKeys]=useState([]); // pick keys manually designated as bonus
   const [points,setPoints]=useState({});
-  const [activePage,setActivePage]=useState("board");
+  // Open at board if draft is already underway, settings if pre-draft
+  // When real persistence is wired up, draftStarted will load from DB and this will auto-route correctly
+  const [activePage,setActivePage]=useState(draftStarted?"board":"settings");
   const [searchQ,setSearchQ]=useState("");
   const [toast,setToast]=useState(null);
   const [hlKey,setHlKey]=useState(null);
@@ -569,13 +576,23 @@ export default function App(){
 
   // ── Ascending pick timer ──────────────────────────────────────────────────
   const [timerSec,setTimerSec]=useState(0);
+  const [timerPaused,setTimerPaused]=useState(false);
   const timerRef=useRef(null);
+  const timerPausedRef=useRef(false);
   const resetTimer=()=>{
     setTimerSec(0);
+    setTimerPaused(false);
+    timerPausedRef.current=false;
     if(timerRef.current) clearInterval(timerRef.current);
-    timerRef.current=setInterval(()=>setTimerSec(s=>s+1),1000);
+    timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
   };
-  const [_timerInit]=useState(()=>{resetTimer();return null;});
+  const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);};
+  const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);};
+  const [_timerInit]=useState(()=>{
+    // Start paused until commissioner starts draft
+    timerPausedRef.current=true;
+    return null;
+  });
 
   // ── Draft order computation ───────────────────────────────────────────────
   const totalPicks=Object.keys(picks).length;
@@ -639,6 +656,10 @@ export default function App(){
     const key=pickKey(weight,seed);
     if(picks[key]){showToast("Already drafted!","err");return;}
     if(!canDraft(team)){showToast(`${team} roster full (${picksPerTeam} picks)!`,"err");return;}
+    // Check if this weight class is exhausted
+    const weightWrestlers=wrestlers[weight]||[];
+    const weightPicked=weightWrestlers.filter(wr=>picks[pickKey(weight,wr.seed)]).length;
+    if(weightPicked>=weightWrestlers.length){showToast(`No wrestlers left at ${weight}lb!`,"err");return;}
     const existsAtWeight=Object.entries(picks).some(([k,t])=>t===team&&k.startsWith(`${weight}-`));
     const isBonus=existsAtWeight||!WEIGHT_CLASSES.includes(weight);
     if(isBonus&&!bonusPickEnabled){showToast("Bonus picks are disabled in settings","err");return;}
@@ -732,7 +753,9 @@ export default function App(){
         searchQ={searchQ} setSearchQ={setSearchQ} searchResults={searchResults}
         picks={picks} getColor={getColor} draftPick={draftPick} draftCustom={draftCustom}
         activePage={activePage} setActivePage={setActivePage} getRoster={getRoster}
-        timerSec={timerSec} getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam}/>
+        timerSec={timerSec} timerPaused={timerPaused} pauseTimer={pauseTimer} resumeTimer={resumeTimer}
+        isCommissioner={isCommissioner} draftStarted={draftStarted}
+        getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam} showToast={showToast}/>
 
       <div style={{maxWidth:1600,margin:"0 auto",padding:"16px 16px 40px"}}>
         {activePage==="board"&&<BoardPage wrestlers={wrestlers} picks={picks} points={points}
@@ -756,7 +779,9 @@ export default function App(){
           bonusPickEnabled={bonusPickEnabled} setBonusPickEnabled={setBonusPickEnabled}
           picks={picks} setPicks={setPicks} setPoints={setPoints}
           getRoster={getRoster} getColor={getColor} showToast={showToast}
-          picksPerTeam={picksPerTeam}/>}
+          picksPerTeam={picksPerTeam} wrestlers={wrestlers}
+          draftStarted={draftStarted}
+          onStartDraft={()=>{setDraftStarted(true);resetTimer();setActivePage("board");}}/>}
         {teams.includes(activePage)&&<RosterPage team={activePage} roster={getRoster(activePage)}
           getColor={getColor} picksPerTeam={picksPerTeam}
           allWrestlers={allWrestlers} picks={picks} setPicks={setPicks} wrestlers={wrestlers}
@@ -770,7 +795,8 @@ export default function App(){
 // ─── HEADER ──────────────────────────────────────────────────────────────────
 function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
   searchQ,setSearchQ,searchResults,picks,getColor,draftPick,draftCustom,
-  activePage,setActivePage,getRoster,timerSec,getRosterStatus,picksPerTeam}){
+  activePage,setActivePage,getRoster,timerSec,timerPaused,pauseTimer,resumeTimer,
+  isCommissioner,draftStarted,getRosterStatus,picksPerTeam,showToast}){
   const clk=onClock?getColor(onClock):null;
   const mins=Math.floor(timerSec/60);
   const secs=timerSec%60;
@@ -789,7 +815,20 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 
   return (
     <div style={{background:"#0b0f14",borderBottom:"2px solid #c9a84c",position:"sticky",top:0,zIndex:100}}>
-      <div style={{maxWidth:1600,margin:"0 auto",padding:"10px 16px 8px",display:"flex",alignItems:"center",gap:11,flexWrap:"wrap"}}>
+      {/* Pre-draft overlay banner */}
+      {!draftStarted&&(
+        <div style={{background:"#0d0a00",borderBottom:"1px solid #c9a84c33",padding:"10px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>⚙</span>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,letterSpacing:".1em",color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif"}}>COMMISSIONER MUST CONFIRM SETTINGS PRIOR TO START</div>
+              <div style={{fontSize:10,color:"#5a4a20",letterSpacing:".08em",fontFamily:"'Barlow Condensed',sans-serif"}}>Draft board, timer, and picks are locked until the draft is started</div>
+            </div>
+          </div>
+          <div style={{fontSize:10,color:"#3a3010",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",border:"1px solid #3a3010",padding:"3px 10px",borderRadius:3}}>PRE-DRAFT</div>
+        </div>
+      )}
+      <div style={{maxWidth:1600,margin:"0 auto",padding:"10px 16px 8px",display:"flex",alignItems:"center",gap:11,flexWrap:"wrap",opacity:draftStarted?1:0.25,pointerEvents:draftStarted?"auto":"none",filter:draftStarted?"none":"grayscale(0.5)"}}>
         {/* Logo */}
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <div style={{width:34,height:34,borderRadius:"50%",background:"radial-gradient(circle at 35% 35%,#e6c84e,#7a5810)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 12px #c9a84c44"}}>🥇</div>
@@ -829,12 +868,22 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
         </div>
 
         {/* Timer */}
-        <div style={{padding:"7px 12px",background:"#070a0e",border:`1px solid ${timerSec>=60?"#3a1800":"#1e2530"}`,borderRadius:7,flexShrink:0,textAlign:"center",minWidth:82,boxShadow:timerSec>=120?`0 0 12px ${timerColor}44`:"none",transition:"all .5s"}}>
-          <div style={{fontSize:8,letterSpacing:".2em",color:"#4a4020",marginBottom:1}}>PICK TIMER</div>
-          <div style={{fontSize:22,fontWeight:700,color:timerColor,lineHeight:1,transition:"color .5s"}}>{timerStr}</div>
-          {timerSec>=60&&<div style={{fontSize:8,color:timerColor,opacity:.7,letterSpacing:".1em",marginTop:1}}>
-            {timerSec<120?"SLOW":timerSec<180?"HURRY UP":"⚠ VERY SLOW"}
-          </div>}
+        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+          <div style={{padding:"7px 12px",background:"#070a0e",border:`1px solid ${timerPaused?"#1a3a5c":timerSec>=60?"#3a1800":"#1e2530"}`,borderRadius:7,textAlign:"center",minWidth:82,boxShadow:timerSec>=120&&!timerPaused?`0 0 12px ${timerColor}44`:"none",transition:"all .5s"}}>
+            <div style={{fontSize:8,letterSpacing:".2em",color:timerPaused?"#2a4a6a":"#4a4020",marginBottom:1}}>{timerPaused?"PAUSED":"PICK TIMER"}</div>
+            <div style={{fontSize:22,fontWeight:700,color:timerPaused?"#4a7aaa":timerColor,lineHeight:1,transition:"color .5s"}}>{timerStr}</div>
+            {!timerPaused&&timerSec>=60&&<div style={{fontSize:8,color:timerColor,opacity:.7,letterSpacing:".1em",marginTop:1}}>
+              {timerSec<120?"SLOW":timerSec<180?"HURRY UP":"⚠ VERY SLOW"}
+            </div>}
+            {timerPaused&&<div style={{fontSize:8,color:"#4a7aaa",opacity:.8,letterSpacing:".1em",marginTop:1}}>COMMISSIONER</div>}
+          </div>
+          {isCommissioner&&(
+            <button onClick={timerPaused?resumeTimer:pauseTimer}
+              title={timerPaused?"Resume timer":"Pause timer"}
+              style={{width:32,height:32,borderRadius:6,border:`1px solid ${timerPaused?"#c9a84c":"#2a3040"}`,background:timerPaused?"#c9a84c22":"#0d1117",color:timerPaused?"#c9a84c":"#6a7a8a",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s",flexShrink:0}}>
+              {timerPaused?"▶":"⏸"}
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -881,11 +930,27 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 
       {/* Nav tabs */}
       <div style={{maxWidth:1600,margin:"0 auto",padding:"0 16px",display:"flex",gap:0,overflowX:"auto",marginBottom:-2}}>
-        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"data",label:"✏️ DATA"},{id:"settings",label:"⚙ SETTINGS"}].map(tab=>(
-          <button key={tab.id} className="tab-link" onClick={()=>setActivePage(tab.id)} style={{padding:"7px 13px",fontSize:11,fontWeight:600,letterSpacing:".12em",color:activePage===tab.id?"#c9a84c":"#4a4020",borderBottom:activePage===tab.id?"2px solid #c9a84c":"2px solid transparent"}}>
-            {tab.label}
-          </button>
-        ))}
+        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"data",label:"✏️ DATA"},{id:"settings",label:"⚙ SETTINGS",commissionerOnly:true}].map(tab=>{
+          const isActive=activePage===tab.id;
+          const preDraftLocked=!draftStarted&&tab.id!=="settings";
+          const commLocked=tab.commissionerOnly&&!isCommissioner;
+          return (
+            <button key={tab.id} className="tab-link"
+              onClick={()=>{
+                if(preDraftLocked) return;
+                if(commLocked){showToast("Only the commissioner can access Settings","err");return;}
+                setActivePage(tab.id);
+              }}
+              title={preDraftLocked?"Draft has not started yet":commLocked?"Commissioner only":""}
+              style={{padding:"7px 13px",fontSize:11,fontWeight:600,letterSpacing:".12em",
+                color:isActive?"#c9a84c":preDraftLocked?"#252010":commLocked?"#3a2a10":"#4a4020",
+                borderBottom:isActive?"2px solid #c9a84c":"2px solid transparent",
+                cursor:preDraftLocked?"default":commLocked?"not-allowed":"pointer",
+                opacity:preDraftLocked?0.35:1}}>
+              {tab.label}{commLocked?" 🔒":""}
+            </button>
+          );
+        })}
         <div style={{width:1,background:"#1e2530",margin:"5px 5px 1px"}}/>
         {teams.map(t=>{
           const c=getColor(t);const r=getRoster(t).length;const isA=activePage===t;
@@ -1192,7 +1257,8 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
 function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setRotationType,
-  bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,getRoster,getColor,showToast,picksPerTeam}){
+  bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,getRoster,getColor,showToast,picksPerTeam,wrestlers,
+  draftStarted,onStartDraft}){
   const [newTeam,setNewTeam]=useState("");
   const [dragging,setDragging]=useState(null);
   const [dragOver2,setDragOver2]=useState(null);
@@ -1210,9 +1276,20 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
   const addTeam=()=>{
     const n=newTeam.trim();
     if(!n||teams.includes(n)) return;
+    if(teams.length>=TEAM_HARD_CAP){
+      showToast(`Hard cap reached — max ${TEAM_HARD_CAP} teams allowed`,"err");
+      return;
+    }
+    const newCount=teams.length+1;
+    const totalWrestlers=Object.values(wrestlers).reduce((s,arr)=>s+arr.length,0);
+    const picksNeeded=newCount*(bonusPickEnabled?PICKS_PER_TEAM_BONUS:PICKS_PER_TEAM_BASE);
     syncOrder([...teams,n]);
     setNewTeam("");
-    showToast(`${n} added`,"ok");
+    if(newCount>TEAM_SOFT_CAP){
+      showToast(`⚠ ${n} added — ${newCount} teams may exhaust wrestler pool (${picksNeeded}/${totalWrestlers} picks needed)`,"info");
+    } else {
+      showToast(`${n} added`,"ok");
+    }
   };
 
   const removeTeam=(t)=>{
@@ -1309,10 +1386,19 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
           </div>
         </div>
         {/* Add team */}
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <div style={{display:"flex",gap:8,marginBottom:6}}>
           <input className="inp" value={newTeam} onChange={e=>setNewTeam(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&addTeam()} placeholder="Add team name…"/>
-          <button className="btn btn-primary btn-md" onClick={addTeam}>ADD</button>
+            onKeyDown={e=>e.key==="Enter"&&addTeam()}
+            placeholder={teams.length>=TEAM_HARD_CAP?"Hard cap reached (30 max)":"Add team name…"}
+            disabled={teams.length>=TEAM_HARD_CAP}/>
+          <button className="btn btn-primary btn-md" onClick={addTeam} disabled={teams.length>=TEAM_HARD_CAP}>ADD</button>
+        </div>
+        <div style={{fontSize:11,color:teams.length>=TEAM_HARD_CAP?"#ef4444":teams.length>TEAM_SOFT_CAP?"#f59e0b":"#4a5260",marginBottom:12,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".08em"}}>
+          {teams.length>=TEAM_HARD_CAP
+            ? `⛔ Hard cap reached — 30 teams maximum`
+            : teams.length>TEAM_SOFT_CAP
+              ? `⚠ ${teams.length}/30 teams — wrestler pool may be exhausted before draft ends`
+              : `${teams.length}/30 teams · soft cap warning at 21`}
         </div>
         {/* Order list */}
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -1356,6 +1442,30 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
           })}
         </div>
       </div>
+
+      {/* ── Apply and Start Draft ── */}
+      {!draftStarted&&(
+        <div className="card" style={{padding:24,border:"2px solid #c9a84c44",background:"#0d0a00",marginBottom:14,textAlign:"center"}}>
+          <div style={{fontSize:11,letterSpacing:".2em",color:"#6a5a20",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:8}}>COMMISSIONER — REVIEW SETTINGS ABOVE BEFORE STARTING</div>
+          <div style={{fontSize:12,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:20,lineHeight:1.6}}>
+            Once started, the draft board will unlock for all participants.<br/>
+            The pick timer will begin and picks can be made.
+          </div>
+          <button
+            onClick={onStartDraft}
+            style={{background:"linear-gradient(135deg,#c9a84c,#a07830)",color:"#070a0e",border:"none",borderRadius:6,padding:"16px 48px",fontSize:16,fontWeight:700,letterSpacing:".15em",fontFamily:"'Oswald',sans-serif",cursor:"pointer",boxShadow:"0 0 24px #c9a84c44",transition:"all .2s",textTransform:"uppercase"}}
+            onMouseOver={e=>e.target.style.boxShadow="0 0 36px #c9a84c88"}
+            onMouseOut={e=>e.target.style.boxShadow="0 0 24px #c9a84c44"}>
+            ▶ APPLY AND START DRAFT
+          </button>
+        </div>
+      )}
+      {draftStarted&&(
+        <div className="card" style={{padding:16,marginBottom:14,border:"1px solid #14532d",background:"#050e08",textAlign:"center"}}>
+          <div style={{fontSize:12,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em"}}>✓ DRAFT IS LIVE — SETTINGS LOCKED</div>
+          <div style={{fontSize:10,color:"#1a4a28",fontFamily:"'Barlow Condensed',sans-serif",marginTop:4}}>Return to Draft Board to make picks</div>
+        </div>
+      )}
 
       {/* ── Danger zone ── */}
       <div className="card" style={{padding:16,border:"1px solid #3a1515"}}>
