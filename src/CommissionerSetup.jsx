@@ -241,12 +241,12 @@ const ROTATION_OPTIONS = [
   { value: "third_round_reversal", label: "Third Round Reversal", desc: "Snake, but reverses again on round 3" },
 ];
 
-export default function CommissionerSetup({ onConfirm }) {
-  const [leagueName, setLeagueName] = useState("");
-  const [teamCount, setTeamCount] = useState(8);
-  const [rotationType, setRotationType] = useState("snake");
-  const [bonusPickEnabled, setBonusPickEnabled] = useState(true);
-  const [recoveryEmail, setRecoveryEmail] = useState("");
+export default function CommissionerSetup({ onConfirm, initialData }) {
+  const [leagueName, setLeagueName] = useState(initialData?.leagueName ?? "");
+  const [teamCount, setTeamCount] = useState(initialData?.teamCount ?? 8);
+  const [rotationType, setRotationType] = useState(initialData?.rotationType ?? "snake");
+  const [bonusPickEnabled, setBonusPickEnabled] = useState(initialData?.bonusPickEnabled ?? true);
+  const [recoveryEmail, setRecoveryEmail] = useState(initialData?.recoveryEmail ?? "");
   const [showError, setShowError] = useState(false);
   const [loading, setLoading] = useState(false);
 

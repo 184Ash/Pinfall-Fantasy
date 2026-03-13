@@ -2,9 +2,32 @@
 import { supabase } from './supabase'
 import { saveSession, addTeamToSession, generateJoinCode } from './session'
 
-// ── Stub — replace in Section 3 Step 7 ──────────────────────────
 export async function fetchLeague(joinCode) {
-  return null
+  // ── 1. Fetch the league row ───────────────────────────────────────
+  const { data: league, error: leagueError } = await supabase
+    .from('leagues')
+    .select('id, name, settings_json, commissioner_email')
+    .eq('id', joinCode)
+    .single()
+
+  if (leagueError || !league) return null
+
+  // ── 2. Fetch all teams for this league ───────────────────────────
+  const { data: teams, error: teamsError } = await supabase
+    .from('teams')
+    .select('id, name, draft_position, role, is_claimed, claimed_by')
+    .eq('league_id', joinCode)
+    .order('draft_position', { ascending: true })
+
+  if (teamsError) return null
+
+  // ── 3. Return structured object ──────────────────────────────────
+  return {
+    leagueName: league.name,
+    teams,
+    settings: league.settings_json ?? {},
+    commissionerEmail: league.commissioner_email ?? null,
+  }
 }
 
 // ── Team Claiming ────────────────────────────────────────────────

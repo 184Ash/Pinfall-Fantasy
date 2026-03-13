@@ -4,8 +4,6 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import CreateLeaguePage from './CreateLeaguePage'
 import LeaguePage from './LeaguePage'
-import { createLeague } from './leagueService'
-window.createLeague = createLeague
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
