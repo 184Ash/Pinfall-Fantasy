@@ -34,34 +34,6 @@ const styles = {
     margin: "0 auto",
     padding: "0 16px",
   },
-  nameSection: {
-    background: "#1A2535",
-    border: "1px solid #2A3A50",
-    borderRadius: "10px",
-    padding: "20px",
-    marginTop: "24px",
-  },
-  label: {
-    display: "block",
-    fontSize: "11px",
-    letterSpacing: "2px",
-    textTransform: "uppercase",
-    color: "#C9A84C",
-    marginBottom: "8px",
-    fontWeight: "600",
-  },
-  input: {
-    width: "100%",
-    background: "#0D1520",
-    border: "1px solid #2A3A50",
-    borderRadius: "6px",
-    color: "#E8EDF2",
-    fontSize: "16px",
-    padding: "12px 14px",
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s",
-  },
   sectionTitle: {
     fontSize: "11px",
     letterSpacing: "2px",
@@ -74,54 +46,79 @@ const styles = {
     background: "#1A2535",
     border: "1px solid #2A3A50",
     borderRadius: "10px",
-    padding: "16px 18px",
+    padding: "14px 16px",
     marginBottom: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "12px",
   },
   teamCardYours: {
     background: "#1A2535",
     border: "1px solid #2A6A3A",
     borderRadius: "10px",
-    padding: "16px 18px",
+    padding: "14px 16px",
     marginBottom: "10px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "12px",
   },
+  teamCardClaimed: {
+    background: "#1A2535",
+    border: "1px solid #2A3A50",
+    borderRadius: "10px",
+    padding: "14px 16px",
+    marginBottom: "10px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    opacity: 0.6,
+  },
   teamName: {
-    fontSize: "16px",
+    fontSize: "15px",
     fontWeight: "600",
     color: "#E8EDF2",
     flex: 1,
+  },
+  claimRow: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    marginTop: "2px",
+  },
+  input: {
+    flex: 1,
+    background: "#0D1520",
+    border: "1px solid #2A3A50",
+    borderRadius: "6px",
+    color: "#E8EDF2",
+    fontSize: "15px",
+    padding: "10px 12px",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
   },
   claimBtn: {
     background: "#C9A84C",
     color: "#0D1520",
     border: "none",
     borderRadius: "6px",
-    padding: "9px 18px",
+    padding: "10px 18px",
     fontSize: "13px",
     fontWeight: "700",
     cursor: "pointer",
-    letterSpacing: "0.5px",
     whiteSpace: "nowrap",
     transition: "background 0.2s, opacity 0.2s",
+    flexShrink: 0,
   },
   claimBtnDisabled: {
     background: "#2A3A50",
     color: "#4A5A6A",
     border: "none",
     borderRadius: "6px",
-    padding: "9px 18px",
+    padding: "10px 18px",
     fontSize: "13px",
     fontWeight: "700",
     cursor: "not-allowed",
-    letterSpacing: "0.5px",
     whiteSpace: "nowrap",
+    flexShrink: 0,
   },
   yoursLabel: {
     display: "flex",
@@ -135,7 +132,6 @@ const styles = {
     color: "#4A5A6A",
     fontSize: "13px",
     fontStyle: "italic",
-    whiteSpace: "nowrap",
   },
   claimAnotherSection: {
     background: "#141E2E",
@@ -155,6 +151,15 @@ const styles = {
     color: "#7A8A9A",
     lineHeight: "1.5",
     marginBottom: "16px",
+  },
+  label: {
+    display: "block",
+    fontSize: "11px",
+    letterSpacing: "2px",
+    textTransform: "uppercase",
+    color: "#C9A84C",
+    marginBottom: "8px",
+    fontWeight: "600",
   },
   rejoinToggle: {
     background: "none",
@@ -232,8 +237,10 @@ export default function JoinScreen({
   onClaim,
   onClaimAnother,
 }) {
-  const [displayName, setDisplayName] = useState("");
-  const [anotherName, setAnotherName] = useState("");
+  // Per-team name inputs for unclaimed teams
+  const [teamNames, setTeamNames] = useState({});
+  // Name inputs for the "claim another" section
+  const [anotherNames, setAnotherNames] = useState({});
   const [showRejoin, setShowRejoin] = useState(false);
   const [rejoinTeamId, setRejoinTeamId] = useState("");
   const [rejoinSent, setRejoinSent] = useState(false);
@@ -241,30 +248,37 @@ export default function JoinScreen({
 
   const sessionTeamIds = currentSession?.teamIds ?? [];
 
-  const handleClaim = async (teamId) => {
-    if (!displayName.trim()) return;
-    setClaiming(teamId);
-    await onClaim(teamId, displayName.trim());
+  const getTeamName = (team) =>
+    teamNames[team.id] !== undefined ? teamNames[team.id] : team.name;
+
+  const handleClaim = async (team) => {
+    const name = getTeamName(team).trim();
+    if (!name) return;
+    setClaiming(team.id);
+    await onClaim(team.id, name);
     setClaiming(null);
   };
 
-  const handleClaimAnother = async (teamId) => {
-    if (!anotherName.trim() || !teamId) return;
-    setClaiming(teamId);
-    await onClaimAnother(teamId, anotherName.trim());
+  const handleClaimAnother = async (team) => {
+    const name = (anotherNames[team.id] || "").trim();
+    if (!name) return;
+    setClaiming(team.id);
+    await onClaimAnother(team.id, name);
     setClaiming(null);
   };
 
   const handleRejoin = async () => {
-  if (!rejoinTeamId) return
-  const requestId = await requestRejoin(leagueId, rejoinTeamId)
-  listenForRejoinApproval(requestId, leagueId, rejoinTeamId, 'member', () => {
-    window.location.reload()
-  })
-  setRejoinSent(true)
-}
+    if (!rejoinTeamId) return;
+    const requestId = await requestRejoin(leagueId, rejoinTeamId);
+    listenForRejoinApproval(requestId, leagueId, rejoinTeamId, 'member', () => {
+      window.location.reload();
+    });
+    setRejoinSent(true);
+  };
 
-  const unclaimedTeams = teams.filter((t) => !t.is_claimed);
+  const unclaimedTeams = teams.filter(
+    (t) => !t.is_claimed && !sessionTeamIds.includes(t.id)
+  );
 
   return (
     <div style={styles.wrapper}>
@@ -275,62 +289,65 @@ export default function JoinScreen({
       </div>
 
       <div style={styles.body}>
-        {/* ── Name Input (first-time claim) ── */}
-        {!currentSession && (
-          <div style={styles.nameSection}>
-            <label style={styles.label}>Your Name</label>
-            <input
-              style={styles.input}
-              type="text"
-              placeholder="Enter your name to claim a team"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              maxLength={40}
-              onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
-              onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
-            />
-          </div>
-        )}
-
         {/* ── Team List ── */}
-        <div style={styles.sectionTitle}>Teams</div>
+        <div style={styles.sectionTitle}>
+          {currentSession ? "Teams" : "Claim Your Team"}
+        </div>
+
         {teams.map((team) => {
           const isYours = sessionTeamIds.includes(team.id);
           const isClaimed = team.is_claimed && !isYours;
           const isLoading = claiming === team.id;
-          const canClaim =
-            !team.is_claimed &&
-            !currentSession &&
-            displayName.trim().length > 0;
+          const nameVal = getTeamName(team);
+          const canClaim = nameVal.trim().length > 0;
 
-          return (
-            <div
-              key={team.id}
-              style={isYours ? styles.teamCardYours : styles.teamCard}
-            >
-              <span style={styles.teamName}>{team.name}</span>
-
-              {isYours && (
+          if (isYours) {
+            return (
+              <div key={team.id} style={styles.teamCardYours}>
+                <span style={styles.teamName}>{team.name}</span>
                 <span style={styles.yoursLabel}>
                   <span style={{ fontSize: "16px" }}>✓</span> Yours
                 </span>
-              )}
+              </div>
+            );
+          }
 
-              {isClaimed && (
-                <span style={styles.claimedLabel}>
-                  Claimed by {team.claimed_by || "someone"}
-                </span>
-              )}
+          if (isClaimed) {
+            return (
+              <div key={team.id} style={styles.teamCardClaimed}>
+                <span style={styles.teamName}>{team.name}</span>
+                <span style={styles.claimedLabel}>Claimed</span>
+              </div>
+            );
+          }
 
-              {!team.is_claimed && !currentSession && (
-                <button
-                  style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
-                  disabled={!canClaim || isLoading}
-                  onClick={() => handleClaim(team.id)}
-                >
-                  {isLoading ? "..." : "Claim"}
-                </button>
-              )}
+          // Unclaimed — show inline name input + claim button
+          return (
+            <div key={team.id} style={styles.teamCard}>
+              <div style={styles.claimRow}>
+                <input
+                  style={styles.input}
+                  type="text"
+                  value={nameVal}
+                  onChange={(e) =>
+                    setTeamNames((prev) => ({ ...prev, [team.id]: e.target.value }))
+                  }
+                  placeholder="Enter your team name"
+                  maxLength={40}
+                  disabled={!!currentSession}
+                  onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
+                  onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
+                />
+                {!currentSession && (
+                  <button
+                    style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
+                    disabled={!canClaim || isLoading}
+                    onClick={() => handleClaim(team)}
+                  >
+                    {isLoading ? "..." : "Claim"}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -341,33 +358,39 @@ export default function JoinScreen({
             <div style={styles.claimAnotherTitle}>Claim Another Team</div>
             <div style={styles.claimAnotherDesc}>
               A second person on this device can claim an additional team.
-              Enter their name below and select a team.
+              Enter their team name below and click Claim.
             </div>
-            <label style={styles.label}>Their Name</label>
-            <input
-              style={{ ...styles.input, marginBottom: "14px" }}
-              type="text"
-              placeholder="Enter their name"
-              value={anotherName}
-              onChange={(e) => setAnotherName(e.target.value)}
-              maxLength={40}
-              onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
-              onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
-            />
             <div style={styles.sectionTitle}>Available Teams</div>
             {unclaimedTeams.map((team) => {
               const isLoading = claiming === team.id;
-              const canClaim = anotherName.trim().length > 0;
+              const nameVal = anotherNames[team.id] || "";
+              const canClaim = nameVal.trim().length > 0;
               return (
                 <div key={team.id} style={styles.teamCard}>
-                  <span style={styles.teamName}>{team.name}</span>
-                  <button
-                    style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
-                    disabled={!canClaim || isLoading}
-                    onClick={() => handleClaimAnother(team.id)}
-                  >
-                    {isLoading ? "..." : "Claim"}
-                  </button>
+                  <div style={styles.claimRow}>
+                    <input
+                      style={styles.input}
+                      type="text"
+                      value={nameVal}
+                      onChange={(e) =>
+                        setAnotherNames((prev) => ({
+                          ...prev,
+                          [team.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter team name"
+                      maxLength={40}
+                      onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
+                      onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
+                    />
+                    <button
+                      style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
+                      disabled={!canClaim || isLoading}
+                      onClick={() => handleClaimAnother(team)}
+                    >
+                      {isLoading ? "..." : "Claim"}
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -403,7 +426,6 @@ export default function JoinScreen({
                     .map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
-                        {t.claimed_by ? ` — ${t.claimed_by}` : ""}
                       </option>
                     ))}
                 </select>
