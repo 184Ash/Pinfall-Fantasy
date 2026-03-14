@@ -229,7 +229,7 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-top">
           <div className="lp-footer-logo-wrap">
-            <img className="lp-footer-logo-img" src="/pinfall-fantasy-logo.svg" alt="" />
+            <img className="lp-footer-logo-img" src="/pinfall-fantasy-logo.png" alt="" />
             <div className="lp-footer-logo">Pinfall Fantasy</div>
           </div>
           <div className="lp-footer-note">© 2026 pinfallfantasy.com &nbsp;·&nbsp; Beta</div>
