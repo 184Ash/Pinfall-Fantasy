@@ -20,7 +20,7 @@ const css = `
   .lp-hero-lines { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .lp-hero-lines::before { content: ''; position: absolute; top: -200px; left: -200px; width: 200%; height: 200%; background: repeating-linear-gradient(-45deg, transparent, transparent 80px, rgba(201,168,76,0.018) 80px, rgba(201,168,76,0.018) 81px); }
   .lp-hero-logo-wrap { position: relative; z-index: 2; margin-bottom: 32px; opacity: 0; animation: lpFadeUp 0.7s ease 0.1s forwards; }
-  .lp-hero-eyebrow { position: relative; z-index: 2; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.35em; text-transform: uppercase; color: #C9A84C; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; opacity: 0; animation: lpFadeUp 0.7s ease 0.2s forwards; }
+  .lp-hero-eyebrow { position: relative; z-index: 2; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 0.35em; text-transform: uppercase; color: #C9A84C; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; opacity: 0; animation: lpFadeUp 0.7s ease 0.2s forwards; }
   .lp-hero-eyebrow::before, .lp-hero-eyebrow::after { content: ''; display: block; width: 32px; height: 1px; background: #8C6E2A; }
   .lp-hero-title { position: relative; z-index: 2; font-family: 'Bebas Neue', sans-serif; font-size: clamp(72px, 11vw, 148px); line-height: 0.92; letter-spacing: 0.03em; color: #C9A84C; opacity: 0; animation: lpFadeUp 0.8s ease 0.35s forwards; }
   .lp-hero-title .lp-word-draft { display: block; color: #E8E4DC; }
@@ -127,7 +127,7 @@ export default function LandingPage() {
         <div className="lp-hero-lines" />
         <div className="lp-mat-ring" />
         <div className="lp-hero-logo-wrap">
-          <img src={logoImg} alt="Pinfall Fantasy" width="500" height="500" />
+          <img src={logoImg} alt="Pinfall Fantasy" width="300" height="300" />
         </div>
         <p className="lp-hero-eyebrow">NCAA Wrestling Fantasy Draft</p>
         <h1 className="lp-hero-title">
