@@ -1,6 +1,7 @@
 // src/leagueService.js
 import { supabase } from './supabase'
 import { saveSession, addTeamToSession, generateJoinCode, getSession } from './session'
+import { DEFAULT_WRESTLERS } from './wrestlers';
 
 export async function fetchLeague(joinCode) {
   // ── 1. Fetch the league row ───────────────────────────────────────
@@ -214,10 +215,35 @@ export async function createLeague(formData) {
     throw new Error(teamsError.message)
   }
 
-  // ── 4. Save commissioner session on this device ──────────────────
+  // ── 4. Insert wrestlers for this league ──────────────────────────
+  const wrestlerRows = []
+  Object.entries(DEFAULT_WRESTLERS).forEach(([weight, wrestlers]) => {
+    wrestlers.forEach(wr => {
+      wrestlerRows.push({
+        league_id: joinCode,
+        weight: parseInt(weight),
+        seed: wr.seed,
+        name: wr.name,
+        school: wr.school,
+      })
+    })
+  })
+
+  const { error: wrestlersError } = await supabase
+    .from('wrestlers')
+    .insert(wrestlerRows)
+
+  if (wrestlersError) {
+    // Clean up league and teams if wrestlers insert fails
+    await supabase.from('teams').delete().eq('league_id', joinCode)
+    await supabase.from('leagues').delete().eq('id', joinCode)
+    throw new Error(wrestlersError.message)
+  }
+
+  // ── 5. Save commissioner session on this device ──────────────────
   saveSession(joinCode, [], 'commissioner')
 
-  // ── 5. Return join code and full URL ─────────────────────────────
+  // ── 6. Return join code and full URL ─────────────────────────────
   const joinUrl = `${window.location.origin}/join/${joinCode}`
   return { joinCode, joinUrl }
 }
@@ -281,4 +307,143 @@ export async function unclaimTeam(leagueId, teamId) {
   }
 
   return { success: true }
+}
+
+export async function loadDraftState(leagueId) {
+  // ── 1. Fetch wrestlers for this league ───────────────────────────
+  const { data: wrestlers, error: wrestlersError } = await supabase
+    .from('wrestlers')
+    .select('id, weight, seed, name, school')
+    .eq('league_id', leagueId)
+
+  if (wrestlersError) throw new Error(wrestlersError.message)
+
+  // ── 2. Fetch picks for this league ───────────────────────────────
+  const { data: picks, error: picksError } = await supabase
+    .from('picks')
+    .select('wrestler_id, team_id, is_bonus, teams(name)')
+    .eq('league_id', leagueId)
+
+  if (picksError) throw new Error(picksError.message)
+
+  // ── 3. Fetch points for this league ──────────────────────────────
+  const { data: points, error: pointsError } = await supabase
+    .from('points')
+    .select('wrestler_id, pts')
+    .eq('league_id', leagueId)
+
+  if (pointsError) throw new Error(pointsError.message)
+
+  // ── 4. Shape wrestlers into DEFAULT_WRESTLERS format ─────────────
+  // { 125: [{seed, name, school}, ...], 133: [...], ... }
+  const wrestlersByWeight = {}
+  wrestlers.forEach(wr => {
+    if (!wrestlersByWeight[wr.weight]) wrestlersByWeight[wr.weight] = []
+    wrestlersByWeight[wr.weight].push({
+      id: wr.id,
+      seed: wr.seed,
+      name: wr.name,
+      school: wr.school,
+    })
+  })
+
+  // ── 5. Shape picks into { "weight-seed": teamName } format ───────
+  // Build a wrestlerId → { weight, seed } lookup first
+  const wrestlerLookup = {}
+  wrestlers.forEach(wr => { wrestlerLookup[wr.id] = wr })
+
+  const picksMap = {}
+  const bonusKeys = []
+  picks.forEach(pick => {
+    const wr = wrestlerLookup[pick.wrestler_id]
+    if (!wr) return
+    const key = `${wr.weight}-${wr.seed}`
+    picksMap[key] = pick.teams?.name ?? pick.team_id
+    if (pick.is_bonus) bonusKeys.push(key)
+  })
+
+  // ── 6. Shape points into { "weight-seed": pts } format ───────────
+  const pointsMap = {}
+  points.forEach(pt => {
+    const wr = wrestlerLookup[pt.wrestler_id]
+    if (!wr) return
+    const key = `${wr.weight}-${wr.seed}`
+    pointsMap[key] = pt.pts
+  })
+
+  return {
+    wrestlers: wrestlersByWeight,
+    picks: picksMap,
+    bonusKeys,
+    points: pointsMap,
+  }
+}
+
+export async function savePick(leagueId, teamId, wrestlerId, isBonus) {
+  const { data, error } = await supabase
+    .from('picks')
+    .insert({
+      league_id: leagueId,
+      team_id: teamId,
+      wrestler_id: wrestlerId,
+      is_bonus: isBonus,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function savePoints(leagueId, pointsMap) {
+  // pointsMap is { "weight-seed": pts } — need to convert to wrestler UUIDs
+  const { data: wrestlers, error: wrestlersError } = await supabase
+    .from('wrestlers')
+    .select('id, weight, seed')
+    .eq('league_id', leagueId)
+
+  if (wrestlersError) throw new Error(wrestlersError.message)
+
+  // Build weight-seed → id lookup
+  const lookup = {}
+  wrestlers.forEach(wr => { lookup[`${wr.weight}-${wr.seed}`] = wr.id })
+
+  // Build upsert rows
+  const rows = Object.entries(pointsMap)
+    .filter(([key, pts]) => lookup[key] && pts > 0)
+    .map(([key, pts]) => ({
+      league_id: leagueId,
+      wrestler_id: lookup[key],
+      pts,
+    }))
+
+  if (rows.length === 0) return
+
+  const { error } = await supabase
+    .from('points')
+    .upsert(rows, { onConflict: 'league_id,wrestler_id' })
+
+  if (error) throw new Error(error.message)
+}
+
+export async function saveSettings(leagueId, settingsObject) {
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('settings_json')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) throw new Error(fetchError.message)
+
+  const updatedSettings = {
+    ...league.settings_json,
+    ...settingsObject,
+  }
+
+  const { error } = await supabase
+    .from('leagues')
+    .update({ settings_json: updatedSettings })
+    .eq('id', leagueId)
+
+  if (error) throw new Error(error.message)
 }

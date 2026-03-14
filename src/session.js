@@ -34,3 +34,14 @@ export function generateJoinCode() {
     chars[Math.floor(Math.random() * chars.length)]
   ).join('')
 }
+
+export function isSessionStorageAvailable() {
+  try {
+    const test = '__storage_test__'
+    sessionStorage.setItem(test, test)
+    sessionStorage.removeItem(test)
+    return true
+  } catch {
+    return false
+  }
+}

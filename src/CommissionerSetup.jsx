@@ -300,7 +300,7 @@ export default function CommissionerSetup({ onConfirm, initialData }) {
             <input
               style={showError && !leagueName.trim() ? styles.inputError : styles.input}
               type="text"
-              placeholder="e.g. Fratelli Fantasy Wrestling"
+              placeholder="e.g. Minnesota Freeze"
               value={leagueName}
               onChange={(e) => {
                 setLeagueName(e.target.value);
