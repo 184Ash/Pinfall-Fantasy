@@ -127,7 +127,7 @@ export default function LandingPage() {
         <div className="lp-hero-lines" />
         <div className="lp-mat-ring" />
         <div className="lp-hero-logo-wrap">
-          <img src={logoImg} alt="Pinfall Fantasy" width="300" height="300" />
+          <img src={logoImg} alt="Pinfall Fantasy" width="200" height="200" />
         </div>
         <p className="lp-hero-eyebrow">NCAA Wrestling Fantasy Draft</p>
         <h1 className="lp-hero-title">
