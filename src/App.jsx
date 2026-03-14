@@ -1,6 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_WRESTLERS } from './wrestlers';
 import { loadDraftState, savePick, savePoints } from './leagueService';
+import { useRealtimePicks } from './hooks/useRealtimePicks';
+import { useRealtimePoints } from './hooks/useRealtimePoints';
+import RejoinApprovalBanner from './RejoinApprovalBanner';
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const WEIGHT_CLASSES = [125,133,141,149,157,165,174,184,197,285];
@@ -241,6 +244,23 @@ export default function App({
       setStateLoading(false);
     });
   },[leagueId]);
+
+  // ── Real-time sync — incoming picks from other devices ───────────
+  const handleRemotePick = useCallback(({ key, teamName }) => {
+    setPicks(p => {
+      if (p[key]) return p; // already have it (own pick) — suppress
+      return { ...p, [key]: teamName };
+    });
+  }, []);
+
+  // ── Real-time sync — incoming points updates ─────────────────────
+  const handleRemotePoints = useCallback(({ key, pts }) => {
+    setPoints(p => ({ ...p, [key]: pts }));
+  }, []);
+
+  useRealtimePicks(leagueId, wrestlers, teamsProp, handleRemotePick);
+  useRealtimePoints(leagueId, wrestlers, handleRemotePoints);
+
   const [searchQ,setSearchQ]=useState("");
   const [toast,setToast]=useState(null);
   const [hlKey,setHlKey]=useState(null);
@@ -465,6 +485,7 @@ export default function App({
   return (
     <div style={{minHeight:"100vh",background:"#070a0e",color:"#d0c8b4",fontFamily:"'Oswald',sans-serif"}}>
       <style>{css}</style>
+      <RejoinApprovalBanner leagueId={leagueId} currentUserRole={session?.role} />
       {toast&&(
         <div className="slide-down" style={{position:"fixed",top:14,right:14,zIndex:9999,
           background:toast.type==="err"?"#1e0a0a":toast.type==="info"?"#0a1220":"#0a1e14",

@@ -190,6 +190,34 @@ export default function LeaguePage() {
     load();
   }, [joinCode]);
 
+  // ── Realtime listener — transition to App when draftStarted flips ─
+  useEffect(() => {
+    if (!joinCode) return;
+
+    const channel = supabase
+      .channel(`league-settings-${joinCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "leagues",
+          filter: `id=eq.${joinCode}`,
+        },
+        (payload) => {
+          const settings = payload.new?.settings_json;
+          if (settings?.draftStarted) {
+            setLeague((prev) =>
+              prev ? { ...prev, settings: { ...prev.settings, ...settings } } : prev
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => channel.unsubscribe();
+  }, [joinCode]);
+
   // ── Claiming ──────────────────────────────────────────────────────
   const handleClaim = async (teamId, displayName) => {
     const result = await claimTeam(joinCode, teamId, displayName);
