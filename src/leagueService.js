@@ -447,3 +447,20 @@ export async function saveSettings(leagueId, settingsObject) {
 
   if (error) throw new Error(error.message)
 }
+
+export async function clearLeagueData(leagueId) {
+  // Delete all picks and points for this league so wrestlers can be re-drafted
+  const { error: picksError } = await supabase
+    .from('picks')
+    .delete()
+    .eq('league_id', leagueId)
+
+  if (picksError) throw new Error(picksError.message)
+
+  const { error: pointsError } = await supabase
+    .from('points')
+    .delete()
+    .eq('league_id', leagueId)
+
+  if (pointsError) throw new Error(pointsError.message)
+}

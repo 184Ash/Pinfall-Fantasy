@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_WRESTLERS } from './wrestlers';
-import { loadDraftState, savePick, savePoints } from './leagueService';
+import { loadDraftState, savePick, savePoints, clearLeagueData } from './leagueService';
 import { useRealtimePicks } from './hooks/useRealtimePicks';
 import { useRealtimePoints } from './hooks/useRealtimePoints';
 import RejoinApprovalBanner from './RejoinApprovalBanner';
@@ -295,6 +295,8 @@ export default function App({
   const [searchQ,setSearchQ]=useState("");
   const [toast,setToast]=useState(null);
   const [hlKey,setHlKey]=useState(null);
+  // ── Bonus pick confirmation modal ────────────────────────────────
+  const [bonusConfirm,setBonusConfirm]=useState(null); // { weight, seed, team } | null
 
   // ── Settings — seed from props when provided ──────────────────────────────
   const [draftOrder,setDraftOrder]=useState(()=>{
@@ -401,7 +403,7 @@ export default function App({
   },[searchQ,allWrestlers,picks]);
 
   // ── Draft actions ─────────────────────────────────────────────────────────
-  const draftPick=async(weight,seed,forTeam)=>{
+  const draftPick=async(weight,seed,forTeam,skipBonusCheck=false)=>{
     const team=forTeam||onClock;
     const key=pickKey(weight,seed);
     if(picks[key]){showToast("Already drafted!","err");return;}
@@ -413,6 +415,29 @@ export default function App({
     const existsAtWeight=Object.entries(picks).some(([k,t])=>t===team&&k.startsWith(`${weight}-`));
     const isBonus=existsAtWeight||!WEIGHT_CLASSES.includes(weight);
     if(isBonus&&!bonusPickEnabled){showToast("Bonus picks are disabled in settings","err");return;}
+    // ── Bonus confirmation logic ──────────────────────────────────
+    if(isBonus&&!skipBonusCheck){
+      // Count existing bonus picks for this team
+      const existingBonusCount=Object.entries(picks).filter(([k,t])=>{
+        return t===team&&bonusKeys.includes(k);
+      }).length;
+      // Also count auto-bonus picks (second pick at same weight, not in bonusKeys)
+      const autoBonusCount=Object.entries(picks).filter(([k,t])=>{
+        if(t!==team) return false;
+        if(bonusKeys.includes(k)) return false;
+        const [w]=k.split("-");
+        const sameWeight=Object.entries(picks).filter(([k2,t2])=>t2===team&&k2.startsWith(`${w}-`)&&k2!==k);
+        return sameWeight.length>0;
+      }).length;
+      const totalBonusCount=existingBonusCount+autoBonusCount;
+      if(totalBonusCount>=1){
+        showToast(`${team} already has a bonus pick — no more room on roster`,"err");
+        return;
+      }
+      // Show confirmation modal
+      setBonusConfirm({weight,seed,team});
+      return;
+    }
     // Save to Supabase if leagueId is present
     if(leagueId){
       try{
@@ -517,6 +542,43 @@ export default function App({
     <div style={{minHeight:"100vh",background:"#070a0e",color:"#d0c8b4",fontFamily:"'Oswald',sans-serif"}}>
       <style>{css}</style>
       <RejoinApprovalBanner leagueId={leagueId} currentUserRole={session?.role} />
+      {/* ── Bonus pick confirmation modal ── */}
+      {bonusConfirm&&(
+        <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.78)",
+          display:"flex",alignItems:"center",justifyContent:"center"}}
+          onClick={()=>setBonusConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:"#111820",border:"2px solid #c9a84c",borderRadius:10,
+              boxShadow:"0 24px 64px #000000",width:320,overflow:"hidden"}}>
+            <div style={{padding:"16px 20px",background:"#0a1018",borderBottom:"1px solid #c9a84c44"}}>
+              <div style={{fontSize:9,letterSpacing:".18em",color:"#8a7040",
+                fontFamily:"'Oswald',sans-serif",marginBottom:6}}>BONUS PICK</div>
+              <div style={{fontSize:15,fontWeight:700,color:"#e0d8b4",
+                fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.4}}>
+                {bonusConfirm.team} already has a wrestler at {bonusConfirm.weight}lb.
+                Would you like to add this as their bonus pick?
+              </div>
+            </div>
+            <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
+              <button
+                onClick={()=>{const {weight,seed,team}=bonusConfirm;setBonusConfirm(null);draftPick(weight,seed,team,true);}}
+                style={{width:"100%",padding:"12px",background:"#c9a84c",border:"none",
+                  borderRadius:6,fontSize:14,fontWeight:700,color:"#070a0e",
+                  fontFamily:"'Oswald',sans-serif",letterSpacing:".08em",cursor:"pointer"}}>
+                YES — ADD AS BONUS ⭐
+              </button>
+              <button
+                onClick={()=>setBonusConfirm(null)}
+                style={{width:"100%",padding:"12px",background:"none",
+                  border:"1px solid #2a3040",borderRadius:6,fontSize:13,
+                  fontWeight:600,color:"#7a8a9a",fontFamily:"'Oswald',sans-serif",
+                  letterSpacing:".08em",cursor:"pointer"}}>
+                CHOOSE ANOTHER WRESTLER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {toast&&(
         <div className="slide-down" style={{position:"fixed",top:14,right:14,zIndex:9999,
           background:toast.type==="err"?"#1e0a0a":toast.type==="info"?"#0a1220":"#0a1e14",
@@ -551,8 +613,11 @@ export default function App({
           rotationType={rotationType} setRotationType={setRotationType}
           bonusPickEnabled={bonusPickEnabled} setBonusPickEnabled={setBonusPickEnabled}
           picks={picks} setPicks={setPicks} setPoints={setPoints}
+          setBonusKeys={setBonusKeys} resetTimer={resetTimer}
+          teamsProp={teamsProp}
           getRoster={getRoster} getColor={getColor} showToast={showToast}
           picksPerTeam={picksPerTeam} wrestlers={wrestlers}
+          leagueId={leagueId}
           isCommissioner={isCommissioner}/>}
         {teams.includes(activePage)&&<RosterPage team={activePage} roster={getRoster(activePage)}
           getColor={getColor} picksPerTeam={picksPerTeam}
@@ -1025,7 +1090,8 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
 function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setRotationType,
-  bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,getRoster,getColor,showToast,picksPerTeam,wrestlers,
+  bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,setBonusKeys,resetTimer,
+  teamsProp,getRoster,getColor,showToast,picksPerTeam,wrestlers,leagueId,
   isCommissioner}){
   // Settings are read-only post-draft — shown for reference only
 
@@ -1146,7 +1212,25 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
       <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
         <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
           <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
-          <button className="btn btn-danger btn-md" onClick={()=>{if(window.confirm("Clear all picks and scores?")){{setPicks({});setPoints({});showToast("Cleared","info");}}}}>CLEAR ALL PICKS & SCORES</button>
+          <button className="btn btn-danger btn-md" onClick={async()=>{
+            if(window.confirm("Clear all picks and scores?")){
+              setPicks({});
+              setPoints({});
+              setBonusKeys([]);
+              resetTimer();
+              // Reset draft order back to pick 1
+              const originalOrder=teamsProp&&teamsProp.length>0
+                ?[...teamsProp].sort((a,b)=>a.draft_position-b.draft_position).map(t=>t.name)
+                :DEFAULT_TEAMS;
+              setDraftOrder(originalOrder);
+              // Clear from Supabase so picks can be re-drafted
+              if(leagueId){
+                try{ await clearLeagueData(leagueId); }
+                catch(err){ console.error('clearLeagueData failed:',err); }
+              }
+              showToast("Cleared","info");
+            }
+          }}>CLEAR ALL PICKS & SCORES</button>
         </div>
       </CommissionerOnly>
     </div>
