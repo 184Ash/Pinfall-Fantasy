@@ -193,6 +193,37 @@ select{cursor:pointer;}
 textarea{resize:vertical;}
 `;
 
+// ─── COMMISSIONER ONLY ───────────────────────────────────────────────────────
+// Wraps any element. Non-commissioners see a locked/disabled overlay instead.
+function CommissionerOnly({ isCommissioner, label = "Commissioner only", children }) {
+  if (isCommissioner) return children;
+  return (
+    <div style={{ position: "relative", display: "inline-flex" }}>
+      <div style={{ opacity: 0.25, pointerEvents: "none", userSelect: "none" }}>
+        {children}
+      </div>
+      <div style={{
+        position: "absolute", inset: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(7,10,14,0.55)",
+        borderRadius: 6,
+        cursor: "not-allowed",
+      }}
+        title={label}
+      >
+        <span style={{
+          fontSize: 9, letterSpacing: ".14em", color: "#4a5a6a",
+          fontFamily: "'Oswald',sans-serif", fontWeight: 600,
+          background: "#0d1117", border: "1px solid #1e2530",
+          borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap",
+        }}>
+          🔒 {label.toUpperCase()}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ─────────────────────────────────────────────────────────────────────
 
 // Picks per team: 10 weight slots + 1 bonus "dark horse" (can be toggled off)
@@ -605,13 +636,13 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
             </div>}
             {timerPaused&&<div style={{fontSize:8,color:"#4a7aaa",opacity:.8,letterSpacing:".1em",marginTop:1}}>COMMISSIONER</div>}
           </div>
-          {isCommissioner&&(
+          <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
             <button onClick={timerPaused?resumeTimer:pauseTimer}
               title={timerPaused?"Resume timer":"Pause timer"}
               style={{width:32,height:32,borderRadius:6,border:`1px solid ${timerPaused?"#c9a84c":"#2a3040"}`,background:timerPaused?"#c9a84c22":"#0d1117",color:timerPaused?"#c9a84c":"#6a7a8a",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s",flexShrink:0}}>
               {timerPaused?"▶":"⏸"}
             </button>
-          )}
+          </CommissionerOnly>
         </div>
 
         {/* Search */}
@@ -660,8 +691,17 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
       <div style={{maxWidth:1600,margin:"0 auto",padding:"0 16px",display:"flex",gap:0,overflowX:"auto",marginBottom:-2}}>
         {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS",commissionerOnly:true}].map(tab=>{
           const isActive=activePage===tab.id;
-          // Settings tab is hidden entirely for non-commissioners
-          if(tab.commissionerOnly&&!isCommissioner) return null;
+          if(tab.commissionerOnly&&!isCommissioner){
+            return (
+              <CommissionerOnly key={tab.id} isCommissioner={false} label="Commissioner only">
+                <button className="tab-link"
+                  style={{padding:"7px 13px",fontSize:11,fontWeight:600,letterSpacing:".12em",
+                    color:"#2a2a20",borderBottom:"2px solid transparent",cursor:"not-allowed"}}>
+                  {tab.label}
+                </button>
+              </CommissionerOnly>
+            );
+          }
           return (
             <button key={tab.id} className="tab-link"
               onClick={()=>setActivePage(tab.id)}
@@ -1103,12 +1143,12 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
       </div>
 
       {/* ── Danger zone (commissioner only) ── */}
-      {isCommissioner&&(
-        <div className="card" style={{padding:16,border:"1px solid #3a1515"}}>
+      <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
+        <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
           <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
           <button className="btn btn-danger btn-md" onClick={()=>{if(window.confirm("Clear all picks and scores?")){{setPicks({});setPoints({});showToast("Cleared","info");}}}}>CLEAR ALL PICKS & SCORES</button>
         </div>
-      )}
+      </CommissionerOnly>
     </div>
   );
 }
