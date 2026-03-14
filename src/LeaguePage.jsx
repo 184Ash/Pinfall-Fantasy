@@ -6,6 +6,7 @@ import { fetchLeague } from "./leagueService";
 import JoinScreen from "./JoinScreen";
 import WaitingRoom from "./WaitingRoom";
 import App from "./App";
+import { supabase } from "./supabase";
 import { claimTeam, claimAdditionalTeam } from "./leagueService";
 
 const styles = {
@@ -95,7 +96,6 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
           </div>
         ))}
 
-        {/* Commissioner recovery */}
         {hasRecoveryEmail && (
           <>
             <button
@@ -171,42 +171,36 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
 export default function LeaguePage() {
   const { joinCode } = useParams();
   const [loading, setLoading] = useState(true);
-  const [league, setLeague] = useState(null);   // { leagueName, teams, settings }
-  const [session, setSession] = useState(null); // { leagueId, teamIds, role }
+  const [league, setLeague] = useState(null);
+  const [session, setSession] = useState(null);
   const [teams, setTeams] = useState([]);
   const [enterWaiting, setEnterWaiting] = useState(false);
 
   // ── Load league from Supabase on mount ───────────────────────────
   useEffect(() => {
-  const load = async () => {
-    const data = await fetchLeague(joinCode);
-    if (data) {
-      setLeague(data);
-      setTeams(data.teams);
-    }
-    const s = getSession();
-    console.log('Session on LeaguePage load:', JSON.stringify(s));
-    console.log('League settings:', JSON.stringify(data?.settings));
-    setSession(s);
-    setLoading(false);
-  };
-  load();
-}, [joinCode]);
+    const load = async () => {
+      const data = await fetchLeague(joinCode);
+      if (data) {
+        setLeague(data);
+        setTeams(data.teams);
+      }
+      setSession(getSession());
+      setLoading(false);
+    };
+    load();
+  }, [joinCode]);
 
   // ── Claiming ──────────────────────────────────────────────────────
   const handleClaim = async (teamId, displayName) => {
-  const result = await claimTeam(joinCode, teamId, displayName);
-  if (result.success) {
-    // Refresh teams so the claimed team shows as yours
-    const updated = await fetchLeague(joinCode);
-    if (updated) setTeams(updated.teams);
-    // Update session in state but don't trigger navigation yet —
-    // user stays on JoinScreen so they can claim additional teams
-    setSession(getSession());
-  } else if (result.reason === "already_claimed") {
-    alert("Someone just claimed that team — please choose another.");
-  }
-};
+    const result = await claimTeam(joinCode, teamId, displayName);
+    if (result.success) {
+      const updated = await fetchLeague(joinCode);
+      if (updated) setTeams(updated.teams);
+      setSession(getSession());
+    } else if (result.reason === "already_claimed") {
+      alert("Someone just claimed that team — please choose another.");
+    }
+  };
 
   const handleClaimAnother = async (teamId, displayName) => {
     const result = await claimAdditionalTeam(joinCode, teamId, displayName);
@@ -219,7 +213,7 @@ export default function LeaguePage() {
     }
   };
 
-  // ── Leave team ────────────────────────────────────────────────────
+  // ── Leave ─────────────────────────────────────────────────────────
   const handleLeave = () => {
     clearSession();
     window.location.reload();
@@ -241,76 +235,99 @@ export default function LeaguePage() {
     );
   }
 
-  // Show JoinScreen if draft hasn't started, regardless of session,
-// so users can claim multiple teams before entering the waiting room
-if (!league.settings?.draftStarted && !enterWaiting && session?.role !== 'commissioner') {
+  // ── Pre-draft ─────────────────────────────────────────────────────
+  if (!league.settings?.draftStarted) {
+
+    // Commissioner and co-commissioner go straight to WaitingRoom
+    // Members go to WaitingRoom after clicking Enter Waiting Room
+    if (session?.role === 'commissioner' || session?.role === 'co_commissioner' || enterWaiting) {
+      return (
+        <>
+          <WaitingRoom
+            leagueId={joinCode}
+            leagueName={league.leagueName}
+            teams={teams}
+            session={session}
+            onDraftStarted={async () => {
+              const updated = await fetchLeague(joinCode);
+              if (updated) setLeague(updated);
+            }}
+          />
+          <button style={styles.leaveBtn} onClick={handleLeave}>
+            Leave
+          </button>
+        </>
+      );
+    }
+
+    // No session — show JoinScreen to claim a team
+    if (!session) {
+      return (
+        <JoinScreen
+          leagueId={joinCode}
+          leagueName={league.leagueName}
+          teams={teams}
+          currentSession={null}
+          onClaim={handleClaim}
+          onClaimAnother={handleClaimAnother}
+        />
+      );
+    }
+
+    // Has session but not commissioner — show JoinScreen with Enter Waiting Room bar
+    return (
+      <>
+        <JoinScreen
+          leagueId={joinCode}
+          leagueName={league.leagueName}
+          teams={teams}
+          currentSession={session}
+          onClaim={handleClaim}
+          onClaimAnother={handleClaimAnother}
+        />
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0,
+          background: "#1A2535", borderTop: "2px solid #C9A84C",
+          padding: "16px 24px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: "16px", zIndex: 100,
+        }}>
+          <div style={{ fontSize: "13px", color: "#7A8A9A" }}>
+            {session.teamIds?.length ?? 0} team{session.teamIds?.length !== 1 ? "s" : ""} claimed on this device
+          </div>
+          <button
+            onClick={async () => {
+              const data = await fetchLeague(joinCode);
+              if (data) setLeague(data);
+              setSession(getSession());
+              setEnterWaiting(true);
+            }}
+            style={{
+              background: "#C9A84C", color: "#0D1520", border: "none",
+              borderRadius: "6px", padding: "12px 28px", fontSize: "14px",
+              fontWeight: "700", cursor: "pointer",
+            }}
+          >
+            Enter Waiting Room →
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // ── Post-draft, no session → read only ────────────────────────────
   if (!session) {
     return (
-      <JoinScreen
-        leagueId={joinCode}
+      <ReadOnlyLeague
+        joinCode={joinCode}
         leagueName={league.leagueName}
         teams={teams}
-        currentSession={null}
-        onClaim={handleClaim}
-        onClaimAnother={handleClaimAnother}
+        settings={league.settings}
+        hasRecoveryEmail={!!league.commissionerEmail}
       />
     );
   }
-  // Has session — show JoinScreen with current session so they can
-  // claim more teams, with an Enter League button to proceed
-  return (
-    <>
-      <JoinScreen
-        leagueId={joinCode}
-        leagueName={league.leagueName}
-        teams={teams}
-        currentSession={session}
-        onClaim={handleClaim}
-        onClaimAnother={handleClaimAnother}
-      />
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        background: "#1A2535", borderTop: "2px solid #C9A84C",
-        padding: "16px 24px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", gap: "16px", zIndex: 100,
-      }}>
-        <div style={{ fontSize: "13px", color: "#7A8A9A" }}>
-          {session.teamIds?.length ?? 0} team{session.teamIds?.length !== 1 ? "s" : ""} claimed on this device
-        </div>
-        <button
-          onClick={async () => {
-            const data = await fetchLeague(joinCode);
-            if (data) setLeague(data);
-            setSession(getSession());
-            setEnterWaiting(true);
-          }}
-          style={{
-            background: "#C9A84C", color: "#0D1520", border: "none",
-            borderRadius: "6px", padding: "12px 28px", fontSize: "14px",
-            fontWeight: "700", cursor: "pointer",
-          }}
-        >
-          Enter Waiting Room →
-        </button>
-      </div>
-    </>
-  );
-}
 
-// Draft not started check is handled above — if we reach here draft has started
-if (!session) {
-  return (
-    <ReadOnlyLeague
-      joinCode={joinCode}
-      leagueName={league.leagueName}
-      teams={teams}
-      settings={league.settings}
-      hasRecoveryEmail={!!league.commissionerEmail}
-    />
-  );
-}
-
-  // Session exists and draft is live → main App
+  // ── Draft live → main App ─────────────────────────────────────────
   return (
     <>
       <App
