@@ -1,7 +1,7 @@
 // src/WaitingRoom.jsx
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
-import { fetchLeague } from "./leagueService";
+import { fetchLeague, goToDraft } from "./leagueService";
 
 const styles = {
   wrapper: {
@@ -200,36 +200,15 @@ export default function WaitingRoom({
     return () => channel.unsubscribe();
   }, [leagueId]);
 
-   // ── Start Draft ───────────────────────────────────────────────────
+   // ── Go to Draft ───────────────────────────────────────────────────
   const handleStartDraft = async () => {
     if (!isCommissioner) return;
     setStarting(true);
     try {
-      // Fetch current settings first to preserve existing fields
-      const { data: league, error } = await supabase
-        .from("leagues")
-        .select("settings_json")
-        .eq("id", leagueId)
-        .single();
-
-      if (error) throw new Error(error.message);
-
-      const updatedSettings = {
-        ...league.settings_json,
-        draftStarted: true,
-      };
-
-      const { error: updateError } = await supabase
-        .from("leagues")
-        .update({ settings_json: updatedSettings })
-        .eq("id", leagueId);
-
-      if (updateError) throw new Error(updateError.message);
-
-      // Notify parent — LeaguePage will re-fetch and transition
-      onDraftStarted();
+      await goToDraft(leagueId);
+      // Realtime will fire on all devices including this one
     } catch (err) {
-      alert("Failed to start draft: " + err.message);
+      alert("Failed to proceed: " + err.message);
       setStarting(false);
     }
   };
@@ -278,11 +257,11 @@ export default function WaitingRoom({
         {isCommissioner ? (
           <>
             <button
-              style={allClaimed || true ? styles.startBtn : styles.startBtnDisabled}
+              style={styles.startBtn}
               onClick={handleStartDraft}
               disabled={starting}
             >
-              {starting ? "Starting draft..." : "Start Draft →"}
+              {starting ? "Going to draft..." : "Go to Draft →"}
             </button>
             {!allClaimed && (
               <div style={{
@@ -293,16 +272,19 @@ export default function WaitingRoom({
                 lineHeight: "1.5",
               }}>
                 {totalCount - claimedCount} team{totalCount - claimedCount !== 1 ? "s" : ""} still unclaimed —
-                you can start anyway or wait for everyone.
+                you can continue anyway or wait for everyone.
               </div>
             )}
           </>
         ) : (
           <div style={styles.waitingBox}>
-            <div style={styles.waitingTitle}>You're in!</div>
+            <div style={styles.waitingTitle}>
+              {allClaimed ? "All teams claimed!" : "You're in!"}
+            </div>
             <div style={styles.waitingDesc}>
-              Waiting for the commissioner to start the draft.
-              This page will update automatically — no need to refresh.
+              {allClaimed
+                ? "All teams have been claimed — waiting on the commissioner to start."
+                : "Waiting for the commissioner to start the draft. This page will update automatically — no need to refresh."}
             </div>
           </div>
         )}

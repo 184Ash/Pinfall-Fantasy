@@ -448,6 +448,42 @@ export async function saveSettings(leagueId, settingsObject) {
   if (error) throw new Error(error.message)
 }
 
+export async function goToDraft(leagueId) {
+  // Signals all devices to navigate from WaitingRoom to Settings
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('settings_json')
+    .eq('id', leagueId)
+    .single()
+  if (fetchError) throw new Error(fetchError.message)
+  const { error } = await supabase
+    .from('leagues')
+    .update({ settings_json: { ...league.settings_json, goToDraft: true } })
+    .eq('id', leagueId)
+  if (error) throw new Error(error.message)
+}
+
+export async function resetDraft(leagueId) {
+  // Resets draftStarted and goToDraft so everyone goes back to settings pre-start state
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('settings_json')
+    .eq('id', leagueId)
+    .single()
+  if (fetchError) throw new Error(fetchError.message)
+  const { error } = await supabase
+    .from('leagues')
+    .update({
+      settings_json: {
+        ...league.settings_json,
+        draftStarted: false,
+        goToDraft: true,
+      }
+    })
+    .eq('id', leagueId)
+  if (error) throw new Error(error.message)
+}
+
 export async function clearLeagueData(leagueId) {
   // Delete all picks and points for this league so wrestlers can be re-drafted
   const { error: picksError } = await supabase

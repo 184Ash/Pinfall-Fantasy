@@ -175,6 +175,7 @@ export default function LeaguePage() {
   const [session, setSession] = useState(null);
   const [teams, setTeams] = useState([]);
   const [enterWaiting, setEnterWaiting] = useState(false);
+  const [initialPage, setInitialPage] = useState("settings");
 
   // ── Load league from Supabase on mount ───────────────────────────
   useEffect(() => {
@@ -183,6 +184,10 @@ export default function LeaguePage() {
       if (data) {
         setLeague(data);
         setTeams(data.teams);
+        // If already past goToDraft, open to board not settings
+        if (data.settings?.draftStarted && Object.keys(data.settings).length > 0) {
+          setInitialPage("board");
+        }
       }
       setSession(getSession());
       setLoading(false);
@@ -190,7 +195,7 @@ export default function LeaguePage() {
     load();
   }, [joinCode]);
 
-  // ── Realtime listener — transition to App when draftStarted flips ─
+  // ── Realtime listener — handle goToDraft and draftStarted ────────
   useEffect(() => {
     if (!joinCode) return;
 
@@ -206,7 +211,24 @@ export default function LeaguePage() {
         },
         (payload) => {
           const settings = payload.new?.settings_json;
-          if (settings?.draftStarted) {
+          if (!settings) return;
+          // goToDraft fired — navigate everyone to App at settings page
+          if (settings.goToDraft && !settings.draftStarted) {
+            setInitialPage("settings");
+            setLeague((prev) =>
+              prev ? { ...prev, settings: { ...prev.settings, ...settings } } : prev
+            );
+          }
+          // draftStarted fired — navigate to board
+          if (settings.draftStarted) {
+            setInitialPage("board");
+            setLeague((prev) =>
+              prev ? { ...prev, settings: { ...prev.settings, ...settings } } : prev
+            );
+          }
+          // Reset fired (draftStarted flipped back to false)
+          if (settings.goToDraft && settings.draftStarted === false) {
+            setInitialPage("settings");
             setLeague((prev) =>
               prev ? { ...prev, settings: { ...prev.settings, ...settings } } : prev
             );
@@ -264,7 +286,7 @@ export default function LeaguePage() {
   }
 
   // ── Pre-draft ─────────────────────────────────────────────────────
-  if (!league.settings?.draftStarted) {
+  if (!league.settings?.draftStarted && !league.settings?.goToDraft) {
 
     // Commissioner and co-commissioner go straight to WaitingRoom
     // Members go to WaitingRoom after clicking Enter Waiting Room
@@ -355,7 +377,7 @@ export default function LeaguePage() {
     );
   }
 
-  // ── Draft live → main App ─────────────────────────────────────────
+  // ── Draft live or goToDraft → main App ───────────────────────────
   return (
     <>
       <App
@@ -364,6 +386,7 @@ export default function LeaguePage() {
         teams={teams}
         session={session}
         settings={league.settings}
+        initialPage={initialPage}
       />
       <button style={styles.leaveBtn} onClick={handleLeave}>
         Leave

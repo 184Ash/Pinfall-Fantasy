@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_WRESTLERS } from './wrestlers';
-import { loadDraftState, savePick, savePoints, clearLeagueData } from './leagueService';
+import { loadDraftState, savePick, savePoints, clearLeagueData, resetDraft, saveSettings } from './leagueService';
 import { useRealtimePicks } from './hooks/useRealtimePicks';
 import { useRealtimePoints } from './hooks/useRealtimePoints';
 import RejoinApprovalBanner from './RejoinApprovalBanner';
@@ -235,30 +235,28 @@ const TEAM_HARD_CAP = 30; // block above this
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App({
   leagueId,
-  session,      // { leagueId, teamIds: string[], role: "commissioner"|"co_commissioner"|"member" }
+  session,
   leagueName,
-  teams: teamsProp,   // [{ id, name, draft_position, role, is_claimed, claimed_by }]
-  settings,     // { rotationType, bonusPickEnabled, draftOrder, draftStarted }
+  teams: teamsProp,
+  settings,
+  initialPage = "board",
 }){
-  // ── Derive team name list from props (fall back to defaults for standalone dev use) ──
   const [teams,setTeams]=useState(()=>{
     if(teamsProp&&teamsProp.length>0) return teamsProp.map(t=>t.name);
     return DEFAULT_TEAMS;
   });
 
-  // ── Commissioner check — real session role ────────────────────────────────
   const isCommissioner=session?.role==="commissioner"||session?.role==="co_commissioner";
-
-  // Draft is always already live when this component mounts (WaitingRoom handled Start Draft)
   const draftStarted=true;
 
   const [wrestlers,setWrestlers]=useState(DEFAULT_WRESTLERS);
   const [picks,setPicks]=useState({});
-  const [bonusKeys,setBonusKeys]=useState([]); // pick keys manually designated as bonus
+  const [bonusKeys,setBonusKeys]=useState([]);
   const [points,setPoints]=useState({});
   const [stateLoading,setStateLoading]=useState(!!leagueId);
-  // Always open at the draft board — draft is live on mount
-  const [activePage,setActivePage]=useState("board");
+  // draftHasStarted = true once first pick is made (or picks exist on load)
+  const [draftHasStarted,setDraftHasStarted]=useState(false);
+  const [activePage,setActivePage]=useState(initialPage);
 
   // ── Load persisted draft state from Supabase on mount ────────────
   useEffect(()=>{
@@ -266,7 +264,7 @@ export default function App({
     loadDraftState(leagueId).then(state=>{
       if(!state) return;
       if(Object.keys(state.wrestlers).length>0) setWrestlers(state.wrestlers);
-      if(Object.keys(state.picks).length>0) setPicks(state.picks);
+      if(Object.keys(state.picks).length>0){setPicks(state.picks);setDraftHasStarted(true);}
       if(state.bonusKeys.length>0) setBonusKeys(state.bonusKeys);
       if(Object.keys(state.points).length>0) setPoints(state.points);
     }).catch(err=>{
@@ -454,6 +452,7 @@ export default function App({
       }
     }
     setPicks(p=>({...p,[key]:team}));
+    if(!draftHasStarted){setDraftHasStarted(true);setActivePage("board");}
     const wr=allWrestlers.find(w=>w.weight===weight&&w.seed===seed);
     showToast(`${wr?.name||"Wrestler"} → ${team}${isBonus?" ⭐ BONUS":""}`,isBonus?"info":"ok");
     setHlKey(key);setTimeout(()=>setHlKey(null),1200);
@@ -618,6 +617,9 @@ export default function App({
           getRoster={getRoster} getColor={getColor} showToast={showToast}
           picksPerTeam={picksPerTeam} wrestlers={wrestlers}
           leagueId={leagueId}
+          draftHasStarted={draftHasStarted}
+          setDraftHasStarted={setDraftHasStarted}
+          setActivePage={setActivePage}
           isCommissioner={isCommissioner}/>}
         {teams.includes(activePage)&&<RosterPage team={activePage} roster={getRoster(activePage)}
           getColor={getColor} picksPerTeam={picksPerTeam}
@@ -1092,10 +1094,14 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
 function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setRotationType,
   bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,setBonusKeys,resetTimer,
   teamsProp,getRoster,getColor,showToast,picksPerTeam,wrestlers,leagueId,
+  draftHasStarted,setDraftHasStarted,setActivePage,
   isCommissioner}){
-  // Settings are read-only post-draft — shown for reference only
 
-  // Preview next 8 picks (read-only, for reference)
+  const [starting,setStarting]=useState(false);
+  const [dragIdx,setDragIdx]=useState(null);
+  const [dragOverIdx,setDragOverIdx]=useState(null);
+
+  // Preview next 8 picks
   const pickPreview=useMemo(()=>{
     const n=Math.max(draftOrder.length,1);
     const total=Object.keys(picks).length;
@@ -1109,21 +1115,75 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
     });
   },[draftOrder,rotationType,picks]);
 
+  const handleRandomize=()=>{
+    const shuffled=[...draftOrder];
+    for(let i=shuffled.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+    }
+    setDraftOrder(shuffled);
+    showToast("Draft order randomized!","ok");
+  };
+
+  const handleDragStart=(i)=>setDragIdx(i);
+  const handleDragOver=(e,i)=>{e.preventDefault();setDragOverIdx(i);};
+  const handleDrop=(i)=>{
+    if(dragIdx===null||dragIdx===i) return;
+    const next=[...draftOrder];
+    const [moved]=next.splice(dragIdx,1);
+    next.splice(i,0,moved);
+    setDraftOrder(next);
+    setDragIdx(null);setDragOverIdx(null);
+  };
+
+  const handleStartDraft=async()=>{
+    if(!isCommissioner) return;
+    setStarting(true);
+    try{
+      // Save final draft order to Supabase then flip draftStarted
+      if(leagueId){
+        const orderPositions=draftOrder.map((name,i)=>{
+          const team=teamsProp?.find(t=>t.name===name);
+          return team?.draft_position||i+1;
+        });
+        await saveSettings(leagueId,{draftStarted:true,draftOrder:orderPositions});
+      }
+      setDraftHasStarted(true);
+      setActivePage("board");
+      resetTimer();
+    }catch(err){
+      showToast("Failed to start draft — try again","err");
+      setStarting(false);
+    }
+  };
+
   return (
     <div style={{maxWidth:860}}>
       <div style={{marginBottom:16}}>
         <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c"}}>DRAFT SETTINGS</h2>
-        <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>League configuration — read-only reference while draft is live</p>
+        <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>
+          {draftHasStarted?"League configuration — reference only while draft is live":"Configure your league before starting the draft"}
+        </p>
       </div>
 
-      {/* ── Live status banner ── */}
-      <div className="card" style={{padding:14,marginBottom:14,border:"1px solid #14532d",background:"#050e08",display:"flex",alignItems:"center",gap:12}}>
-        <div className="pulse" style={{width:9,height:9,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px #34d39977",flexShrink:0}}/>
-        <div>
-          <div style={{fontSize:12,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",fontWeight:700}}>✓ DRAFT IS LIVE</div>
-          <div style={{fontSize:10,color:"#1a4a28",fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Settings were locked when the draft started. Shown here for reference only.</div>
+      {/* ── Status banner ── */}
+      {draftHasStarted?(
+        <div className="card" style={{padding:14,marginBottom:14,border:"1px solid #14532d",background:"#050e08",display:"flex",alignItems:"center",gap:12}}>
+          <div className="pulse" style={{width:9,height:9,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px #34d39977",flexShrink:0}}/>
+          <div>
+            <div style={{fontSize:12,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",fontWeight:700}}>✓ DRAFT IS LIVE</div>
+            <div style={{fontSize:10,color:"#1a4a28",fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Settings locked. Shown here for reference only.</div>
+          </div>
         </div>
-      </div>
+      ):(
+        <div className="card" style={{padding:14,marginBottom:14,border:"1px solid #c9a84c44",background:"#0d1008",display:"flex",alignItems:"center",gap:12}}>
+          <div className="pulse" style={{width:9,height:9,borderRadius:"50%",background:"#c9a84c",boxShadow:"0 0 8px #c9a84c77",flexShrink:0}}/>
+          <div>
+            <div style={{fontSize:12,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",fontWeight:700}}>DRAFT NOT STARTED</div>
+            <div style={{fontSize:10,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Customize the draft order below, then click Start Draft when ready.</div>
+          </div>
+        </div>
+      )}
 
       {/* ── Rotation type (read-only) ── */}
       <div className="card" style={{padding:16,marginBottom:14}}>
@@ -1155,8 +1215,8 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
             <div style={{fontSize:13,fontWeight:600,color:"#c0b898",marginBottom:3}}>⭐ Bonus / Dark Horse Pick</div>
             <div style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5}}>
               {bonusPickEnabled
-                ? `Enabled — each team gets one extra pick at any weight class (${picksPerTeam} total picks per team).`
-                : `Disabled — strict 10-wrestler-per-team format (${picksPerTeam} picks per team).`}
+                ?`Enabled — each team gets one extra pick at any weight class (${picksPerTeam} total picks per team).`
+                :`Disabled — strict 10-wrestler-per-team format (${picksPerTeam} picks per team).`}
             </div>
           </div>
           <div style={{padding:"10px 22px",background:bonusPickEnabled?"#c9a84c22":"#1a1f26",
@@ -1169,17 +1229,47 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
         </div>
       </div>
 
-      {/* ── Draft order (read-only) ── */}
+      {/* ── Draft order — editable pre-start, read-only post-start ── */}
       <div className="card" style={{padding:16,marginBottom:14}}>
-        <div className="sec-label" style={{marginBottom:12}}>DRAFT ORDER ({draftOrder.length} teams)</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
+          <div className="sec-label">DRAFT ORDER ({draftOrder.length} teams)</div>
+          {!draftHasStarted&&isCommissioner&&(
+            <button
+              onClick={handleRandomize}
+              style={{padding:"5px 14px",background:"#0d1520",border:"1px solid #c9a84c44",
+                borderRadius:5,color:"#c9a84c",fontSize:11,fontFamily:"'Oswald',sans-serif",
+                fontWeight:600,letterSpacing:".1em",cursor:"pointer"}}>
+              🎲 RANDOMIZE
+            </button>
+          )}
+        </div>
+        {!draftHasStarted&&isCommissioner&&(
+          <div style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",marginBottom:10,lineHeight:1.5}}>
+            Drag teams to reorder, or click Randomize for a random draft order.
+          </div>
+        )}
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
           {draftOrder.map((t,i)=>{
             const c=getColor(t);const r=getRoster(t).length;
+            const isDragging=dragIdx===i;
+            const isDragOver=dragOverIdx===i;
             return (
               <div key={t}
+                draggable={!draftHasStarted&&isCommissioner}
+                onDragStart={()=>handleDragStart(i)}
+                onDragOver={(e)=>handleDragOver(e,i)}
+                onDrop={()=>handleDrop(i)}
+                onDragEnd={()=>{setDragIdx(null);setDragOverIdx(null);}}
                 style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",
-                  background:"#070a0e",border:`1px solid ${c.bg}33`,
-                  borderLeft:`4px solid ${c.bg}`,borderRadius:6}}>
+                  background:isDragOver?"#1a2535":"#070a0e",
+                  border:`1px solid ${isDragOver?"#c9a84c":c.bg+"33"}`,
+                  borderLeft:`4px solid ${c.bg}`,borderRadius:6,
+                  opacity:isDragging?0.4:1,
+                  cursor:!draftHasStarted&&isCommissioner?"grab":"default",
+                  transition:"background .1s,border .1s"}}>
+                {!draftHasStarted&&isCommissioner&&(
+                  <span style={{fontSize:12,color:"#3a4050",marginRight:2}}>⠿</span>
+                )}
                 <span style={{fontSize:13,fontWeight:700,color:"#3a3820",minWidth:22,textAlign:"right",fontFamily:"'Barlow Condensed',sans-serif"}}>{i+1}</span>
                 <div style={{width:8,height:8,borderRadius:"50%",background:c.bg,boxShadow:`0 0 5px ${c.bg}`,flexShrink:0}}/>
                 <span style={{flex:1,fontSize:14,fontWeight:500,color:c.text,letterSpacing:".05em"}}>{t}</span>
@@ -1208,30 +1298,47 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
         </div>
       </div>
 
-      {/* ── Danger zone (commissioner only) ── */}
+      {/* ── Start Draft / Danger Zone ── */}
       <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
-        <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
-          <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
-          <button className="btn btn-danger btn-md" onClick={async()=>{
-            if(window.confirm("Clear all picks and scores?")){
-              setPicks({});
-              setPoints({});
-              setBonusKeys([]);
-              resetTimer();
-              // Reset draft order back to pick 1
-              const originalOrder=teamsProp&&teamsProp.length>0
-                ?[...teamsProp].sort((a,b)=>a.draft_position-b.draft_position).map(t=>t.name)
-                :DEFAULT_TEAMS;
-              setDraftOrder(originalOrder);
-              // Clear from Supabase so picks can be re-drafted
-              if(leagueId){
-                try{ await clearLeagueData(leagueId); }
-                catch(err){ console.error('clearLeagueData failed:',err); }
+        {!draftHasStarted?(
+          <div className="card" style={{padding:20,border:"1px solid #c9a84c44",width:"100%",background:"#0d1008"}}>
+            <div style={{fontSize:11,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".12em",marginBottom:8,textAlign:"center"}}>
+              WHEN YOU'RE READY — ALL PARTICIPANTS WILL BE MOVED TO THE DRAFT BOARD
+            </div>
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={handleStartDraft}
+              disabled={starting}
+              style={{width:"100%",padding:"16px",fontSize:16,fontWeight:700,
+                letterSpacing:".1em",opacity:starting?0.6:1}}>
+              {starting?"STARTING...":"🏁 START DRAFT"}
+            </button>
+          </div>
+        ):(
+          <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
+            <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
+            <button className="btn btn-danger btn-md" onClick={async()=>{
+              if(window.confirm("Clear all picks and scores? Everyone will be brought back to settings.")){
+                setPicks({});
+                setPoints({});
+                setBonusKeys([]);
+                resetTimer();
+                const originalOrder=teamsProp&&teamsProp.length>0
+                  ?[...teamsProp].sort((a,b)=>a.draft_position-b.draft_position).map(t=>t.name)
+                  :DEFAULT_TEAMS;
+                setDraftOrder(originalOrder);
+                setDraftHasStarted(false);
+                if(leagueId){
+                  try{
+                    await clearLeagueData(leagueId);
+                    await resetDraft(leagueId);
+                  }catch(err){console.error('reset failed:',err);}
+                }
+                showToast("Cleared — back to pre-draft settings","info");
               }
-              showToast("Cleared","info");
-            }
-          }}>CLEAR ALL PICKS & SCORES</button>
-        </div>
+            }}>CLEAR ALL PICKS & SCORES</button>
+          </div>
+        )}
       </CommissionerOnly>
     </div>
   );
