@@ -155,8 +155,10 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
                     background: "#1A3A2A", border: "1px solid #2A6A3A", borderRadius: "6px",
                     color: "#4CAF7D", fontSize: "13px", padding: "12px 14px", lineHeight: "1.5",
                   }}>
-                    ✓ Check your email for the magic link. Keep this window open and click
-                    the link — you'll be brought back here as commissioner.
+                    ✓ Check your email for the magic link. Important — open the link on the 
+device you want to use as commissioner during the draft. Your session 
+is tied to that device. Clicking it on your phone won't restore 
+access on your laptop.
                   </div>
                 )}
               </div>
