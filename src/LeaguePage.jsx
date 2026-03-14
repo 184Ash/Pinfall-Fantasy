@@ -174,20 +174,24 @@ export default function LeaguePage() {
   const [league, setLeague] = useState(null);   // { leagueName, teams, settings }
   const [session, setSession] = useState(null); // { leagueId, teamIds, role }
   const [teams, setTeams] = useState([]);
+  const [enterWaiting, setEnterWaiting] = useState(false);
 
   // ── Load league from Supabase on mount ───────────────────────────
   useEffect(() => {
-    const load = async () => {
-      const data = await fetchLeague(joinCode);
-      if (data) {
-        setLeague(data);
-        setTeams(data.teams);
-      }
-      setSession(getSession());
-      setLoading(false);
-    };
-    load();
-  }, [joinCode]);
+  const load = async () => {
+    const data = await fetchLeague(joinCode);
+    if (data) {
+      setLeague(data);
+      setTeams(data.teams);
+    }
+    const s = getSession();
+    console.log('Session on LeaguePage load:', JSON.stringify(s));
+    console.log('League settings:', JSON.stringify(data?.settings));
+    setSession(s);
+    setLoading(false);
+  };
+  load();
+}, [joinCode]);
 
   // ── Claiming ──────────────────────────────────────────────────────
   const handleClaim = async (teamId, displayName) => {
@@ -239,7 +243,7 @@ export default function LeaguePage() {
 
   // Show JoinScreen if draft hasn't started, regardless of session,
 // so users can claim multiple teams before entering the waiting room
-if (!league.settings?.draftStarted) {
+if (!league.settings?.draftStarted && !enterWaiting && session?.role !== 'commissioner') {
   if (!session) {
     return (
       <JoinScreen
@@ -275,10 +279,11 @@ if (!league.settings?.draftStarted) {
         </div>
         <button
           onClick={async () => {
-  const data = await fetchLeague(joinCode);
-  if (data) setLeague(data);
-  setSession(getSession());
-}}
+            const data = await fetchLeague(joinCode);
+            if (data) setLeague(data);
+            setSession(getSession());
+            setEnterWaiting(true);
+          }}
           style={{
             background: "#C9A84C", color: "#0D1520", border: "none",
             borderRadius: "6px", padding: "12px 28px", fontSize: "14px",

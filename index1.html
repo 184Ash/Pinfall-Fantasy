@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#1E2128;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pinfall Fantasy — NCAA Wrestling Fantasy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      background-color: #1E2128 !important;
+      background: #1E2128 !important;
+      color: #E8E4DC;
+      margin: 0;
+      padding: 0;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(30,33,40,0.98) 0%, rgba(30,33,40,0) 100%);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.12em;
+      color: #C9A84C;
+      text-decoration: none;
+    }
+    .nav-beta {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #1E2128;
+      background: #C9A84C;
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      overflow: hidden;
+      background-color: #1E2128;
+    }
+
+    /* radial gold glow */
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 40%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px; height: 700px;
+      background: radial-gradient(ellipse, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.04) 40%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* mat rings */
+    .mat-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 680px; height: 680px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.08);
+      pointer-events: none;
+    }
+    .mat-ring::before {
+      content: '';
+      position: absolute;
+      inset: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.05);
+    }
+    .mat-ring::after {
+      content: '';
+      position: absolute;
+      inset: 120px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.04);
+    }
+
+    /* diagonal lines */
+    .hero-lines {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .hero-lines::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: -200px;
+      width: 200%; height: 200%;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent, transparent 80px,
+        rgba(201,168,76,0.018) 80px,
+        rgba(201,168,76,0.018) 81px
+      );
+    }
+
+    .hero-eyebrow {
+      position: relative; z-index: 2;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: #C9A84C;
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 14px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.2s forwards;
+    }
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: ''; display: block;
+      width: 32px; height: 1px;
+      background: #8C6E2A;
+    }
+
+    .hero-title {
+      position: relative; z-index: 2;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(72px, 11vw, 148px);
+      line-height: 0.92;
+      letter-spacing: 0.03em;
+      color: #C9A84C;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.35s forwards;
+    }
+    .hero-title .word-draft {
+      display: block;
+      color: #E8E4DC;
+    }
+
+    .hero-subtitle {
+      position: relative; z-index: 2;
+      margin-top: 28px;
+      font-size: 19px; font-weight: 400;
+      line-height: 1.75;
+      color: #B8C0C8;
+      max-width: 480px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.5s forwards;
+    }
+    .hero-subtitle strong {
+      color: #E8E4DC;
+      font-weight: 500;
+    }
+
+    .hero-cta-group {
+      position: relative; z-index: 2;
+      margin-top: 52px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.65s forwards;
+    }
+
+    /* ── PRIMARY BUTTON ── */
+    .btn-create {
+      display: inline-flex;
+      align-items: center; gap: 12px;
+      background: #C9A84C;
+      color: #1E2128;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px; font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 18px 44px;
+      border: none; cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: background 0.2s, transform 0.15s;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    }
+    .btn-create:hover { background: #E2C06A; transform: translateY(-2px); }
+    .btn-create:active { transform: translateY(0); }
+    .btn-create svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .btn-learn {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #9EA8B0;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-learn:hover { color: #E8E4DC; border-color: #8C6E2A; }
+
+    .hero-note {
+      font-size: 13px; letter-spacing: 0.12em;
+      color: #B89A3A;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      position: relative; z-index: 2;
+      margin-top: 80px;
+      display: flex; align-items: center;
+      border-top: 1px solid rgba(201,168,76,0.15);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.8s forwards;
+    }
+    .stat-item {
+      padding: 20px 40px;
+      text-align: center;
+      border-right: 1px solid rgba(201,168,76,0.1);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px; letter-spacing: 0.05em;
+      color: #C9A84C; line-height: 1;
+    }
+    .stat-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #9EA8B0; margin-top: 4px;
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-section {
+      padding: 40px 0;
+      overflow: hidden;
+      background-color: #1E2128;
+      border-top: 1px solid rgba(201,168,76,0.1);
+      border-bottom: 1px solid rgba(201,168,76,0.1);
+    }
+    .marquee-track {
+      display: flex; gap: 0;
+      animation: marquee 20s linear infinite;
+      white-space: nowrap;
+    }
+    .marquee-item {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px; letter-spacing: 0.3em;
+      color: #8C6E2A;
+      padding: 0 32px;
+      border-right: 1px solid rgba(201,168,76,0.12);
+      flex-shrink: 0;
+    }
+
+    /* ── FEATURES ── */
+    .features {
+      padding: 120px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: #1E2128;
+    }
+    .section-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: #C9A84C; margin-bottom: 16px;
+    }
+    .section-heading {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(40px, 5vw, 64px);
+      letter-spacing: 0.04em;
+      color: #E8E4DC; line-height: 1;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 16px; color: #9EA8B0;
+      max-width: 420px; line-height: 1.7;
+      margin-bottom: 64px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+    .feature-card {
+      background: #252830;
+      padding: 40px 36px;
+      position: relative; overflow: hidden;
+      transition: background 0.25s;
+    }
+    .feature-card:hover { background: #2C3038; }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #C9A84C 0%, transparent 100%);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { font-size: 28px; margin-bottom: 20px; display: block; }
+    .feature-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #E8E4DC; margin-bottom: 10px;
+    }
+    .feature-desc { font-size: 14px; line-height: 1.7; color: #9EA8B0; }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      padding: 100px 48px;
+      background-color: #252830;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .how-inner { max-width: 1000px; margin: 0 auto; }
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0; margin-top: 60px;
+      position: relative;
+    }
+    .steps-row::before {
+      content: '';
+      position: absolute;
+      top: 28px; left: 14%; right: 14%;
+      height: 1px;
+      background: #8C6E2A;
+      opacity: 0.4;
+    }
+    .step {
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      padding: 0 20px;
+    }
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 1px solid #8C6E2A;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px; letter-spacing: 0.05em;
+      color: #C9A84C;
+      background: #252830;
+      position: relative; z-index: 1;
+      margin-bottom: 20px;
+    }
+    .step-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #E8E4DC; margin-bottom: 8px;
+    }
+    .step-desc { font-size: 13px; line-height: 1.6; color: #9EA8B0; }
+
+    /* ── BOTTOM CTA ── */
+    .bottom-cta {
+      padding: 140px 48px;
+      text-align: center;
+      position: relative; overflow: hidden;
+      background-color: #1E2128;
+    }
+    .bottom-cta::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(ellipse, rgba(201,168,76,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .bottom-cta-title {
+      position: relative;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 7vw, 96px);
+      letter-spacing: 0.04em;
+      color: #E8E4DC; line-height: 0.95;
+      margin-bottom: 24px;
+    }
+    .bottom-cta-title span { color: #C9A84C; }
+    .bottom-cta-sub {
+      position: relative;
+      font-size: 16px; color: #9EA8B0;
+      margin-bottom: 48px; line-height: 1.6;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px 48px;
+      background-color: #1E2128;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 0.1em;
+      color: #8C6E2A;
+    }
+    .footer-note {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px; letter-spacing: 0.12em;
+      color: #4A5260;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .reveal {
+      opacity: 0; transform: translateY(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 18px 24px; }
+      .features { padding: 80px 24px; }
+      .features-grid { grid-template-columns: 1fr; gap: 2px; }
+      .steps-row { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+      .steps-row::before { display: none; }
+      .how { padding: 80px 24px; }
+      .stat-item { padding: 16px 20px; }
+      .bottom-cta { padding: 100px 24px; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .steps-row { grid-template-columns: 1fr; }
+      .stats-bar { flex-wrap: wrap; justify-content: center; }
+      .stat-item { border-right: none; border-bottom: 1px solid rgba(201,168,76,0.1); width: 50%; }
+    }
+  </style>
+</head>
+<body style="background-color:#1E2128;">
+
+  <nav>
+    <a class="nav-logo" href="#">Pinfall Fantasy</a>
+    <span class="nav-beta">Beta</span>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-lines"></div>
+    <div class="mat-ring"></div>
+    <p class="hero-eyebrow">NCAA Wrestling Fantasy</p>
+    <h1 class="hero-title">
+      Pinfall<span class="word-draft">Fantasy</span>
+    </h1>
+    <p class="hero-subtitle">
+      The fantasy platform built for <strong>real wrestling fans.</strong>
+      Pick your roster, compete all tournament long, and settle the debate on who knows wrestling best.
+    </p>
+    <div class="hero-cta-group">
+      <a href="/create" class="btn-create">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Create a League
+      </a>
+      <a href="#how" class="btn-learn">How it works ↓</a>
+      <p class="hero-note">Free to use &nbsp;·&nbsp; No account required &nbsp;·&nbsp; Share a link to invite your league</p>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num">10</div>
+        <div class="stat-label">Weight Classes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">33</div>
+        <div class="stat-label">Seeds Per Weight</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10</div>
+        <div class="stat-label">Teams Per League</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">Live</div>
+        <div class="stat-label">Draft Sync</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee-section">
+    <div class="marquee-track">
+      <span class="marquee-item">125 LB</span>
+      <span class="marquee-item">133 LB</span>
+      <span class="marquee-item">141 LB</span>
+      <span class="marquee-item">149 LB</span>
+      <span class="marquee-item">157 LB</span>
+      <span class="marquee-item">165 LB</span>
+      <span class="marquee-item">174 LB</span>
+      <span class="marquee-item">184 LB</span>
+      <span class="marquee-item">197 LB</span>
+      <span class="marquee-item">285 LB</span>
+      <span class="marquee-item">NCAA WRESTLING</span>
+      <span class="marquee-item">FANTASY DRAFT</span>
+      <span class="marquee-item">SNAKE DRAFT</span>
+      <span class="marquee-item">LIVE SCORING</span>
+      <span class="marquee-item">125 LB</span>
+      <span class="marquee-item">133 LB</span>
+      <span class="marquee-item">141 LB</span>
+      <span class="marquee-item">149 LB</span>
+      <span class="marquee-item">157 LB</span>
+      <span class="marquee-item">165 LB</span>
+      <span class="marquee-item">174 LB</span>
+      <span class="marquee-item">184 LB</span>
+      <span class="marquee-item">197 LB</span>
+      <span class="marquee-item">285 LB</span>
+      <span class="marquee-item">NCAA WRESTLING</span>
+      <span class="marquee-item">FANTASY DRAFT</span>
+      <span class="marquee-item">SNAKE DRAFT</span>
+      <span class="marquee-item">LIVE SCORING</span>
+    </div>
+  </div>
+
+  <section class="features">
+    <div class="reveal">
+      <p class="section-label">What you get</p>
+      <h2 class="section-heading">Built for the mat.</h2>
+      <p class="section-sub">Everything you need for a serious NCAA wrestling fantasy draft — nothing you don't.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <span class="feature-icon">🏆</span>
+        <div class="feature-title">Full Tournament Draft Board</div>
+        <p class="feature-desc">All 10 weight classes, complete seedings, snake or custom rotation. The whole tournament in one board.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title">Live Draft Sync</div>
+        <p class="feature-desc">Every pick appears instantly for everyone in your league. No refreshing, no calling out picks in a group chat.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🙋</span>
+        <div class="feature-title">Claim Your Team</div>
+        <p class="feature-desc">Open the link, enter your name, and claim your team. No accounts, no passcodes, no signup — just one link for the whole league.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <div class="feature-title">Easy Score Updates</div>
+        <p class="feature-desc">Drag and drop your score file or update point totals directly in the app. Standings refresh instantly for everyone in your league.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🛡</span>
+        <div class="feature-title">Commissioner Controls</div>
+        <p class="feature-desc">Full admin access to reassign picks, adjust settings, override the board, and manage the draft from start to finish.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">💾</span>
+        <div class="feature-title">Persistent State</div>
+        <p class="feature-desc">Your draft lives in the cloud. Close the tab, reopen the link — everything is exactly where you left it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="how-inner">
+      <div class="reveal">
+        <p class="section-label">How it works</p>
+        <h2 class="section-heading">From zero to draft day in minutes.</h2>
+        <p class="section-sub">No downloads, no accounts, no technical setup required.</p>
+      </div>
+      <div class="steps-row reveal">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-title">Create a League</div>
+          <p class="step-desc">Name your league, set your teams, choose your draft format.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-title">Share the Link</div>
+          <p class="step-desc">You get a unique league URL. Send it to your group chat — that's it. No passcodes to hand out.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-title">Go Live</div>
+          <p class="step-desc">Everyone opens the same link. Picks sync in real time across all devices.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-title">Watch & Score</div>
+          <p class="step-desc">Update scores after each session. Standings refresh for the whole league instantly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bottom-cta">
+    <div class="reveal">
+      <h2 class="bottom-cta-title">Ready to<br><span>Play?</span></h2>
+      <p class="bottom-cta-sub">
+        Beta is live now. Free to use, free to host your league.<br>
+        No account. Just a link.
+      </p>
+      <a href="/create" class="btn-create">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Create a League
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">Pinfall Fantasy</div>
+    <div class="footer-note">© 2026 pinfallfantasy.com &nbsp;·&nbsp; Beta &nbsp;·&nbsp; Not affiliated with or endorsed by the NCAA</div>
+  </footer>
+
+  <script>
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    reveals.forEach(el => observer.observe(el));
+
+    const grid = document.querySelector('.features-grid');
+    if (grid) {
+      const cardObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          grid.querySelectorAll('.feature-card').forEach((card, i) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = `opacity 0.5s ease ${i*0.08}s, transform 0.5s ease ${i*0.08}s`;
+            setTimeout(() => {
+              card.style.opacity = '1';
+              card.style.transform = 'translateY(0)';
+            }, 50 + i * 80);
+          });
+          cardObserver.unobserve(grid);
+        }
+      }, { threshold: 0.1 });
+      cardObserver.observe(grid);
+    }
+  </script>
+</body>
+</html>

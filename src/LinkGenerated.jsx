@@ -1,6 +1,7 @@
 // src/LinkGenerated.jsx
 import { useState } from "react";
 import { claimTeamAsCommissioner } from "./leagueService";
+import { supabase } from "./supabase";
 
 const styles = {
   wrapper: {
@@ -260,7 +261,31 @@ export default function LinkGenerated({ joinCode, leagueUrl, teams: initialTeams
     }
     setClaiming(null);
   };
-
+const handleUnclaimCommissioner = async (teamId) => {
+  if (!window.confirm("Unclaim this team? It will become available again.")) return;
+  try {
+    const { error } = await supabase
+      .from('teams')
+      .update({
+        is_claimed: false,
+        claimed_at: null,
+        claimed_by: null,
+        name: teams.find(t => t.id === teamId)?.draft_position
+  ? `Team ${teams.find(t => t.id === teamId).draft_position}`
+  : 'Team',
+role: 'member',
+})
+.eq('id', teamId);
+if (error) throw new Error(error.message);
+setTeams(prev => prev.map(t =>
+  t.id === teamId
+    ? { ...t, is_claimed: false, name: `Team ${t.draft_position}`, claimed_by: null }
+    : t
+));
+  } catch (err) {
+    alert("Something went wrong: " + err.message);
+  }
+};
   const claimedCount = teams.filter(t => t.is_claimed).length;
 
   return (
@@ -311,15 +336,40 @@ export default function LinkGenerated({ joinCode, leagueUrl, teams: initialTeams
 
           {teams.map((team) => {
             if (team.is_claimed) {
-              return (
-                <div key={team.id} style={styles.teamCardClaimed}>
-                  <span style={styles.claimedName}>{team.name}</span>
-                  <span style={styles.claimedLabel}>
-                    <span style={{ fontSize: "16px" }}>✓</span> Yours
-                  </span>
-                </div>
-              );
-            }
+  return (
+    <div key={team.id} style={styles.teamCardClaimed}>
+      <span style={styles.claimedName}>{team.name}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <span style={styles.claimedLabel}>
+          <span style={{ fontSize: "16px" }}>✓</span> Yours
+        </span>
+        <button
+          onClick={() => handleUnclaimCommissioner(team.id)}
+          style={{
+            background: "none",
+            border: "1px solid #3A2A2A",
+            borderRadius: "5px",
+            color: "#5A3A3A",
+            fontSize: "11px",
+            padding: "4px 10px",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.borderColor = "#8B2020";
+            e.target.style.color = "#C0392B";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.borderColor = "#3A2A2A";
+            e.target.style.color = "#5A3A3A";
+          }}
+        >
+          Unclaim
+        </button>
+      </div>
+    </div>
+  );
+}
 
             const canClaim = (teamNames[team.id] ?? "").trim().length > 0;
             const isLoading = claiming === team.id;

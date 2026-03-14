@@ -1,6 +1,6 @@
 // src/leagueService.js
 import { supabase } from './supabase'
-import { saveSession, addTeamToSession, generateJoinCode } from './session'
+import { saveSession, addTeamToSession, generateJoinCode, getSession } from './session'
 
 export async function fetchLeague(joinCode) {
   // ── 1. Fetch the league row ───────────────────────────────────────
@@ -251,13 +251,22 @@ export async function claimTeamAsCommissioner(leagueId, teamId, teamName) {
 }
 
 export async function unclaimTeam(leagueId, teamId) {
+  // Fetch current draft_position to restore placeholder name
+  const { data: team, error: fetchError } = await supabase
+    .from('teams')
+    .select('draft_position')
+    .eq('id', teamId)
+    .single()
+
+  if (fetchError) throw new Error(fetchError.message)
+
   const { error } = await supabase
     .from('teams')
     .update({
       is_claimed: false,
       claimed_at: null,
       claimed_by: null,
-      name: null,
+      name: `Team ${team.draft_position}`,
       role: 'member',
     })
     .eq('id', teamId)
@@ -265,7 +274,6 @@ export async function unclaimTeam(leagueId, teamId) {
 
   if (error) throw new Error(error.message)
 
-  // Remove this teamId from the session array
   const session = getSession()
   if (session) {
     const updatedIds = session.teamIds.filter(id => id !== teamId)

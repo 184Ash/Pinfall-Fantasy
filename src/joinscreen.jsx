@@ -228,7 +228,9 @@ export default function JoinScreen({
   onClaim,
   onClaimAnother,
 }) {
-  const [teamNames, setTeamNames] = useState({});
+  const [teamNames, setTeamNames] = useState(() =>
+  Object.fromEntries(teams.map(t => [t.id, t.name || ""]))
+);
   const [anotherNames, setAnotherNames] = useState({});
   const [showRejoin, setShowRejoin] = useState(false);
   const [rejoinTeamId, setRejoinTeamId] = useState("");
@@ -249,7 +251,7 @@ export default function JoinScreen({
   };
 
   const handleClaimAnother = async (team) => {
-    const name = (anotherNames[team.id] || "").trim();
+    const name = (anotherNames[team.id] || teamNames[team.id] || "").trim();
     if (!name) return;
     setClaiming(team.id);
     await onClaimAnother(team.id, name);
@@ -366,31 +368,30 @@ export default function JoinScreen({
                   }
                   placeholder="e.g. Iron Wolves, Gold Rush..."
                   maxLength={40}
-                  disabled={!!currentSession}
+                  disabled={false}
                   onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
                   onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
                 />
-                {!currentSession && (
-                  <button
-                    style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
-                    disabled={!canClaim || isLoading}
-                    onClick={() => handleClaim(team)}
-                    title={!canClaim ? "Enter a team name first" : ""}
-                  >
-                    {isLoading ? "..." : "Claim"}
-                  </button>
-                )}
+                <button
+                style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
+                disabled={!canClaim || isLoading}
+                onClick={() => currentSession ? handleClaimAnother(team) : handleClaim(team)}
+                title={!canClaim ? "Enter a team name first" : ""}
+              >
+                {isLoading ? "..." : "Claim"}
+              </button>
               </div>
               {!canClaim && !currentSession && (
-                <div style={{
-                  fontSize: "11px",
-                  color: "#4A5A6A",
-                  marginTop: "5px",
-                  fontStyle: "italic",
-                }}>
-                  ↑ Enter a name above before claiming
-                </div>
-              )}
+  <div style={{
+    fontSize: "11px",
+    color: "#4A5A6A",
+    marginTop: "5px",
+    fontStyle: "italic",
+  }}>
+    ↑ Enter a name above before claiming
+  </div>
+)}
+
             </div>
           );
         })}
@@ -400,8 +401,8 @@ export default function JoinScreen({
           <div style={styles.claimAnotherSection}>
             <div style={styles.claimAnotherTitle}>Claim Another Team</div>
             <div style={styles.claimAnotherDesc}>
-              A second person on this device can claim an additional team.
-              Enter their team name below and click Claim.
+              Claim additional teams below — whether for yourself or others sharing this device.
+              Enter a team name and click Claim.
             </div>
             <div style={styles.sectionTitle}>Available Teams</div>
             {unclaimedTeams.map((team) => {
