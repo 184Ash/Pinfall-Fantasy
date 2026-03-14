@@ -1143,7 +1143,7 @@ function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leag
       if(leagueId) savePoints(leagueId, merged).catch(err=>console.error('savePoints failed:',err));
       return merged;
     });
-    setManualKey("");setManualPts("");
+    setManualKey("");setManualPts("");setManualSearch("");
   };
 
   const draftedWrestlers=useMemo(()=>{
@@ -1162,190 +1162,176 @@ function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leag
 
   return (
     <div>
-      {/* ── How to enter scores ── */}
-      <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:18,fontWeight:700,letterSpacing:".1em",color:"#c9a84c",marginBottom:12}}>SCORE ENTRY</h2>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12}}>
-          {/* Option 1 */}
-          <div style={{flex:"1 1 280px",padding:"14px 16px",background:"#0b0f14",border:"2px solid #c9a84c44",borderRadius:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",letterSpacing:".08em",marginBottom:6}}>OPTION 1 — BULK IMPORT</div>
-            <div style={{fontSize:12,color:"#7a6a40",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.6}}>
-              Paste or upload a score table from TrackWrestling or FloWrestling. The parser matches wrestler names automatically and applies all scores at once.
-            </div>
-            <div style={{fontSize:11,color:"#4a3a20",fontFamily:"'Barlow Condensed',sans-serif",marginTop:6,padding:"5px 8px",background:"#1a0e08",border:"1px solid #3a1e08",borderRadius:4}}>
-              ⚠ Each import fully replaces all existing scores — always paste cumulative totals, not per-session results.
-            </div>
+
+      {/* ── OPTION 1: BULK IMPORT — gold border ── */}
+      <div style={{border:"2px solid #c9a84c44",borderRadius:10,background:"#0b0f14",marginBottom:14,overflow:"hidden"}}>
+        <div style={{padding:"12px 16px",borderBottom:"1px solid #c9a84c22",background:"#0d1008"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",letterSpacing:".1em",marginBottom:4}}>OPTION 1 — BULK IMPORT</div>
+          <div style={{fontSize:11,color:"#7a6a40",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5,marginBottom:6}}>
+            Paste or upload a score table from TrackWrestling or FloWrestling. Names are matched automatically and all scores are applied at once.
           </div>
-          {/* Option 2 */}
-          <div style={{flex:"1 1 280px",padding:"14px 16px",background:"#0b0f14",border:"2px solid #2a3a50",borderRadius:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#93c5fd",letterSpacing:".08em",marginBottom:6}}>OPTION 2 — MANUAL ENTRY</div>
-            <div style={{fontSize:12,color:"#4a5a6a",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.6}}>
-              Search for a specific wrestler by name and enter their points directly. Best for corrections or adding a single score without re-importing everything.
-            </div>
-            <div style={{fontSize:11,color:"#3a4a5a",fontFamily:"'Barlow Condensed',sans-serif",marginTop:6,padding:"5px 8px",background:"#0a1020",border:"1px solid #1a2a3a",borderRadius:4}}>
-              ℹ Manual entry adds to or updates existing scores — it does not replace them.
-            </div>
+          <div style={{fontSize:11,color:"#7a4a20",fontFamily:"'Barlow Condensed',sans-serif",padding:"5px 8px",background:"#1a0e08",border:"1px solid #3a1e08",borderRadius:4,display:"inline-block"}}>
+            ⚠ Each import fully replaces all existing scores — always use cumulative totals, not per-session results.
           </div>
+        </div>
+        <div style={{padding:"12px 16px"}}>
+          {!preview&&(
+            <div>
+              <div onDragOver={e=>{e.preventDefault();setDragOver(true)}} onDragLeave={()=>setDragOver(false)}
+                onDrop={e=>{e.preventDefault();setDragOver(false);handleFile(e);}}
+                style={{marginBottom:8,padding:"8px 14px",border:`2px dashed ${dragOver?"#c9a84c":"#2a2010"}`,borderRadius:8,background:dragOver?"#1a1500":"#070a0e",transition:"all .2s",textAlign:"center"}}>
+                <span style={{fontSize:11,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif"}}>
+                  📂 Drop a .txt or .csv, or{" "}
+                  <label style={{color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>
+                    browse<input type="file" accept=".txt,.csv,.tsv" onChange={handleFile} style={{display:"none"}}/>
+                  </label>
+                </span>
+              </div>
+              <textarea className="inp" rows={8} value={rawText} onChange={e=>setRawText(e.target.value)}
+                placeholder={"Paste TrackWrestling fantasy standings or score table here.\n\nWORKS:\n  \u2022 TW standings:  1  Stevo Poulin  Iowa State  14.0\n  \u2022 With pts suffix:  Stevo Poulin (Iowa State) \u2014 14.0 pts\n  \u2022 CSV with header:  Name, School, Points\n\nWONT WORK:\n  \u2022 Raw HTML or webpage source\n  \u2022 Columns without a points/pts header\n  \u2022 Non-wrestler rows mixed in\n\nTip: always import cumulative totals."}
+                style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,lineHeight:1.6}}/>
+              <div style={{display:"flex",gap:10,marginTop:10,alignItems:"center"}}>
+                <button className="btn btn-primary btn-lg" onClick={runParse} disabled={!rawText.trim()} style={{opacity:rawText.trim()?1:.4}}>PARSE & PREVIEW</button>
+                <button className="btn btn-ghost btn-md" onClick={()=>setRawText("")}>CLEAR</button>
+                {rawText.trim()&&<span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{rawText.trim().split("\n").filter(Boolean).length} lines</span>}
+              </div>
+            </div>
+          )}
+          {preview&&(
+            <div>
+              <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+                <div style={{display:"flex",gap:7}}>
+                  <StatCard v={preview.matched.filter(m=>m.drafted).length} l="DRAFTED MATCHED" c="#34d399" bg="#0c2218" bd="#1a4030"/>
+                  {preview.matched.filter(m=>!m.drafted).length>0&&
+                    <StatCard v={preview.matched.filter(m=>!m.drafted).length} l="NOT DRAFTED" c="#93c5fd" bg="#0f1820" bd="#1a2f40"/>}
+                  <StatCard v={preview.unmatched.length} l="NO MATCH" c="#fca5a5" bg="#1e0a0a" bd="#3a1515"/>
+                </div>
+                <div style={{display:"flex",gap:8,marginLeft:"auto",alignItems:"center"}}>
+                  {!applied&&preview.matched.filter(m=>m.drafted).length>0&&(
+                    <button className="btn btn-primary btn-lg" onClick={applyPreview}>
+                      ✓ APPLY {preview.matched.filter(m=>m.drafted).length} SCORES
+                    </button>
+                  )}
+                  {applied&&<div style={{padding:"8px 16px",background:"#0c2218",border:"1px solid #1a4030",borderRadius:6,fontSize:13,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>✓ Scores applied!</div>}
+                  <button className="btn btn-ghost btn-md" onClick={clearAll}>RE-PASTE</button>
+                </div>
+              </div>
+              {preview.matched.filter(m=>m.drafted).length>0&&(
+                <div className="card" style={{marginBottom:11}}>
+                  <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219",display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#34d399",letterSpacing:".08em"}}>✓ DRAFTED — WILL BE SCORED</span>
+                  </div>
+                  {preview.matched.filter(m=>m.drafted).map((m,i)=>{
+                    const tc=getColor(picks[m.key]);
+                    return (
+                      <div key={i} style={{padding:"7px 14px",borderBottom:"1px solid #0f1318",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span style={{fontSize:10,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",minWidth:28}}>{m.entry.weight}lb</span>
+                        <span style={{fontSize:10,color:"#3a4040",fontFamily:"'Barlow Condensed',sans-serif",minWidth:16}}>#{m.entry.seed}</span>
+                        <span style={{fontSize:14,color:"#d0c8b4",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600,minWidth:160}}>{m.entry.name}</span>
+                        <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",flex:1}}>{m.entry.school}</span>
+                        {!m.exact&&<span style={{fontSize:9,color:"#b45309",padding:"1px 5px",background:"#1e1000",border:"1px solid #2a1800",borderRadius:3,fontFamily:"'Barlow Condensed',sans-serif"}}>fuzzy"{m.rawName}"</span>}
+                        <span style={{fontSize:16,fontWeight:700,color:"#34d399"}}>{m.pts} <span style={{fontSize:10,color:"#2a5040"}}>pts</span></span>
+                        <span style={{fontSize:10,color:tc.text,padding:"1px 8px",background:`${tc.bg}22`,border:`1px solid ${tc.bg}44`,borderRadius:4,fontFamily:"'Barlow Condensed',sans-serif"}}>{picks[m.key]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {preview.matched.filter(m=>!m.drafted).length>0&&(
+                <div className="card" style={{marginBottom:11}}>
+                  <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219"}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#93c5fd",letterSpacing:".08em"}}>ℹ FOUND BUT NOT DRAFTED</span>
+                  </div>
+                  <div style={{padding:"9px 14px",display:"flex",flexWrap:"wrap",gap:6}}>
+                    {preview.matched.filter(m=>!m.drafted).map((m,i)=>(
+                      <span key={i} style={{fontSize:11,color:"#4a5060",fontFamily:"'Barlow Condensed',sans-serif",padding:"2px 8px",background:"#0d1219",border:"1px solid #1e2530",borderRadius:4}}>
+                        {m.entry.name} ({m.entry.weight}lb) — {m.pts}pt
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {preview.unmatched.length>0&&(
+                <div className="card" style={{marginBottom:11}}>
+                  <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219"}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#fca5a5",letterSpacing:".08em"}}>✗ COULD NOT MATCH</span>
+                    <span style={{fontSize:11,color:"#5a3030",fontFamily:"'Barlow Condensed',sans-serif",marginLeft:8}}>not in wrestler database</span>
+                  </div>
+                  <div style={{padding:"9px 14px",display:"flex",flexWrap:"wrap",gap:6}}>
+                    {preview.unmatched.map((u,i)=>(
+                      <span key={i} style={{fontSize:11,color:"#7a4040",fontFamily:"'Barlow Condensed',sans-serif",padding:"2px 8px",background:"#1e0a0a",border:"1px solid #3a1515",borderRadius:4}}>{u.rawName} ({u.pts}pt)</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Drop / paste zone */}
-      {!preview&&(
-        <div>
-          <div onDragOver={e=>{e.preventDefault();setDragOver(true)}} onDragLeave={()=>setDragOver(false)}
-            onDrop={e=>{e.preventDefault();setDragOver(false);handleFile(e);}}
-            style={{marginBottom:8,padding:"10px 16px",border:`2px dashed ${dragOver?"#c9a84c":"#1e2530"}`,borderRadius:10,background:dragOver?"#1a1500":"#0b0f14",transition:"all .2s",textAlign:"center"}}>
-            <span style={{fontSize:12,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif"}}>
-              📂 Drop a .txt or .csv, or{" "}
-              <label style={{color:"#c9a84c",cursor:"pointer",textDecoration:"underline"}}>
-                browse<input type="file" accept=".txt,.csv,.tsv" onChange={handleFile} style={{display:"none"}}/>
-              </label>
-            </span>
-          </div>
-          <textarea className="inp" rows={10} value={rawText} onChange={e=>setRawText(e.target.value)}
-            placeholder={`Paste TrackWrestling fantasy standings or score table here.\n\nWORKS:\n  • TW standings:  1  Stevo Poulin  Iowa State  14.0\n  • With pts suffix:  Stevo Poulin (Iowa State) — 14.0 pts\n  • CSV with header:  Name, School, Points\n  • Direct copy-paste from TW fantasy results page\n\nWON'T WORK:\n  • Raw HTML or webpage source code\n  • Columns without a points/pts header\n  • Totals mixed with non-wrestler rows (ads, headers, footers)\n\nTip: always import cumulative totals — each import fully replaces all existing scores.`}
-            style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,lineHeight:1.6}}/>
-          <div style={{display:"flex",gap:10,marginTop:10,alignItems:"center"}}>
-            <button className="btn btn-primary btn-lg" onClick={runParse} disabled={!rawText.trim()} style={{opacity:rawText.trim()?1:.4}}>PARSE & PREVIEW</button>
-            <button className="btn btn-ghost btn-md" onClick={()=>setRawText("")}>CLEAR</button>
-            {rawText.trim()&&<span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{rawText.trim().split("\n").filter(Boolean).length} lines</span>}
+      {/* ── OPTION 2: MANUAL ENTRY — blue border ── */}
+      <div style={{border:"2px solid #1e3a5f",borderRadius:10,background:"#0a0f18",marginBottom:20,overflow:"hidden"}}>
+        <div style={{padding:"12px 16px",borderBottom:"1px solid #1a2a3a",background:"#080e18"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#93c5fd",letterSpacing:".1em",marginBottom:4}}>OPTION 2 — MANUAL ENTRY</div>
+          <div style={{fontSize:11,color:"#4a5a6a",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5}}>
+            Search for a wrestler by name and set their points directly. Best for corrections or single updates. Does not replace other scores.
           </div>
         </div>
-      )}
-
-      {/* Preview */}
-      {preview&&(
-        <div>
-          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-            <div style={{display:"flex",gap:7}}>
-              <StatCard v={preview.matched.filter(m=>m.drafted).length} l="DRAFTED MATCHED" c="#34d399" bg="#0c2218" bd="#1a4030"/>
-              {preview.matched.filter(m=>!m.drafted).length>0&&
-                <StatCard v={preview.matched.filter(m=>!m.drafted).length} l="NOT DRAFTED" c="#93c5fd" bg="#0f1820" bd="#1a2f40"/>}
-              <StatCard v={preview.unmatched.length} l="NO MATCH" c="#fca5a5" bg="#1e0a0a" bd="#3a1515"/>
-            </div>
-            <div style={{display:"flex",gap:8,marginLeft:"auto",alignItems:"center"}}>
-              {!applied&&preview.matched.filter(m=>m.drafted).length>0&&(
-                <button className="btn btn-primary btn-lg" onClick={applyPreview}>
-                  ✓ APPLY {preview.matched.filter(m=>m.drafted).length} SCORES
-                </button>
-              )}
-              {applied&&<div style={{padding:"8px 16px",background:"#0c2218",border:"1px solid #1a4030",borderRadius:6,fontSize:13,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>✓ Scores applied!</div>}
-              <button className="btn btn-ghost btn-md" onClick={clearAll}>RE-PASTE</button>
-            </div>
+        <div style={{padding:"12px 16px"}}>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:manualSearch?8:0}}>
+            <input className="inp" type="text" value={manualSearch}
+              onChange={e=>{setManualSearch(e.target.value);setManualKey("");}}
+              placeholder="Search wrestler name or team..."
+              style={{flex:1,minWidth:160,padding:"6px 10px",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}/>
+            <input className="inp" type="number" step="0.5" min="0" max="100" value={manualPts}
+              onChange={e=>setManualPts(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&applyManual()}
+              placeholder="pts" style={{width:75,padding:"6px 10px",fontSize:13}}/>
+            <button className="btn btn-primary btn-sm" onClick={applyManual}
+              disabled={!manualKey||!manualPts} style={{padding:"6px 16px",opacity:manualKey&&manualPts?1:0.4}}>SET</button>
           </div>
-
-          {/* Matched drafted */}
-          {preview.matched.filter(m=>m.drafted).length>0&&(
-            <div className="card" style={{marginBottom:11}}>
-              <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219",display:"flex",gap:8,alignItems:"center"}}>
-                <span style={{fontSize:13,fontWeight:600,color:"#34d399",letterSpacing:".08em"}}>✓ DRAFTED — WILL BE SCORED</span>
-              </div>
-              {preview.matched.filter(m=>m.drafted).map((m,i)=>{
-                const tc=getColor(picks[m.key]);
-                return (
-                  <div key={i} style={{padding:"7px 14px",borderBottom:"1px solid #0f1318",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",minWidth:28}}>{m.entry.weight}lb</span>
-                    <span style={{fontSize:10,color:"#3a4040",fontFamily:"'Barlow Condensed',sans-serif",minWidth:16}}>#{m.entry.seed}</span>
-                    <span style={{fontSize:14,color:"#d0c8b4",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600,minWidth:160}}>{m.entry.name}</span>
-                    <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",flex:1}}>{m.entry.school}</span>
-                    {!m.exact&&<span style={{fontSize:9,color:"#b45309",padding:"1px 5px",background:"#1e1000",border:"1px solid #2a1800",borderRadius:3,fontFamily:"'Barlow Condensed',sans-serif"}}>fuzzy≈"{m.rawName}"</span>}
-                    <span style={{fontSize:16,fontWeight:700,color:"#34d399"}}>{m.pts} <span style={{fontSize:10,color:"#2a5040"}}>pts</span></span>
-                    <span style={{fontSize:10,color:tc.text,padding:"1px 8px",background:`${tc.bg}22`,border:`1px solid ${tc.bg}44`,borderRadius:4,fontFamily:"'Barlow Condensed',sans-serif"}}>{picks[m.key]}</span>
+          {manualSearch.trim().length>0&&(
+            <div style={{background:"#0d1117",border:"1px solid #1e2f40",borderRadius:6,overflow:"hidden",maxHeight:200,overflowY:"auto"}}>
+              {draftedWrestlers
+                .filter(w=>w.name.toLowerCase().includes(manualSearch.toLowerCase())||w.team.toLowerCase().includes(manualSearch.toLowerCase()))
+                .slice(0,12)
+                .map(w=>(
+                  <div key={w.key}
+                    onClick={()=>{setManualKey(w.key);setManualSearch(w.name);}}
+                    className="wrow"
+                    style={{padding:"7px 12px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+                      background:manualKey===w.key?"#0d2040":"transparent",
+                      borderBottom:"1px solid #111820"}}>
+                    <span style={{fontSize:10,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",minWidth:30}}>{w.weight}lb</span>
+                    <span style={{fontSize:10,color:"#3a4040",fontFamily:"'Barlow Condensed',sans-serif",minWidth:18}}>#{w.seed}</span>
+                    <span style={{flex:1,fontSize:12,color:manualKey===w.key?"#93c5fd":"#d0c8b4",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>{w.name}</span>
+                    <span style={{fontSize:10,color:getColor(w.team).text,fontFamily:"'Barlow Condensed',sans-serif"}}>{w.team}</span>
+                    {w.pts>0&&<span style={{fontSize:11,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif"}}>{w.pts}pt</span>}
                   </div>
-                );
-              })}
+                ))}
+              {draftedWrestlers.filter(w=>w.name.toLowerCase().includes(manualSearch.toLowerCase())||w.team.toLowerCase().includes(manualSearch.toLowerCase())).length===0&&(
+                <div style={{padding:"10px 14px",fontSize:12,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>No drafted wrestlers match "{manualSearch}"</div>
+              )}
             </div>
           )}
-
-          {/* Matched but undrafted */}
-          {preview.matched.filter(m=>!m.drafted).length>0&&(
-            <div className="card" style={{marginBottom:11}}>
-              <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219"}}>
-                <span style={{fontSize:13,fontWeight:600,color:"#93c5fd",letterSpacing:".08em"}}>ℹ FOUND BUT NOT DRAFTED</span>
-              </div>
-              <div style={{padding:"9px 14px",display:"flex",flexWrap:"wrap",gap:6}}>
-                {preview.matched.filter(m=>!m.drafted).map((m,i)=>(
-                  <span key={i} style={{fontSize:11,color:"#4a5060",fontFamily:"'Barlow Condensed',sans-serif",padding:"2px 8px",background:"#0d1219",border:"1px solid #1e2530",borderRadius:4}}>
-                    {m.entry.name} ({m.entry.weight}lb) — {m.pts}pt
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Unmatched */}
-          {preview.unmatched.length>0&&(
-            <div className="card" style={{marginBottom:11}}>
-              <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219"}}>
-                <span style={{fontSize:13,fontWeight:600,color:"#fca5a5",letterSpacing:".08em"}}>✗ COULD NOT MATCH</span>
-                <span style={{fontSize:11,color:"#5a3030",fontFamily:"'Barlow Condensed',sans-serif",marginLeft:8}}>not in wrestler database</span>
-              </div>
-              <div style={{padding:"9px 14px",display:"flex",flexWrap:"wrap",gap:6}}>
-                {preview.unmatched.map((u,i)=>(
-                  <span key={i} style={{fontSize:11,color:"#7a4040",fontFamily:"'Barlow Condensed',sans-serif",padding:"2px 8px",background:"#1e0a0a",border:"1px solid #3a1515",borderRadius:4}}>{u.rawName} ({u.pts}pt)</span>
-                ))}
-              </div>
+          {manualKey&&!manualSearch.trim()&&(
+            <div style={{fontSize:11,color:"#93c5fd",fontFamily:"'Barlow Condensed',sans-serif",marginTop:4}}>
+              ✓ Selected — enter points above and click SET
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Current scores table */}
+      {/* ── CUMULATIVE SCORES TABLE ── */}
       {draftedWrestlers.length>0&&(
-        <div className="card" style={{marginTop:20}}>
+        <div className="card">
           <div style={{padding:"9px 14px",borderBottom:"1px solid #1a1f26",background:"#0d1219",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-            <span style={{fontSize:13,fontWeight:600,color:"#c9a84c",letterSpacing:".08em"}}>CURRENT SCORES — ALL DRAFTED WRESTLERS</span>
+            <span style={{fontSize:13,fontWeight:600,color:"#c9a84c",letterSpacing:".08em"}}>CUMULATIVE SCORES — ALL DRAFTED WRESTLERS</span>
             <div style={{display:"flex",gap:12,alignItems:"center"}}>
-              <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{totalEntered}/{draftedWrestlers.length} have points · Grand total: <b style={{color:"#34d399"}}>{grandTotal.toFixed(1)}</b></span>
+              <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{totalEntered}/{draftedWrestlers.length} scored · Total: <b style={{color:"#34d399"}}>{grandTotal.toFixed(1)}</b></span>
               <button className="btn btn-danger btn-sm" onClick={()=>{if(window.confirm("Clear all entered points?"))setPoints({});}}>CLEAR SCORES</button>
             </div>
           </div>
-          {/* Manual single entry */}
-          <div style={{padding:"8px 14px",borderBottom:"1px solid #1a1f26",background:"#08100c"}}>
-            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:manualSearch?6:0}}>
-              <span style={{fontSize:10,color:"#3a5030",letterSpacing:".12em",flexShrink:0}}>MANUAL ENTRY:</span>
-              <input className="inp" type="text" value={manualSearch}
-                onChange={e=>{setManualSearch(e.target.value);setManualKey("");}}
-                placeholder="Search wrestler name..."
-                style={{flex:1,minWidth:160,padding:"5px 8px",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}/>
-              <input className="inp" type="number" step="0.5" min="0" max="100" value={manualPts}
-                onChange={e=>setManualPts(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&applyManual()}
-                placeholder="pts" style={{width:70,padding:"5px 8px",fontSize:13}}/>
-              <button className="btn btn-primary btn-sm" onClick={applyManual}
-                disabled={!manualKey||!manualPts} style={{padding:"5px 14px",opacity:manualKey&&manualPts?1:0.4}}>SET</button>
-            </div>
-            {manualSearch.trim().length>0&&(
-              <div style={{background:"#0d1117",border:"1px solid #1e2530",borderRadius:5,overflow:"hidden",maxHeight:180,overflowY:"auto"}}>
-                {draftedWrestlers
-                  .filter(w=>w.name.toLowerCase().includes(manualSearch.toLowerCase())||w.team.toLowerCase().includes(manualSearch.toLowerCase()))
-                  .slice(0,12)
-                  .map(w=>(
-                    <div key={w.key}
-                      onClick={()=>{setManualKey(w.key);setManualSearch(w.name);}}
-                      className="wrow"
-                      style={{padding:"6px 10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-                        background:manualKey===w.key?"#1a2c18":"transparent",
-                        borderBottom:"1px solid #111820"}}>
-                      <span style={{fontSize:10,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",minWidth:28}}>{w.weight}lb</span>
-                      <span style={{fontSize:10,color:"#3a4040",fontFamily:"'Barlow Condensed',sans-serif",minWidth:16}}>#{w.seed}</span>
-                      <span style={{flex:1,fontSize:12,color:manualKey===w.key?"#34d399":"#d0c8b4",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>{w.name}</span>
-                      <span style={{fontSize:10,color:getColor(w.team).text,fontFamily:"'Barlow Condensed',sans-serif"}}>{w.team}</span>
-                      {w.pts>0&&<span style={{fontSize:11,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif"}}>{w.pts}pt</span>}
-                    </div>
-                  ))}
-                {draftedWrestlers.filter(w=>w.name.toLowerCase().includes(manualSearch.toLowerCase())||w.team.toLowerCase().includes(manualSearch.toLowerCase())).length===0&&(
-                  <div style={{padding:"10px 14px",fontSize:12,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>No drafted wrestlers match "{manualSearch}"</div>
-                )}
-              </div>
-            )}
-            {manualKey&&!manualSearch.trim()&&(
-              <div style={{fontSize:11,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",marginTop:4}}>
-                ✓ Selected — enter points and click SET
-              </div>
-            )}
-          </div>
-          {/* Table */}
           {draftedWrestlers.map((wr,i)=>{
             const tc=getColor(wr.team);
             return (
