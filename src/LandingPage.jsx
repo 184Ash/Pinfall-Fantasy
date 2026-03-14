@@ -116,7 +116,7 @@ export default function LandingPage() {
 
       <nav className="lp-nav">
         <a className="lp-nav-logo-wrap" href="#">
-          <img className="lp-nav-logo-img" src="/pinfall-fantasy-logo.svg" alt="Pinfall Fantasy" />
+          <img className="lp-nav-logo-img" src="/pinfall-fantasy-logo.png" alt="Pinfall Fantasy" />
           <span className="lp-nav-logo">Pinfall Fantasy</span>
         </a>
         <span className="lp-nav-beta">Beta</span>
@@ -126,7 +126,7 @@ export default function LandingPage() {
         <div className="lp-hero-lines" />
         <div className="lp-mat-ring" />
         <div className="lp-hero-logo-wrap">
-          <img src="/pinfall-fantasy-logo.svg" alt="Pinfall Fantasy" width="100" height="100" />
+          <img src="/pinfall-fantasy-logo.png" alt="Pinfall Fantasy" width="100" height="100" />
         </div>
         <p className="lp-hero-eyebrow">NCAA Wrestling Fantasy Draft</p>
         <h1 className="lp-hero-title">
