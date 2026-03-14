@@ -1,5 +1,6 @@
 // src/LinkGenerated.jsx
 import { useState } from "react";
+import { claimTeamAsCommissioner } from "./leagueService";
 
 const styles = {
   wrapper: {
@@ -102,25 +103,84 @@ const styles = {
     lineHeight: "1.6",
     marginTop: "14px",
   },
-  teamList: {
-    listStyle: "none",
-    padding: "0",
-    margin: "0",
+  teamCard: {
+    background: "#0D1520",
+    border: "1px solid #2A3A50",
+    borderRadius: "8px",
+    padding: "12px 14px",
+    marginBottom: "10px",
   },
-  teamItem: {
+  teamCardClaimed: {
+    background: "#0D1520",
+    border: "1px solid #2A6A3A",
+    borderRadius: "8px",
+    padding: "12px 14px",
+    marginBottom: "10px",
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    padding: "10px 0",
-    borderBottom: "1px solid #2A3A50",
-    fontSize: "14px",
+    justifyContent: "space-between",
+  },
+  claimRow: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    background: "#1A2535",
+    border: "1px solid #2A3A50",
+    borderRadius: "6px",
+    color: "#E8EDF2",
+    fontSize: "15px",
+    padding: "10px 12px",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  },
+  claimBtn: {
+    background: "#C9A84C",
+    color: "#0D1520",
+    border: "none",
+    borderRadius: "6px",
+    padding: "10px 18px",
+    fontSize: "13px",
+    fontWeight: "700",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
+  claimBtnDisabled: {
+    background: "#2A3A50",
+    color: "#4A5A6A",
+    border: "none",
+    borderRadius: "6px",
+    padding: "10px 18px",
+    fontSize: "13px",
+    fontWeight: "700",
+    cursor: "not-allowed",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
+  claimedLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    color: "#4CAF7D",
+    fontSize: "13px",
+    fontWeight: "700",
+  },
+  claimedName: {
+    fontSize: "15px",
+    fontWeight: "600",
     color: "#E8EDF2",
   },
-  teamNumber: {
-    fontSize: "12px",
-    color: "#4A5A6A",
-    minWidth: "24px",
-    fontWeight: "600",
+  joinCodeDisplay: {
+    fontSize: "36px",
+    fontWeight: "700",
+    color: "#C9A84C",
+    letterSpacing: "8px",
+    textAlign: "center",
+    padding: "8px 0",
   },
   goBtn: {
     width: "100%",
@@ -143,10 +203,23 @@ const styles = {
     marginTop: "12px",
     lineHeight: "1.5",
   },
+  skipNote: {
+    textAlign: "center",
+    fontSize: "12px",
+    color: "#4A5A6A",
+    marginTop: "10px",
+    lineHeight: "1.5",
+  },
 };
 
-export default function LinkGenerated({ joinCode, leagueUrl, teams = [], onGoToLeague }) {
+export default function LinkGenerated({ joinCode, leagueUrl, teams: initialTeams = [], onGoToLeague }) {
   const [copied, setCopied] = useState(false);
+  const [teams, setTeams] = useState(initialTeams);
+  const [teamNames, setTeamNames] = useState(() =>
+  Object.fromEntries(initialTeams.map(t => [t.id, t.name]))
+);
+  const [claiming, setClaiming] = useState(null);
+  const [claimError, setClaimError] = useState(null);
 
   const handleCopy = async () => {
     try {
@@ -154,7 +227,6 @@ export default function LinkGenerated({ joinCode, leagueUrl, teams = [], onGoToL
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     } catch {
-      // Fallback for browsers that block clipboard API
       const el = document.createElement("textarea");
       el.value = leagueUrl;
       document.body.appendChild(el);
@@ -165,6 +237,31 @@ export default function LinkGenerated({ joinCode, leagueUrl, teams = [], onGoToL
       setTimeout(() => setCopied(false), 3000);
     }
   };
+
+  const handleClaim = async (team) => {
+    const name = (teamNames[team.id] ?? "").trim();
+    if (!name) return;
+    setClaiming(team.id);
+    setClaimError(null);
+    try {
+      const result = await claimTeamAsCommissioner(joinCode, team.id, name);
+      if (result.success) {
+        // Update local team list to show as claimed
+        setTeams(prev => prev.map(t =>
+          t.id === team.id
+            ? { ...t, is_claimed: true, name, claimed_by: name }
+            : t
+        ));
+      } else if (result.reason === "already_claimed") {
+        setClaimError(`${team.name} was already claimed.`);
+      }
+    } catch (err) {
+      setClaimError("Something went wrong. Please try again.");
+    }
+    setClaiming(null);
+  };
+
+  const claimedCount = teams.filter(t => t.is_claimed).length;
 
   return (
     <div style={styles.wrapper}>
@@ -190,50 +287,80 @@ export default function LinkGenerated({ joinCode, leagueUrl, teams = [], onGoToL
             {copied ? "✓ Copied to clipboard" : "Copy Link"}
           </button>
           <div style={styles.lockedNote}>
-            🔒 This is the only link for your league. Send it to your group
-            chat — participants open it, enter their team name, and claim their
-            spot. No passcodes needed.
+            🔒 Send this link to your league. Participants open it, enter their
+            team name, and claim their spot. No passcodes needed.
           </div>
         </div>
 
-        {/* ── Team Summary ── */}
+        {/* ── Claim Your Teams ── */}
         <div style={styles.section}>
           <div style={styles.sectionTitle}>
-            {teams.length} Teams Created
+            Claim Your Team{claimedCount > 0 ? ` — ${claimedCount} claimed` : ""}
           </div>
-          <ul style={styles.teamList}>
-            {teams.map((team, i) => (
-              <li key={i} style={{
-                ...styles.teamItem,
-                ...(i === teams.length - 1 ? { borderBottom: "none" } : {}),
-              }}>
-                <span style={styles.teamNumber}>{i + 1}</span>
-                <span>{team.name}</span>
-                <span style={{ marginLeft: "auto", fontSize: "12px", color: "#4A5A6A" }}>
-                  Unclaimed
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div style={{ ...styles.lockedNote, marginTop: "16px" }}>
-            🔒 Team count and draft settings are now locked. Participants will
-            choose their own team names when they claim a spot.
+          <div style={{ fontSize: "12px", color: "#7A8A9A", lineHeight: "1.6", marginBottom: "16px" }}>
+            Claim one or more teams for yourself before sharing the link.
+            If you're running the draft solo, claim all of them here.
+            Leave any unclaimed — participants will name and claim them when they open the link.
+          </div>
+
+          {claimError && (
+            <div style={{ color: "#C0392B", fontSize: "12px", marginBottom: "12px" }}>
+              {claimError}
+            </div>
+          )}
+
+          {teams.map((team) => {
+            if (team.is_claimed) {
+              return (
+                <div key={team.id} style={styles.teamCardClaimed}>
+                  <span style={styles.claimedName}>{team.name}</span>
+                  <span style={styles.claimedLabel}>
+                    <span style={{ fontSize: "16px" }}>✓</span> Yours
+                  </span>
+                </div>
+              );
+            }
+
+            const canClaim = (teamNames[team.id] ?? "").trim().length > 0;
+            const isLoading = claiming === team.id;
+
+            return (
+              <div key={team.id} style={styles.teamCard}>
+                <div style={styles.claimRow}>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    value={teamNames[team.id] ?? ""}
+                    onChange={(e) =>
+                      setTeamNames(prev => ({ ...prev, [team.id]: e.target.value }))
+                    }
+                    placeholder="Enter your team name"
+                    maxLength={40}
+                    onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
+                    onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
+                  />
+                  <button
+                    style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
+                    disabled={!canClaim || isLoading}
+                    onClick={() => handleClaim(team)}
+                  >
+                    {isLoading ? "..." : "Claim"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={styles.skipNote}>
+            Skip claiming entirely if you're just the host — you'll have
+            commissioner access to draft for all teams without owning one.
           </div>
         </div>
 
         {/* ── Join Code ── */}
         <div style={styles.section}>
           <div style={styles.sectionTitle}>Join Code</div>
-          <div style={{
-            fontSize: "36px",
-            fontWeight: "700",
-            color: "#C9A84C",
-            letterSpacing: "8px",
-            textAlign: "center",
-            padding: "8px 0",
-          }}>
-            {joinCode}
-          </div>
+          <div style={styles.joinCodeDisplay}>{joinCode}</div>
           <div style={{ fontSize: "12px", color: "#7A8A9A", textAlign: "center", lineHeight: "1.6" }}>
             The last 5 characters of your league URL. Useful if someone needs
             to type it in manually.

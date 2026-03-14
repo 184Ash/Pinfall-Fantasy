@@ -22,12 +22,17 @@ export async function fetchLeague(joinCode) {
   if (teamsError) return null
 
   // ── 3. Return structured object ──────────────────────────────────
-  return {
-    leagueName: league.name,
-    teams,
-    settings: league.settings_json ?? {},
-    commissionerEmail: league.commissioner_email ?? null,
-  }
+  const teamsWithFallback = teams.map((t) => ({
+  ...t,
+  name: t.name || `Team ${t.draft_position || 1}`,
+}))
+
+return {
+  leagueName: league.name,
+  teams: teamsWithFallback,
+  settings: league.settings_json ?? {},
+  commissionerEmail: league.commissioner_email ?? null,
+}
 }
 
 // ── Team Claiming ────────────────────────────────────────────────
@@ -215,4 +220,57 @@ export async function createLeague(formData) {
   // ── 5. Return join code and full URL ─────────────────────────────
   const joinUrl = `${window.location.origin}/join/${joinCode}`
   return { joinCode, joinUrl }
+}
+
+// Used when commissioner claims a team from LinkGenerated —
+// updates Supabase but does NOT touch the existing commissioner session
+export async function claimTeamAsCommissioner(leagueId, teamId, teamName) {
+  const { data: team, error: fetchError } = await supabase
+    .from('teams')
+    .select('is_claimed')
+    .eq('id', teamId)
+    .single()
+
+  if (fetchError) throw new Error(fetchError.message)
+  if (team.is_claimed) return { success: false, reason: 'already_claimed' }
+
+  const { error: updateError } = await supabase
+    .from('teams')
+    .update({
+      is_claimed: true,
+      claimed_at: new Date().toISOString(),
+      claimed_by: teamName,
+      name: teamName,
+      role: 'member',
+    })
+    .eq('id', teamId)
+
+  if (updateError) throw new Error(updateError.message)
+
+  return { success: true }
+}
+
+export async function unclaimTeam(leagueId, teamId) {
+  const { error } = await supabase
+    .from('teams')
+    .update({
+      is_claimed: false,
+      claimed_at: null,
+      claimed_by: null,
+      name: null,
+      role: 'member',
+    })
+    .eq('id', teamId)
+    .eq('league_id', leagueId)
+
+  if (error) throw new Error(error.message)
+
+  // Remove this teamId from the session array
+  const session = getSession()
+  if (session) {
+    const updatedIds = session.teamIds.filter(id => id !== teamId)
+    saveSession(session.leagueId, updatedIds, session.role)
+  }
+
+  return { success: true }
 }

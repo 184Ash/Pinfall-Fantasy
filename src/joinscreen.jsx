@@ -1,6 +1,6 @@
 // src/JoinScreen.jsx
 import { useState } from "react";
-import { requestRejoin, listenForRejoinApproval } from './leagueService'
+import { requestRejoin, listenForRejoinApproval, unclaimTeam } from './leagueService'
 
 const styles = {
   wrapper: {
@@ -152,15 +152,6 @@ const styles = {
     lineHeight: "1.5",
     marginBottom: "16px",
   },
-  label: {
-    display: "block",
-    fontSize: "11px",
-    letterSpacing: "2px",
-    textTransform: "uppercase",
-    color: "#C9A84C",
-    marginBottom: "8px",
-    fontWeight: "600",
-  },
   rejoinToggle: {
     background: "none",
     border: "none",
@@ -237,9 +228,7 @@ export default function JoinScreen({
   onClaim,
   onClaimAnother,
 }) {
-  // Per-team name inputs for unclaimed teams
   const [teamNames, setTeamNames] = useState({});
-  // Name inputs for the "claim another" section
   const [anotherNames, setAnotherNames] = useState({});
   const [showRejoin, setShowRejoin] = useState(false);
   const [rejoinTeamId, setRejoinTeamId] = useState("");
@@ -276,6 +265,12 @@ export default function JoinScreen({
     setRejoinSent(true);
   };
 
+  const handleUnclaim = async (teamId) => {
+    if (!window.confirm("Are you sure you want to unclaim this team? The spot will become available again.")) return;
+    await unclaimTeam(leagueId, teamId);
+    window.location.reload();
+  };
+
   const unclaimedTeams = teams.filter(
     (t) => !t.is_claimed && !sessionTeamIds.includes(t.id)
   );
@@ -301,17 +296,44 @@ export default function JoinScreen({
           const nameVal = getTeamName(team);
           const canClaim = nameVal.trim().length > 0;
 
+          // ── Yours ──
           if (isYours) {
             return (
               <div key={team.id} style={styles.teamCardYours}>
                 <span style={styles.teamName}>{team.name}</span>
-                <span style={styles.yoursLabel}>
-                  <span style={{ fontSize: "16px" }}>✓</span> Yours
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={styles.yoursLabel}>
+                    <span style={{ fontSize: "16px" }}>✓</span> Yours
+                  </span>
+                  <button
+                    onClick={() => handleUnclaim(team.id)}
+                    style={{
+                      background: "none",
+                      border: "1px solid #3A2A2A",
+                      borderRadius: "5px",
+                      color: "#5A3A3A",
+                      fontSize: "11px",
+                      padding: "4px 10px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = "#8B2020";
+                      e.target.style.color = "#C0392B";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = "#3A2A2A";
+                      e.target.style.color = "#5A3A3A";
+                    }}
+                  >
+                    Unclaim
+                  </button>
+                </div>
               </div>
             );
           }
 
+          // ── Claimed by someone else ──
           if (isClaimed) {
             return (
               <div key={team.id} style={styles.teamCardClaimed}>
@@ -321,9 +343,19 @@ export default function JoinScreen({
             );
           }
 
-          // Unclaimed — show inline name input + claim button
+          // ── Unclaimed ──
           return (
             <div key={team.id} style={styles.teamCard}>
+              <div style={{
+                fontSize: "11px",
+                color: "#C9A84C",
+                marginBottom: "6px",
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                fontWeight: "600",
+              }}>
+                Enter your team name to claim
+              </div>
               <div style={styles.claimRow}>
                 <input
                   style={styles.input}
@@ -332,7 +364,7 @@ export default function JoinScreen({
                   onChange={(e) =>
                     setTeamNames((prev) => ({ ...prev, [team.id]: e.target.value }))
                   }
-                  placeholder="Enter your team name"
+                  placeholder="e.g. Iron Wolves, Gold Rush..."
                   maxLength={40}
                   disabled={!!currentSession}
                   onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
@@ -343,11 +375,22 @@ export default function JoinScreen({
                     style={canClaim ? styles.claimBtn : styles.claimBtnDisabled}
                     disabled={!canClaim || isLoading}
                     onClick={() => handleClaim(team)}
+                    title={!canClaim ? "Enter a team name first" : ""}
                   >
                     {isLoading ? "..." : "Claim"}
                   </button>
                 )}
               </div>
+              {!canClaim && !currentSession && (
+                <div style={{
+                  fontSize: "11px",
+                  color: "#4A5A6A",
+                  marginTop: "5px",
+                  fontStyle: "italic",
+                }}>
+                  ↑ Enter a name above before claiming
+                </div>
+              )}
             </div>
           );
         })}
@@ -367,6 +410,16 @@ export default function JoinScreen({
               const canClaim = nameVal.trim().length > 0;
               return (
                 <div key={team.id} style={styles.teamCard}>
+                  <div style={{
+                    fontSize: "11px",
+                    color: "#C9A84C",
+                    marginBottom: "6px",
+                    letterSpacing: "1px",
+                    textTransform: "uppercase",
+                    fontWeight: "600",
+                  }}>
+                    Enter team name to claim
+                  </div>
                   <div style={styles.claimRow}>
                     <input
                       style={styles.input}
@@ -378,7 +431,7 @@ export default function JoinScreen({
                           [team.id]: e.target.value,
                         }))
                       }
-                      placeholder="Enter team name"
+                      placeholder="e.g. Iron Wolves, Gold Rush..."
                       maxLength={40}
                       onFocus={(e) => (e.target.style.borderColor = "#C9A84C")}
                       onBlur={(e) => (e.target.style.borderColor = "#2A3A50")}
@@ -391,6 +444,16 @@ export default function JoinScreen({
                       {isLoading ? "..." : "Claim"}
                     </button>
                   </div>
+                  {!canClaim && (
+                    <div style={{
+                      fontSize: "11px",
+                      color: "#4A5A6A",
+                      marginTop: "5px",
+                      fontStyle: "italic",
+                    }}>
+                      ↑ Enter a name above before claiming
+                    </div>
+                  )}
                 </div>
               );
             })}

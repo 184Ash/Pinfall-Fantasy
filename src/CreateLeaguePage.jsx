@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CommissionerSetup from "./CommissionerSetup";
 import LinkGenerated from "./LinkGenerated";
-import { createLeague } from "./leagueService";
+import { createLeague, fetchLeague } from "./leagueService";
 
 const styles = {
   loading: {
@@ -85,10 +85,8 @@ export default function CreateLeaguePage() {
     try {
       const data = await createLeague(formData);
       // Build team list for LinkGenerated from formData
-      const teams = Array.from({ length: formData.teamCount }, (_, i) => ({
-        name: `Team ${i + 1}`,
-      }));
-      setResult({ ...data, teams });
+      const leagueData = await fetchLeague(data.joinCode);
+      setResult({ ...data, teams: leagueData?.teams ?? [] });
       setPhase("done");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
