@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_WRESTLERS } from './wrestlers';
 import { loadDraftState, savePick, savePoints, clearLeagueData, resetDraft, saveSettings } from './leagueService';
+import { supabase } from './supabase';
 import { useRealtimePicks } from './hooks/useRealtimePicks';
 import { useRealtimePoints } from './hooks/useRealtimePoints';
 import RejoinApprovalBanner from './RejoinApprovalBanner';
@@ -290,6 +291,21 @@ export default function App({
   useRealtimePicks(leagueId, wrestlers, teamsProp, handleRemotePick);
   useRealtimePoints(leagueId, wrestlers, handleRemotePoints);
 
+  // ── Realtime timer-pause sync ─────────────────────────────────────────────
+  useEffect(()=>{
+    if(!leagueId) return;
+    const ch=supabase.channel(`timer-pause-${leagueId}`)
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'leagues',filter:`id=eq.${leagueId}`},
+        (payload)=>{
+          const s=payload.new?.settings_json;
+          if(!s||typeof s.timerPaused!=='boolean') return;
+          timerPausedRef.current=s.timerPaused;
+          setTimerPaused(s.timerPaused);
+        })
+      .subscribe();
+    return ()=>ch.unsubscribe();
+  },[leagueId]);
+
   const [searchQ,setSearchQ]=useState("");
   const [toast,setToast]=useState(null);
   const [hlKey,setHlKey]=useState(null);
@@ -324,8 +340,8 @@ export default function App({
     if(timerRef.current) clearInterval(timerRef.current);
     timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
   };
-  const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);};
-  const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);};
+  const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);if(leagueId)saveSettings(leagueId,{timerPaused:true}).catch(()=>{});};
+  const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);if(leagueId)saveSettings(leagueId,{timerPaused:false}).catch(()=>{});};
   const [_timerInit]=useState(()=>{
     // Draft is always live on mount — start timer running immediately
     timerPausedRef.current=false;
@@ -346,12 +362,6 @@ export default function App({
     }
     if(rotationType==="linear"){
       return draftOrder[pos];
-    }
-    if(rotationType==="third_round_reversal"){
-      // Rounds 0,1 snake; round 2 reverses again and stays reversed for all odd rounds after
-      const effectiveRound=round;
-      if(effectiveRound%2===0) return draftOrder[pos];
-      return draftOrder[n-1-pos];
     }
     return draftOrder[pos];
   },[draftOrder,rotationType,round,pos,n]);
@@ -403,6 +413,7 @@ export default function App({
   // ── Draft actions ─────────────────────────────────────────────────────────
   const draftPick=async(weight,seed,forTeam,skipBonusCheck=false)=>{
     const team=forTeam||onClock;
+    if(!isCommissioner&&!userCanPickNow(team)){showToast("You can only draft for your own team on your turn","err");return;}
     const key=pickKey(weight,seed);
     if(picks[key]){showToast("Already drafted!","err");return;}
     if(!canDraft(team)){showToast(`${team} roster full (${picksPerTeam} picks)!`,"err");return;}
@@ -462,6 +473,7 @@ export default function App({
 
   const draftCustom=(rawName,forTeam)=>{
     const team=forTeam||onClock;
+    if(!isCommissioner&&!userCanPickNow(team)){showToast("You can only draft for your own team on your turn","err");return;}
     if(!rawName.trim()) return;
     if(!canDraft(team)){showToast(`${team} roster full!`,"err");return;}
     const idx=buildNameIndex(wrestlers);
@@ -480,8 +492,9 @@ export default function App({
     resetTimer();
   };
 
-  // Override pick assignment (team reassign)
+  // Override pick assignment (team reassign) — commissioner only
   const reassignPick=(key,newTeam)=>{
+    if(!isCommissioner){showToast("Only the commissioner can reassign picks","err");return;}
     setPicks(p=>({...p,[key]:newTeam}));
     showToast(`Pick reassigned → ${newTeam}`,"info");
   };
@@ -594,16 +607,18 @@ export default function App({
         picks={picks} getColor={getColor} draftPick={draftPick} draftCustom={draftCustom}
         activePage={activePage} setActivePage={setActivePage} getRoster={getRoster}
         timerSec={timerSec} timerPaused={timerPaused} pauseTimer={pauseTimer} resumeTimer={resumeTimer}
-        isCommissioner={isCommissioner} draftStarted={true}
+        isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)} draftStarted={true}
         getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam} showToast={showToast}/>
 
       <div style={{maxWidth:1600,margin:"0 auto",padding:"16px 16px 40px"}}>
         {activePage==="board"&&<BoardPage wrestlers={wrestlers} picks={picks} points={points}
           draftPick={draftPick} hlKey={hlKey} teams={teams}
           getColor={getColor} availCount={availCount} reassignPick={reassignPick}
-          draftOrder={draftOrder} rotationType={rotationType} totalPicks={totalPicks}/>}
+          draftOrder={draftOrder} rotationType={rotationType} totalPicks={totalPicks}
+          isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}/>}
         {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
-          setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}/>}
+          setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}
+          isCommissioner={isCommissioner}/>}
         {activePage==="standings"&&<StandingsPage teamScores={teamScores} getColor={getColor} getRoster={getRoster}/>}
 
         {activePage==="settings"&&<SettingsPage
@@ -625,7 +640,8 @@ export default function App({
           getColor={getColor} picksPerTeam={picksPerTeam}
           allWrestlers={allWrestlers} picks={picks} setPicks={setPicks} wrestlers={wrestlers}
           bonusKeys={bonusKeys} setBonusKeys={setBonusKeys}
-          bonusPickEnabled={bonusPickEnabled} showToast={showToast}/>}
+          bonusPickEnabled={bonusPickEnabled} showToast={showToast}
+          isCommissioner={isCommissioner}/>}
       </div>
     </div>
   );
@@ -635,7 +651,8 @@ export default function App({
 function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
   searchQ,setSearchQ,searchResults,picks,getColor,draftPick,draftCustom,
   activePage,setActivePage,getRoster,timerSec,timerPaused,pauseTimer,resumeTimer,
-  isCommissioner,draftStarted,getRosterStatus,picksPerTeam,showToast}){
+  isCommissioner,canPickNow,draftStarted,getRosterStatus,picksPerTeam,showToast}){
+  const canDraftNow=isCommissioner||canPickNow;
   const clk=onClock?getColor(onClock):null;
   const mins=Math.floor(timerSec/60);
   const secs=timerSec%60;
@@ -703,20 +720,22 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
             </div>}
             {timerPaused&&<div style={{fontSize:8,color:"#4a7aaa",opacity:.8,letterSpacing:".1em",marginTop:1}}>COMMISSIONER</div>}
           </div>
-          <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
+          {isCommissioner&&(
             <button onClick={timerPaused?resumeTimer:pauseTimer}
               title={timerPaused?"Resume timer":"Pause timer"}
               style={{width:32,height:32,borderRadius:6,border:`1px solid ${timerPaused?"#c9a84c":"#2a3040"}`,background:timerPaused?"#c9a84c22":"#0d1117",color:timerPaused?"#c9a84c":"#6a7a8a",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s",flexShrink:0}}>
               {timerPaused?"▶":"⏸"}
             </button>
-          </CommissionerOnly>
+          )}
         </div>
 
         {/* Search */}
-        <div style={{flex:1,minWidth:200,position:"relative"}}>
-          <input className="inp" value={searchQ} onChange={e=>setSearchQ(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&searchQ.trim()){const r=searchResults[0];if(r&&!r.isCustom&&!r.takenBy)draftPick(r.weight,r.seed);else if(r?.isCustom)draftCustom(searchQ.trim());}}}
-            placeholder={`Search to draft for ${onClock||"…"} — or type any name`}/>
+        <div style={{width:"35%",minWidth:180,position:"relative"}}>
+          <input className="inp" value={searchQ} onChange={e=>canDraftNow&&setSearchQ(e.target.value)}
+            onKeyDown={e=>{if(!canDraftNow)return;if(e.key==="Enter"&&searchQ.trim()){const r=searchResults[0];if(r&&!r.isCustom&&!r.takenBy)draftPick(r.weight,r.seed);else if(r?.isCustom)draftCustom(searchQ.trim());}}}
+            placeholder={canDraftNow?`Search to draft for ${onClock||"…"} — or type any name`:"Wait for your turn to pick"}
+            disabled={!canDraftNow}
+            style={{opacity:canDraftNow?1:0.4,cursor:canDraftNow?"text":"not-allowed"}}/>
           {searchQ&&(
             <div className="slide-down" style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,zIndex:400,background:"#0d1117",border:"1px solid #1e2530",borderRadius:6,overflow:"hidden",boxShadow:"0 12px 40px #00000099"}}>
               {searchResults.map((wr,i)=>{
@@ -735,7 +754,7 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
                     <span style={{fontSize:10,color:"#3a3a30",fontFamily:"'Barlow Condensed',sans-serif",flexShrink:0}}>{wr.school}</span>
                     {tb
                       ?<span style={{fontSize:10,color:getColor(tb).text,fontFamily:"'Barlow Condensed',sans-serif",flexShrink:0,maxWidth:80,overflow:"hidden",textOverflow:"ellipsis"}}>{tb}</span>
-                      :<button className="btn btn-primary btn-sm" onClick={()=>draftPick(wr.weight,wr.seed)}>DRAFT</button>}
+                      :canDraftNow&&<button className="btn btn-primary btn-sm" onClick={()=>draftPick(wr.weight,wr.seed)}>DRAFT</button>}
                   </div>
                 );
               })}
@@ -810,7 +829,7 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 const PAGE_SIZE = 12; // wrestlers per page per weight column
 
 function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
-  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks}){
+  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow}){
   const [overrideKey,setOverrideKey]=useState(null);
   // Per-weight page index (0-based). Reset all to 0 whenever a new pick is made.
   const [pages,setPages]=useState(()=>Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0])));
@@ -1025,13 +1044,13 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
                       overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{wr.school}</div>
                   </div>
                   {tb?(
-                    <button onClick={()=>setOverrideKey(key)}
-                      title="Click to reassign to a different team"
+                    <button onClick={()=>isCommissioner&&setOverrideKey(key)}
+                      title={isCommissioner?"Click to reassign to a different team":undefined}
                       style={{display:"flex",alignItems:"center",gap:3,padding:"2px 6px",flexShrink:0,
                         background:tc.bg+"33",border:`1px solid ${tc.bg}66`,borderRadius:4,
-                        cursor:"pointer",transition:"background .15s"}}
-                      onMouseEnter={e=>e.currentTarget.style.background=tc.bg+"55"}
-                      onMouseLeave={e=>e.currentTarget.style.background=tc.bg+"33"}>
+                        cursor:isCommissioner?"pointer":"default",transition:"background .15s"}}
+                      onMouseEnter={e=>isCommissioner&&(e.currentTarget.style.background=tc.bg+"55")}
+                      onMouseLeave={e=>isCommissioner&&(e.currentTarget.style.background=tc.bg+"33")}>
                       {pts>0&&(
                         <span style={{fontSize:9,color:"#34d399",
                           fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,marginRight:2}}>
@@ -1044,10 +1063,10 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
                         fontFamily:"'Barlow Condensed',sans-serif",
                         overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                         maxWidth:52,fontWeight:600}}>{tb}</span>
-                      <span style={{fontSize:8,color:tc.text+"cc"}}>▾</span>
+                      {isCommissioner&&<span style={{fontSize:8,color:tc.text+"cc"}}>▾</span>}
                     </button>
                   ):(
-                    <button className="btn btn-sm" onClick={()=>draftPick(w,wr.seed)}
+                    (isCommissioner||canPickNow)&&<button className="btn btn-sm" onClick={()=>draftPick(w,wr.seed)}
                       style={{padding:"2px 7px",background:"#0c1e14",border:"1px solid #1a3824",
                         borderRadius:4,color:"#2a6a44",fontSize:9,fontFamily:"'Oswald',sans-serif",
                         fontWeight:600,letterSpacing:".07em",flexShrink:0}}>DRAFT</button>
@@ -1192,7 +1211,6 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
           {[
             {id:"snake",icon:"🐍",label:"Snake Draft",desc:"Rd 1: 1→10, Rd 2: 10→1, alternates each round"},
             {id:"linear",icon:"→",label:"Linear Draft",desc:"Same order every round (1→10 always)"},
-            {id:"third_round_reversal",icon:"↕",label:"3rd Round Reversal",desc:"Snake but reverses direction every other round"},
           ].map(r=>(
             <div key={r.id}
               style={{flex:"1 1 220px",padding:"12px 14px",
@@ -1344,7 +1362,7 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
   );
 }
 
-function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leagueId}){
+function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leagueId,isCommissioner}){
   const [rawText,setRawText]=useState("");
   const [dragOver,setDragOver]=useState(false);
   const [preview,setPreview]=useState(null);   // {matched, unmatched}
@@ -1415,8 +1433,14 @@ function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leag
   return (
     <div>
 
-      {/* ── OPTION 1: BULK IMPORT — gold border ── */}
-      <div style={{border:"2px solid #c9a84c44",borderRadius:10,background:"#0b0f14",marginBottom:14,overflow:"hidden"}}>
+      {!isCommissioner&&(
+        <div style={{padding:"10px 14px",marginBottom:12,background:"#0d1219",border:"1px solid #1e2530",borderRadius:7,fontSize:11,color:"#4a5a6a",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".08em"}}>
+          🔒 COMMISSIONER ONLY — Score import and manual entry are restricted to the commissioner.
+        </div>
+      )}
+
+      {/* ── OPTION 1: BULK IMPORT — gold border (commissioner only) ── */}
+      {isCommissioner&&<div style={{border:"2px solid #c9a84c44",borderRadius:10,background:"#0b0f14",marginBottom:14,overflow:"hidden"}}>
         <div style={{padding:"12px 16px",borderBottom:"1px solid #c9a84c22",background:"#0d1008"}}>
           <div style={{fontSize:13,fontWeight:700,color:"#c9a84c",letterSpacing:".1em",marginBottom:4}}>OPTION 1 — BULK IMPORT</div>
           <div style={{fontSize:11,color:"#7a6a40",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5,marginBottom:6}}>
@@ -1519,10 +1543,10 @@ function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leag
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
-      {/* ── OPTION 2: MANUAL ENTRY — blue border ── */}
-      <div style={{border:"2px solid #1e3a5f",borderRadius:10,background:"#0a0f18",marginBottom:20,overflow:"hidden"}}>
+      {/* ── OPTION 2: MANUAL ENTRY — blue border (commissioner only) ── */}
+      {isCommissioner&&<div style={{border:"2px solid #1e3a5f",borderRadius:10,background:"#0a0f18",marginBottom:20,overflow:"hidden"}}>
         <div style={{padding:"12px 16px",borderBottom:"1px solid #1a2a3a",background:"#080e18"}}>
           <div style={{fontSize:13,fontWeight:700,color:"#93c5fd",letterSpacing:".1em",marginBottom:4}}>OPTION 2 — MANUAL ENTRY</div>
           <div style={{fontSize:11,color:"#4a5a6a",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5}}>
@@ -1572,7 +1596,7 @@ function ScoresPage({wrestlers,picks,points,setPoints,getColor,allWrestlers,leag
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── CUMULATIVE SCORES TABLE ── */}
       {draftedWrestlers.length>0&&(
@@ -1712,7 +1736,7 @@ function SetupPage({teams,setTeams,picks,setPicks,setPoints,getRoster,getColor,d
 
 // ─── ROSTER PAGE ──────────────────────────────────────────────────────────────
 function RosterPage({team,roster,getColor,picksPerTeam,allWrestlers,picks,setPicks,
-  wrestlers,bonusKeys,setBonusKeys,bonusPickEnabled,showToast}){
+  wrestlers,bonusKeys,setBonusKeys,bonusPickEnabled,showToast,isCommissioner}){
   const c=getColor(team);
   const total=roster.reduce((s,w)=>s+w.pts,0);
 
@@ -1815,7 +1839,7 @@ function RosterPage({team,roster,getColor,picksPerTeam,allWrestlers,picks,setPic
           {wr.pts>0&&!isH&&(
             <span style={{fontSize:11,fontWeight:700,color:"#34d399",flexShrink:0}}>{wr.pts}pt</span>
           )}
-          {isH&&(
+          {isH&&isCommissioner&&(
             <div style={{display:"flex",gap:3,flexShrink:0}}>
               <button onClick={()=>{setReplaceTarget({key:wr.key,weight:wr.weight,seed:wr.seed,name:wr.name});setReplaceQ("");}}
                 style={{fontSize:9,padding:"2px 7px",background:"#0c1e14",border:"1px solid #1a4828",
