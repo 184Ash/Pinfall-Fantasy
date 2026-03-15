@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSession, clearSession } from "./session";
-import { fetchLeague } from "./leagueService";
+import { fetchLeague, requestRejoin, requestLateJoin, listenForRejoinApproval } from "./leagueService";
 import JoinScreen from "./JoinScreen";
 import WaitingRoom from "./WaitingRoom";
 import App from "./App";
@@ -50,6 +50,20 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // Rejoin (lost session on a previously claimed team)
+  const [showRejoin, setShowRejoin] = useState(false);
+  const [rejoinTeamId, setRejoinTeamId] = useState("");
+  const [rejoinSent, setRejoinSent] = useState(false);
+
+  // Late join (claiming an unclaimed team after draft started)
+  const [lateJoinNames, setLateJoinNames] = useState({});
+  const [lateJoinSent, setLateJoinSent] = useState({});
+
+  const claimedTeams = teams.filter(t => t.is_claimed);
+  const unclaimedTeams = teams.filter(t => !t.is_claimed);
+
+  const subtitle = settings?.draftStarted ? "Draft live" : "Draft in progress";
+
   const handleSendLink = async () => {
     if (!recoveryEmail.trim()) return;
     setSending(true);
@@ -61,6 +75,25 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
     });
     setSent(true);
     setSending(false);
+  };
+
+  const handleRejoin = async () => {
+    if (!rejoinTeamId) return;
+    const requestId = await requestRejoin(joinCode, rejoinTeamId);
+    listenForRejoinApproval(requestId, joinCode, rejoinTeamId, 'member', () => {
+      window.location.reload();
+    });
+    setRejoinSent(true);
+  };
+
+  const handleLateJoin = async (team) => {
+    const name = (lateJoinNames[team.id] || '').trim();
+    if (!name) return;
+    const requestId = await requestLateJoin(joinCode, team.id, name);
+    listenForRejoinApproval(requestId, joinCode, team.id, 'member', () => {
+      window.location.reload();
+    });
+    setLateJoinSent(prev => ({ ...prev, [team.id]: true }));
   };
 
   return (
@@ -77,7 +110,7 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
         <h1 style={{ fontSize: "26px", fontWeight: "700", color: "#FFF", margin: "0 0 4px" }}>
           {leagueName}
         </h1>
-        <div style={{ fontSize: "13px", color: "#7A8A9A" }}>Draft complete — read only</div>
+        <div style={{ fontSize: "13px", color: "#7A8A9A" }}>{subtitle}</div>
       </div>
 
       <div style={{ maxWidth: "480px", margin: "0 auto", padding: "0 16px" }}>
@@ -90,12 +123,146 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
             justifyContent: "space-between", alignItems: "center",
           }}>
             <span style={{ fontSize: "15px", fontWeight: "600" }}>{team.name}</span>
-            {team.is_claimed && (
-              <span style={{ fontSize: "12px", color: "#4CAF7D" }}>✓ Claimed</span>
-            )}
+            {team.is_claimed
+              ? <span style={{ fontSize: "12px", color: "#4CAF7D" }}>✓ Claimed</span>
+              : <span style={{ fontSize: "12px", color: "#4A5A6A", fontStyle: "italic" }}>Unclaimed</span>
+            }
           </div>
         ))}
 
+        {/* ── Late Join — claim an unclaimed team after draft started ── */}
+        {unclaimedTeams.length > 0 && (
+          <div style={{
+            background: "#141E2E", border: "1px dashed #2A3A50", borderRadius: "10px",
+            padding: "20px", marginTop: "28px",
+          }}>
+            <div style={{ fontSize: "13px", fontWeight: "700", color: "#C9A84C", marginBottom: "6px" }}>
+              Join as a Late Addition
+            </div>
+            <div style={{ fontSize: "13px", color: "#7A8A9A", lineHeight: "1.5", marginBottom: "16px" }}>
+              The draft is live. Pick an unclaimed team, enter your name, and submit — the commissioner will approve your access.
+            </div>
+            {unclaimedTeams.map(team => (
+              <div key={team.id} style={{
+                background: "#1A2535", border: "1px solid #2A3A50", borderRadius: "10px",
+                padding: "14px 16px", marginBottom: "10px",
+              }}>
+                <div style={{ fontSize: "11px", color: "#C9A84C", marginBottom: "6px",
+                  letterSpacing: "1px", textTransform: "uppercase", fontWeight: "600" }}>
+                  {team.name}
+                </div>
+                {lateJoinSent[team.id] ? (
+                  <div style={{
+                    background: "#1A3A2A", border: "1px solid #2A6A3A", borderRadius: "6px",
+                    color: "#4CAF7D", fontSize: "13px", padding: "10px 12px", lineHeight: "1.5",
+                  }}>
+                    ✓ Request sent — keep this window open. You'll be redirected when approved.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      style={{
+                        flex: 1, background: "#0D1520", border: "1px solid #2A3A50",
+                        borderRadius: "6px", color: "#E8EDF2", fontSize: "15px",
+                        padding: "10px 12px", outline: "none", boxSizing: "border-box",
+                      }}
+                      type="text"
+                      placeholder="Your team name..."
+                      maxLength={40}
+                      value={lateJoinNames[team.id] || ''}
+                      onChange={e => setLateJoinNames(prev => ({ ...prev, [team.id]: e.target.value }))}
+                      onFocus={e => (e.target.style.borderColor = "#C9A84C")}
+                      onBlur={e => (e.target.style.borderColor = "#2A3A50")}
+                    />
+                    <button
+                      disabled={!(lateJoinNames[team.id] || '').trim()}
+                      onClick={() => handleLateJoin(team)}
+                      style={{
+                        background: (lateJoinNames[team.id] || '').trim() ? "#C9A84C" : "#2A3A50",
+                        color: (lateJoinNames[team.id] || '').trim() ? "#0D1520" : "#4A5A6A",
+                        border: "none", borderRadius: "6px", padding: "10px 18px",
+                        fontSize: "13px", fontWeight: "700", cursor: (lateJoinNames[team.id] || '').trim() ? "pointer" : "not-allowed",
+                        whiteSpace: "nowrap", flexShrink: 0,
+                      }}
+                    >
+                      Request to Join
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Rejoin — restore session for a previously claimed team ── */}
+        {claimedTeams.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowRejoin(v => !v)}
+              style={{
+                background: "none", border: "none", color: "#4A5A6A",
+                fontSize: "13px", cursor: "pointer", textDecoration: "underline",
+                marginTop: "32px", display: "block", width: "100%", textAlign: "center",
+              }}
+            >
+              {showRejoin ? "▲ Hide" : "Lost your team?"}
+            </button>
+            {showRejoin && (
+              <div style={{
+                background: "#1A2535", border: "1px solid #2A3A50", borderRadius: "10px",
+                padding: "20px", marginTop: "12px",
+              }}>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#E8EDF2", marginBottom: "6px" }}>
+                  Request to Rejoin
+                </div>
+                <div style={{ fontSize: "12px", color: "#7A8A9A", marginBottom: "14px", lineHeight: "1.5" }}>
+                  If you lost your session, select your team and submit a request.
+                  The commissioner will approve it and restore your access.
+                </div>
+                {!rejoinSent ? (
+                  <>
+                    <select
+                      value={rejoinTeamId}
+                      onChange={e => setRejoinTeamId(e.target.value)}
+                      style={{
+                        width: "100%", background: "#0D1520", border: "1px solid #2A3A50",
+                        borderRadius: "6px", color: "#E8EDF2", fontSize: "15px",
+                        padding: "11px 14px", marginBottom: "12px", outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <option value="">Select your team...</option>
+                      {claimedTeams.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={!rejoinTeamId}
+                      onClick={handleRejoin}
+                      style={{
+                        background: "none", border: `1px solid ${rejoinTeamId ? "#C9A84C" : "#4A5A6A"}`,
+                        borderRadius: "6px", color: rejoinTeamId ? "#C9A84C" : "#9EA8B0",
+                        fontSize: "13px", fontWeight: "600", padding: "10px 18px",
+                        cursor: rejoinTeamId ? "pointer" : "not-allowed", width: "100%",
+                      }}
+                    >
+                      Submit Rejoin Request
+                    </button>
+                  </>
+                ) : (
+                  <div style={{
+                    background: "#1A3A2A", border: "1px solid #2A6A3A", borderRadius: "6px",
+                    color: "#4CAF7D", fontSize: "13px", padding: "12px 14px", lineHeight: "1.5",
+                  }}>
+                    ✓ Request sent. The commissioner will approve your access shortly — keep this window open.
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Commissioner magic-link recovery ── */}
         {hasRecoveryEmail && (
           <>
             <button
@@ -155,10 +322,10 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
                     background: "#1A3A2A", border: "1px solid #2A6A3A", borderRadius: "6px",
                     color: "#4CAF7D", fontSize: "13px", padding: "12px 14px", lineHeight: "1.5",
                   }}>
-                    ✓ Check your email for the magic link. Important — open the link on the 
-device you want to use as commissioner during the draft. Your session 
-is tied to that device. Clicking it on your phone won't restore 
-access on your laptop.
+                    ✓ Check your email for the magic link. Important — open the link on the
+                    device you want to use as commissioner during the draft. Your session
+                    is tied to that device. Clicking it on your phone won't restore
+                    access on your laptop.
                   </div>
                 )}
               </div>

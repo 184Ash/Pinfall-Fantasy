@@ -109,7 +109,7 @@ export default function RejoinApprovalBanner({ leagueId, currentUserRole }) {
     const loadPending = async () => {
       const { data, error } = await supabase
         .from("rejoin_requests")
-        .select(`id, team_id, status, teams(name, role)`)
+        .select(`id, team_id, status, teams(name, role, is_claimed, claimed_by)`)
         .eq("league_id", leagueId)
         .eq("status", "pending");
 
@@ -132,7 +132,7 @@ export default function RejoinApprovalBanner({ leagueId, currentUserRole }) {
           // Fetch the team name to display in the banner
           const { data: team } = await supabase
             .from("teams")
-            .select("name, role")
+            .select("name, role, is_claimed, claimed_by")
             .eq("id", payload.new.team_id)
             .single();
 
@@ -155,6 +155,10 @@ export default function RejoinApprovalBanner({ leagueId, currentUserRole }) {
   };
 
   const handleDeny = async (request) => {
+    // If this was a late-join request, clear the temporary claimed_by we stored
+    if (!request.teams?.is_claimed) {
+      await supabase.from("teams").update({ claimed_by: null }).eq("id", request.team_id);
+    }
     await supabase
       .from("rejoin_requests")
       .update({ status: "denied" })
@@ -169,16 +173,23 @@ export default function RejoinApprovalBanner({ leagueId, currentUserRole }) {
       {requests.map((request) => {
         const teamName = request.teams?.name ?? "Unknown Team";
         const claimedBy = request.teams?.claimed_by ?? null;
+        const isLateJoin = !request.teams?.is_claimed;
+        // Late-join: claimed_by holds the requested name, name holds the placeholder ("Team 3")
+        // Rejoin: claimed_by holds their display name, name holds their chosen team name
+        const displayName = isLateJoin
+          ? (claimedBy ?? "Unknown")
+          : (claimedBy ? `${claimedBy} (${teamName})` : teamName);
+        const subtext = isLateJoin
+          ? `wants to join as ${teamName} — approve access?`
+          : "wants to rejoin — restore their access?";
 
         return (
           <div key={request.id} style={styles.banner}>
             <div style={styles.left}>
               <span style={styles.icon}>🔔</span>
               <div style={styles.text}>
-                <div style={styles.teamName}>
-                  {claimedBy ? `${claimedBy} (${teamName})` : teamName}
-                </div>
-                <div style={styles.subtext}>wants to rejoin — restore their access?</div>
+                <div style={styles.teamName}>{displayName}</div>
+                <div style={styles.subtext}>{subtext}</div>
               </div>
             </div>
             <div style={styles.buttons}>
