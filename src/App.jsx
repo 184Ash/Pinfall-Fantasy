@@ -1024,7 +1024,7 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
               const pts=points[key]||0;
               return (
                 <div key={wr.seed}
-                  className={`wrow ${tb?"taken-row":""} ${isHl?"flash-row":""}`}
+                  className={`wrow ${isHl?"flash-row":""}`}
                   style={{padding:"5px 8px",
                     borderBottom:i<pageWrs.length-1?"1px solid #0f1318":"none",
                     display:"flex",alignItems:"center",gap:0,
