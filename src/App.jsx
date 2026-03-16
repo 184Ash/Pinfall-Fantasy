@@ -939,23 +939,45 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   // Per-team configs: { teamName: { pages: {w:num}, hidden: {w:bool} } }
   const [teamConfigs,setTeamConfigs]=useState({});
 
-  // Derived view state — automatically switches when onClock changes for multi-team
-  const pages=isMultiTeamDevice?(teamConfigs[onClock]?.pages||defPages):globalPages;
-  const hidden=isMultiTeamDevice?(teamConfigs[onClock]?.hidden||defHidden):globalHidden;
+  // ── "Next controlled team": look ahead to find the next team this device controls.
+  //    Config and glow always reflect the team preparing to pick, not the current onClock.
+  const nextControlledTeam=useMemo(()=>{
+    const ctn=controlledTeamNames||[];
+    if(ctn.length===0) return "";
+    if(ctn.length===1) return ctn[0];
+    if(!_n) return ctn[0];
+    for(let offset=0;offset<_n*2+1;offset++){
+      const t=totalPicks+offset;
+      const r=Math.floor(t/_n);const p=t%_n;
+      let team;
+      if(rotationType==="snake") team=r%2===0?draftOrder[p]:draftOrder[_n-1-p];
+      else team=draftOrder[p];
+      if(ctn.includes(team)) return team;
+    }
+    return ctn[0];
+  },[draftOrder,rotationType,totalPicks,controlledTeamNames,_n]);
+
+  // Derived view state — switches to the next controlled team's saved config
+  const pages=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.pages||defPages):globalPages;
+  const hidden=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.hidden||defHidden):globalHidden;
+
+  // Glow color — derived from next controlled team; null for sessionless viewers
+  const glowColor=(controlledTeamNames||[]).length>0&&nextControlledTeam
+    ?getColor(nextControlledTeam):null;
 
   const setPage=(w,p)=>{
-    if(isMultiTeamDevice&&onClock){
-      setTeamConfigs(tc=>({...tc,[onClock]:{...(tc[onClock]||{}),
-        pages:{...(tc[onClock]?.pages||defPages),[w]:p}}}));
+    if(isMultiTeamDevice&&nextControlledTeam){
+      setTeamConfigs(tc=>({...tc,[nextControlledTeam]:{...(tc[nextControlledTeam]||{}),
+        pages:{...(tc[nextControlledTeam]?.pages||defPages),[w]:p}}}));
     } else {
       setGlobalPages(prev=>({...prev,[w]:p}));
     }
   };
   const toggleHidden=(w)=>{
-    if(isMultiTeamDevice&&onClock){
+    if(isMultiTeamDevice&&nextControlledTeam){
       setTeamConfigs(tc=>{
-        const cur=tc[onClock]?.hidden||defHidden;
-        return {...tc,[onClock]:{...(tc[onClock]||{}),hidden:{...cur,[w]:!cur[w]}}};
+        const cur=tc[nextControlledTeam]?.hidden||defHidden;
+        return {...tc,[nextControlledTeam]:{...(tc[nextControlledTeam]||{}),hidden:{...cur,[w]:!cur[w]}}};
       });
     } else {
       setGlobalHidden(prev=>({...prev,[w]:!prev[w]}));
@@ -1158,7 +1180,11 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
       )}
 
       {/* Weight columns */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,borderRadius:8,
+        transition:'box-shadow 0.9s ease',
+        boxShadow:glowColor
+          ?`0 0 0 1px ${glowColor.bg}28, 0 0 28px 5px ${glowColor.bg}18, 0 0 75px 18px ${glowColor.bg}0e, 0 0 160px 55px ${glowColor.bg}08`
+          :'none'}}>
         {WEIGHT_CLASSES.map(w=>{
           const allWrs=wrestlers[w]||[];
           const totalPages=Math.ceil(allWrs.length/PAGE_SIZE);
