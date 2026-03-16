@@ -304,6 +304,27 @@ export default function App({
     });
   },[leagueId]);
 
+  // ── Ascending pick timer — declared before handleRemotePick to avoid Vite TDZ ──
+  const [timerSec,setTimerSec]=useState(0);
+  const [timerPaused,setTimerPaused]=useState(false);
+  const timerRef=useRef(null);
+  const timerPausedRef=useRef(false);
+  const resetTimer=useCallback(()=>{
+    setTimerSec(0);
+    setTimerPaused(false);
+    timerPausedRef.current=false;
+    if(timerRef.current) clearInterval(timerRef.current);
+    timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
+  },[]);
+  const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);if(leagueId)saveSettings(leagueId,{timerPaused:true}).catch(()=>{});};
+  const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);if(leagueId)saveSettings(leagueId,{timerPaused:false}).catch(()=>{});};
+  const [_timerInit]=useState(()=>{
+    // Draft is always live on mount — start timer running immediately
+    timerPausedRef.current=false;
+    timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
+    return null;
+  });
+
   // ── Real-time sync — incoming picks from other devices ───────────
   const handleRemotePick = useCallback(({ key, teamName }) => {
     setPicks(p => {
@@ -369,27 +390,6 @@ export default function App({
   const [rotationType,setRotationType]=useState(settings?.rotationType||"snake");
   const [bonusPickEnabled,setBonusPickEnabled]=useState(settings?.bonusPickEnabled!==false);
   const picksPerTeam=bonusPickEnabled?PICKS_PER_TEAM_BONUS:PICKS_PER_TEAM_BASE;
-
-  // ── Ascending pick timer ──────────────────────────────────────────────────
-  const [timerSec,setTimerSec]=useState(0);
-  const [timerPaused,setTimerPaused]=useState(false);
-  const timerRef=useRef(null);
-  const timerPausedRef=useRef(false);
-  const resetTimer=useCallback(()=>{
-    setTimerSec(0);
-    setTimerPaused(false);
-    timerPausedRef.current=false;
-    if(timerRef.current) clearInterval(timerRef.current);
-    timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
-  },[]);
-  const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);if(leagueId)saveSettings(leagueId,{timerPaused:true}).catch(()=>{});};
-  const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);if(leagueId)saveSettings(leagueId,{timerPaused:false}).catch(()=>{});};
-  const [_timerInit]=useState(()=>{
-    // Draft is always live on mount — start timer running immediately
-    timerPausedRef.current=false;
-    timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
-    return null;
-  });
 
   // ── Per-device chime — auto-disabled for solo commissioner ───────────────
   // Solo commissioner = created the league, controls all picks, chime every pick = noise
@@ -919,12 +919,14 @@ const PAGE_SIZE = 12; // wrestlers per page per weight column
 function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow,picksLog,
   controlledTeamNames}){
-  const [overrideKey,setOverrideKey]=useState(null);
-
-  // ── Compute onClock inside BoardPage for per-team config switching ──
+  // ── Declared at top before any hooks to avoid Vite production TDZ ──
   const _n=draftOrder.length;
   const _round=_n>0?Math.floor(totalPicks/_n):0;
   const _pos=_n>0?totalPicks%_n:0;
+
+  const [overrideKey,setOverrideKey]=useState(null);
+
+  // ── Compute onClock inside BoardPage for per-team config switching ──
   const onClock=useMemo(()=>{
     if(!_n) return "";
     if(rotationType==="snake") return _round%2===0?draftOrder[_pos]:draftOrder[_n-1-_pos];
