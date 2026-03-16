@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { WEIGHT_CLASSES, DEFAULT_WC_PAGES, DEFAULT_WC_HIDDEN, PAGE_SIZE } from '../constants';
 import { pickKey } from '../utils/scoreParser';
 
@@ -82,20 +82,74 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
     return {name:wr?.name||"Wrestler",team:picks[overrideKey]};
   },[overrideKey,wrestlers,picks]);
 
-  // Build upcoming picks queue (next 10)
-  const upcomingPicks=useMemo(()=>{
-    const n=Math.max(draftOrder.length,1);
-    const queue=[];
-    for(let offset=0;offset<Math.min(10,n*2);offset++){
-      const t=totalPicks+offset;
-      const r=Math.floor(t/n);const p=t%n;
-      let team;
-      if(rotationType==="linear") team=draftOrder[p];
-      else team=r%2===0?draftOrder[p]:draftOrder[n-1-p];
-      if(team) queue.push({pickNum:t+1,round:r+1,team,isCurrent:offset===0});
+  // ── Draft timeline: all past picks + current + upcoming ──────────────────
+  const timeline=useMemo(()=>{
+    const items=[];
+    (picksLog||[]).forEach((p,i)=>{
+      items.push({type:"past",pickNum:i+1,teamName:p.teamName,name:p.name,
+        weight:p.weight,seed:p.seed,isBonus:p.isBonus,key:p.key});
+    });
+    if(!draftComplete){
+      const n=Math.max(draftOrder.length,1);
+      const lookahead=Math.min(14,draftOrder.length);
+      for(let offset=0;offset<lookahead;offset++){
+        const t=totalPicks+offset;
+        const r=Math.floor(t/n);const pos=t%n;
+        const team=rotationType==="linear"?draftOrder[pos]
+          :r%2===0?draftOrder[pos]:draftOrder[n-1-pos];
+        if(team) items.push({type:offset===0?"current":"future",pickNum:t+1,round:r+1,teamName:team});
+      }
     }
-    return queue;
-  },[draftOrder,rotationType,totalPicks]);
+    return items;
+  },[picksLog,draftOrder,rotationType,totalPicks,draftComplete]);
+
+  // ── Timeline scroll refs ──────────────────────────────────────────────────
+  const timelineRef=useRef(null);
+  const currentPickRef=useRef(null);
+  const hasInitiallyScrolled=useRef(false);
+  const liveScrollLeft=useRef(0);
+  const [showSync,setShowSync]=useState(false);
+
+  // Compute and (optionally) apply the "live center" scroll position
+  useEffect(()=>{
+    const container=timelineRef.current;
+    const item=currentPickRef.current;
+    if(!container) return;
+    if(!item){
+      // Draft complete — scroll to end on first load
+      if(!hasInitiallyScrolled.current){
+        container.scrollLeft=container.scrollWidth;
+        hasInitiallyScrolled.current=true;
+      }
+      return;
+    }
+    const target=Math.max(0,item.offsetLeft-container.offsetWidth/2+item.offsetWidth/2);
+    liveScrollLeft.current=target;
+    if(!hasInitiallyScrolled.current){
+      container.scrollLeft=target;
+      hasInitiallyScrolled.current=true;
+      setShowSync(false);
+    } else {
+      // New pick came in — animate to new center, then re-evaluate sync btn
+      container.scrollTo({left:target,behavior:"smooth"});
+      setShowSync(false);
+    }
+  },[totalPicks,timeline.length]);
+
+  // Detect manual scrolling away from live position
+  const handleTimelineScroll=()=>{
+    const container=timelineRef.current;
+    if(!container) return;
+    const diff=Math.abs(container.scrollLeft-liveScrollLeft.current);
+    setShowSync(diff>60);
+  };
+
+  const syncToLive=()=>{
+    const container=timelineRef.current;
+    if(!container) return;
+    container.scrollTo({left:liveScrollLeft.current,behavior:"smooth"});
+    setShowSync(false);
+  };
 
   return (
     <div>
@@ -166,108 +220,105 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
         </div>
       )}
 
-      {/* ── Live draft queue — hidden when draft is complete ── */}
-      {!draftComplete&&<div className="card" style={{marginBottom:14}}>
-        <div style={{padding:"6px 14px 5px",borderBottom:"1px solid #1a1f26",background:"#0d1219",
+      {/* ── Draft Timeline — unified past + current + upcoming ── */}
+      <div className="card" style={{marginBottom:14,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"5px 14px 4px",borderBottom:"1px solid #1a1f26",background:"#0d1219",
           display:"flex",alignItems:"center",gap:10,borderRadius:"8px 8px 0 0"}}>
           <span style={{fontSize:10,letterSpacing:".18em",color:"#6a5a30",
-            fontFamily:"'Oswald',sans-serif"}}>UPCOMING PICKS</span>
+            fontFamily:"'Oswald',sans-serif"}}>DRAFT TIMELINE</span>
           <span style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>
-            {rotationType==="snake"?"🐍 Snake":rotationType==="linear"?"→ Linear":"↕ Custom"}
+            {totalPicks} pick{totalPicks!==1?"s":""} made
           </span>
-        </div>
-        <div style={{display:"flex",overflowX:"auto",padding:"10px 10px 8px",alignItems:"flex-start"}}>
-          {upcomingPicks.map((p,i)=>{
-            const c=getColor(p.team);
-            const isNow=p.isCurrent;
-            return (
-              <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",
-                flexShrink:0,padding:isNow?"10px 12px 8px":"6px 10px 8px",marginRight:3,
-                borderRadius:7,background:isNow?`${c.bg}28`:"transparent",
-                border:isNow?`1px solid ${c.bg}66`:"1px solid transparent",
-                minWidth:86,position:"relative",transition:"all .25s"}}>
-                {isNow&&(
-                  <div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",
-                    fontSize:8,color:"#070a0e",background:c.bg,padding:"1px 8px",
-                    borderRadius:"0 0 5px 5px",fontFamily:"'Oswald',sans-serif",fontWeight:700,
-                    letterSpacing:".1em",whiteSpace:"nowrap",boxShadow:`0 2px 8px ${c.bg}66`}}>
-                    ON CLOCK
-                  </div>
-                )}
-                <div style={{marginTop:isNow?12:0,marginBottom:6,
-                  width:isNow?34:22,height:isNow?34:22,borderRadius:"50%",
-                  background:isNow?`radial-gradient(circle at 35% 35%,${c.bg},${c.bg}88)`:c.bg+"44",
-                  border:`2px solid ${isNow?c.bg:c.bg+"77"}`,
-                  boxShadow:isNow?`0 0 16px ${c.bg}77`:"none",
-                  flexShrink:0,transition:"all .3s"}}/>
-                <div style={{fontSize:isNow?12:10,fontWeight:isNow?700:500,
-                  color:isNow?c.text:c.text+"88",fontFamily:"'Barlow Condensed',sans-serif",
-                  textAlign:"center",maxWidth:82,overflow:"hidden",textOverflow:"ellipsis",
-                  whiteSpace:"nowrap",marginBottom:3}}>
-                  {p.team}
-                </div>
-                <div style={{fontSize:9,color:isNow?"#c9a84c99":"#2a3020",
-                  fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".06em"}}>
-                  Pk {p.pickNum} · R{p.round}
-                </div>
-              </div>
-            );
-          })}
-          {upcomingPicks.length===0&&(
-            <div style={{padding:"14px 16px",color:"#3a3820",fontSize:12,
-              fontFamily:"'Barlow Condensed',sans-serif"}}>
-              Draft complete or no teams configured
-            </div>
+          {!draftComplete&&<span style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>
+            · {rotationType==="snake"?"🐍 Snake":"→ Linear"}
+          </span>}
+          {/* Sync-to-live button — only shown when user has scrolled away */}
+          {showSync&&(
+            <button onClick={syncToLive}
+              style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,
+                padding:"2px 9px",background:"#0d1520",border:"1px solid #c9a84c55",
+                borderRadius:4,color:"#c9a84c",fontSize:9,fontFamily:"'Oswald',sans-serif",
+                fontWeight:600,letterSpacing:".1em",cursor:"pointer",flexShrink:0}}>
+              ◉ LIVE
+            </button>
           )}
         </div>
-      </div>}
-
-      {/* ── Recent Picks Log ── */}
-      {picksLog&&picksLog.length>0&&(
-        <div className="card" style={{marginBottom:14}}>
-          <div style={{padding:"6px 14px 5px",borderBottom:"1px solid #1a1f26",background:"#0d1219",
-            display:"flex",alignItems:"center",gap:10,borderRadius:"8px 8px 0 0"}}>
-            <span style={{fontSize:10,letterSpacing:".18em",color:"#6a5a30",
-              fontFamily:"'Oswald',sans-serif"}}>RECENT PICKS</span>
-            <span style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>
-              {picksLog.length} pick{picksLog.length!==1?"s":""}
-            </span>
-          </div>
-          <div style={{maxHeight:160,overflowY:"auto",
-            scrollbarWidth:"thin",scrollbarColor:"#c9a84c44 #0a0f16"}}>
-            {[...picksLog].reverse().map((p,i)=>{
-              const c=getColor(p.teamName);
-              const pickNum=picksLog.length-i;
-              const isFirst=i===0;
+        {/* Scrollable strip */}
+        <div style={{position:"relative"}}>
+          {/* Fade edges */}
+          <div style={{position:"absolute",left:0,top:0,bottom:0,width:80,zIndex:2,
+            pointerEvents:"none",background:"linear-gradient(to right,#0b0f14 20%,transparent)"}}/>
+          <div style={{position:"absolute",right:0,top:0,bottom:0,width:80,zIndex:2,
+            pointerEvents:"none",background:"linear-gradient(to left,#0b0f14 20%,transparent)"}}/>
+          <style>{`.tl-scroll::-webkit-scrollbar{display:none}`}</style>
+          <div className="tl-scroll" ref={timelineRef} onScroll={handleTimelineScroll}
+            style={{display:"flex",overflowX:"auto",padding:"12px 100px 10px",gap:3,
+              alignItems:"center",scrollbarWidth:"none",msOverflowStyle:"none"}}>
+            {timeline.map((item,idx)=>{
+              const isCurrent=item.type==="current";
+              const isPast=item.type==="past";
+              const c=getColor(item.teamName);
+              const futureIdx=isCurrent?0:isPast?0:(idx-(picksLog||[]).length);
+              const opacity=isCurrent?1:isPast?0.6:Math.max(0.22,0.58-futureIdx*0.05);
               return (
-                <div key={p.key} style={{
-                  display:"flex",alignItems:"center",gap:8,
-                  padding:"5px 12px",
-                  background:isFirst?`${c.bg}18`:"transparent",
-                  borderBottom:i<picksLog.length-1?"1px solid #0f1318":"none",
-                  transition:"background .15s"}}>
-                  <span style={{fontSize:9,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif",
-                    minWidth:22,textAlign:"right",flexShrink:0}}>#{pickNum}</span>
-                  <span style={{width:8,height:8,borderRadius:"50%",flexShrink:0,
-                    background:c.bg,boxShadow:`0 0 6px ${c.bg}88`}}/>
-                  <span style={{fontSize:11,fontWeight:600,color:c.text,
+                <div key={`${item.type}-${idx}`} ref={isCurrent?currentPickRef:null}
+                  style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",
+                    padding:isCurrent?"10px 14px 8px":"5px 9px 6px",
+                    minWidth:isCurrent?112:isPast?98:84,
+                    borderRadius:8,position:"relative",
+                    background:isCurrent?`${c.bg}1e`:"transparent",
+                    border:isCurrent?`1px solid ${c.bg}55`:"1px solid transparent",
+                    opacity,transition:"opacity .3s"}}>
+                  {/* ON CLOCK badge */}
+                  {isCurrent&&<div style={{position:"absolute",top:-1,left:"50%",
+                    transform:"translateX(-50%)",fontSize:7,color:"#070a0e",background:c.bg,
+                    padding:"1px 8px",borderRadius:"0 0 5px 5px",
+                    fontFamily:"'Oswald',sans-serif",fontWeight:700,letterSpacing:".1em",
+                    whiteSpace:"nowrap",boxShadow:`0 2px 8px ${c.bg}55`}}>ON CLOCK</div>}
+                  {/* Pick # */}
+                  <div style={{fontSize:8,color:isCurrent?"#c9a84c88":"#2a302080",
                     fontFamily:"'Barlow Condensed',sans-serif",
-                    minWidth:90,flexShrink:0,
-                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.teamName}</span>
-                  <span style={{fontSize:12,fontWeight:600,color:isFirst?"#e0d8b4":"#c0b898",
-                    fontFamily:"'Barlow Condensed',sans-serif",flex:1,
-                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                  <span style={{fontSize:10,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",
-                    flexShrink:0,whiteSpace:"nowrap"}}>
-                    {p.weight>0?`${p.weight}lb`:"Custom"} · #{p.seed}
-                  </span>
-                  {p.isBonus&&<span style={{fontSize:10,flexShrink:0}}>⭐</span>}
+                    marginBottom:3,marginTop:isCurrent?10:0,letterSpacing:".05em"}}>
+                    #{item.pickNum}
+                  </div>
+                  {/* Team circle */}
+                  <div style={{width:isCurrent?26:14,height:isCurrent?26:14,borderRadius:"50%",
+                    flexShrink:0,marginBottom:4,
+                    background:isCurrent?`radial-gradient(circle at 35% 35%,${c.bg},${c.bg}88)`:c.bg+"44",
+                    border:`2px solid ${isCurrent?c.bg:c.bg+"55"}`,
+                    boxShadow:isCurrent?`0 0 14px ${c.bg}66`:"none",transition:"all .3s"}}/>
+                  {/* Team name */}
+                  <div style={{fontSize:isCurrent?11:9,fontWeight:isCurrent?700:500,
+                    color:isCurrent?c.text:c.text+"99",fontFamily:"'Barlow Condensed',sans-serif",
+                    textAlign:"center",maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",
+                    whiteSpace:"nowrap",marginBottom:(isPast&&item.name)?2:0}}>
+                    {item.teamName}
+                  </div>
+                  {/* Wrestler name (past only) */}
+                  {isPast&&item.name&&<div style={{fontSize:9,color:"#c0b89877",
+                    fontFamily:"'Barlow Condensed',sans-serif",textAlign:"center",maxWidth:100,
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:1}}>
+                    {item.name}
+                  </div>}
+                  {/* Weight (past only) */}
+                  {isPast&&item.weight>0&&<div style={{fontSize:8,color:"#3a382077",
+                    fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".04em"}}>
+                    {item.weight}lb{item.isBonus?" ⭐":""}
+                  </div>}
+                  {/* Round (current + future) */}
+                  {!isPast&&<div style={{fontSize:8,color:isCurrent?"#c9a84c77":"#2a302077",
+                    fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".05em"}}>
+                    Rd {item.round}
+                  </div>}
                 </div>
               );
             })}
+            {timeline.length===0&&<div style={{padding:"16px 20px",color:"#3a3820",fontSize:12,
+              fontFamily:"'Barlow Condensed',sans-serif"}}>Draft not started</div>}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Weight columns */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,borderRadius:8,
