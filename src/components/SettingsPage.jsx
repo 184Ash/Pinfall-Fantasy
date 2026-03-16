@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { saveSettings, requestRejoin, requestLateJoin, listenForRejoinApproval, clearLeagueData, resetDraft } from '../leagueService';
-import CommissionerOnly from './CommissionerOnly';
 import { DEFAULT_TEAMS } from '../constants';
 
 // ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
@@ -117,31 +116,13 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
 
   return (
     <div style={{maxWidth:860}}>
-      <div style={{marginBottom:16}}>
-        <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c"}}>DRAFT SETTINGS</h2>
-        <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>
-          {draftHasStarted?"League configuration — reference only while draft is live":"Configure your league before starting the draft"}
-        </p>
+      <div style={{marginBottom:16,display:"flex",alignItems:"baseline",gap:12,flexWrap:"wrap"}}>
+        <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c",margin:0}}>DRAFT SETTINGS</h2>
+        <span style={{fontSize:9,letterSpacing:".14em",color:"#4a5a6a",fontFamily:"'Oswald',sans-serif",fontWeight:600,
+          background:"#0d1117",border:"1px solid #1e2530",borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>
+          🔒 COMMISSIONER ONLY
+        </span>
       </div>
-
-      {/* ── Status banner ── */}
-      {draftHasStarted?(
-        <div className="card" style={{padding:14,marginBottom:14,border:"1px solid #14532d",background:"#050e08",display:"flex",alignItems:"center",gap:12}}>
-          <div className="pulse" style={{width:9,height:9,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px #34d39977",flexShrink:0}}/>
-          <div>
-            <div style={{fontSize:12,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",fontWeight:700}}>✓ DRAFT IS LIVE</div>
-            <div style={{fontSize:10,color:"#1a4a28",fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Settings locked. Shown here for reference only.</div>
-          </div>
-        </div>
-      ):(
-        <div className="card" style={{padding:14,marginBottom:14,border:"1px solid #c9a84c44",background:"#0d1008",display:"flex",alignItems:"center",gap:12}}>
-          <div className="pulse" style={{width:9,height:9,borderRadius:"50%",background:"#c9a84c",boxShadow:"0 0 8px #c9a84c77",flexShrink:0}}/>
-          <div>
-            <div style={{fontSize:12,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".15em",fontWeight:700}}>DRAFT NOT STARTED</div>
-            <div style={{fontSize:10,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Customize the draft order below, then click Start Draft when ready.</div>
-          </div>
-        </div>
-      )}
 
       {/* ── Rotation type (read-only) ── */}
       <div className="card" style={{padding:16,marginBottom:14}}>
@@ -255,48 +236,46 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
         </div>
       </div>
 
-      {/* ── Start Draft / Danger Zone ── */}
-      <CommissionerOnly isCommissioner={isCommissioner} label="Commissioner only">
-        {!draftHasStarted?(
-          <div className="card" style={{padding:20,border:"1px solid #c9a84c44",width:"100%",background:"#0d1008"}}>
-            <div style={{fontSize:11,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".12em",marginBottom:8,textAlign:"center"}}>
-              WHEN YOU'RE READY — ALL PARTICIPANTS WILL BE MOVED TO THE DRAFT BOARD
-            </div>
-            <button
-              className="btn btn-primary btn-lg"
-              onClick={handleStartDraft}
-              disabled={starting}
-              style={{width:"100%",padding:"16px",fontSize:16,fontWeight:700,
-                letterSpacing:".1em",opacity:starting?0.6:1}}>
-              {starting?"STARTING...":"🏁 START DRAFT"}
-            </button>
+      {/* ── Start Draft / Danger Zone (commissioner only) ── */}
+      {isCommissioner&&(!draftHasStarted?(
+        <div className="card" style={{padding:20,border:"1px solid #c9a84c44",width:"100%",background:"#0d1008"}}>
+          <div style={{fontSize:11,color:"#6a5a30",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:".12em",marginBottom:8,textAlign:"center"}}>
+            WHEN YOU'RE READY — ALL PARTICIPANTS WILL BE MOVED TO THE DRAFT BOARD
           </div>
-        ):!draftComplete?(
-          <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
-            <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
-            <button className="btn btn-danger btn-md" onClick={async()=>{
-              if(window.confirm("Clear all picks and scores? Everyone will be brought back to settings.")){
-                setPicks({});
-                setPoints({});
-                setBonusKeys([]);
-                resetTimer();
-                const originalOrder=teamsProp&&teamsProp.length>0
-                  ?[...teamsProp].sort((a,b)=>a.draft_position-b.draft_position).map(t=>t.name)
-                  :DEFAULT_TEAMS;
-                setDraftOrder(originalOrder);
-                setDraftHasStarted(false);
-                if(leagueId){
-                  try{
-                    await clearLeagueData(leagueId);
-                    await resetDraft(leagueId);
-                  }catch(err){console.error('reset failed:',err);}
-                }
-                showToast("Cleared — back to pre-draft settings","info");
+          <button
+            className="btn btn-primary btn-lg"
+            onClick={handleStartDraft}
+            disabled={starting}
+            style={{width:"100%",padding:"16px",fontSize:16,fontWeight:700,
+              letterSpacing:".1em",opacity:starting?0.6:1}}>
+            {starting?"STARTING...":"🏁 START DRAFT"}
+          </button>
+        </div>
+      ):!draftComplete?(
+        <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
+          <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
+          <button className="btn btn-danger btn-md" onClick={async()=>{
+            if(window.confirm("Clear all picks and scores? Everyone will be brought back to settings.")){
+              setPicks({});
+              setPoints({});
+              setBonusKeys([]);
+              resetTimer();
+              const originalOrder=teamsProp&&teamsProp.length>0
+                ?[...teamsProp].sort((a,b)=>a.draft_position-b.draft_position).map(t=>t.name)
+                :DEFAULT_TEAMS;
+              setDraftOrder(originalOrder);
+              setDraftHasStarted(false);
+              if(leagueId){
+                try{
+                  await clearLeagueData(leagueId);
+                  await resetDraft(leagueId);
+                }catch(err){console.error('reset failed:',err);}
               }
-            }}>CLEAR ALL PICKS & SCORES</button>
-          </div>
-        ):null}
-      </CommissionerOnly>
+              showToast("Cleared — back to pre-draft settings","info");
+            }
+          }}>CLEAR ALL PICKS & SCORES</button>
+        </div>
+      ):null)}
 
       {/* ── Join Draft (no session, non-commissioner) ── */}
       {showJoinSection&&(
