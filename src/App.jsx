@@ -8,6 +8,9 @@ import RejoinApprovalBanner from './RejoinApprovalBanner';
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const WEIGHT_CLASSES = [125,133,141,149,157,165,174,184,197,285];
+// Module-level defaults so Vite's bundler can never create a TDZ in BoardPage
+const DEFAULT_WC_PAGES  = Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0]));
+const DEFAULT_WC_HIDDEN = Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,false]));
 
 const TEAM_COLORS = [
   {bg:"#C8102E",glow:"#C8102E55",text:"#ff6b80"},
@@ -930,12 +933,10 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
 
   // ── Per-team config switching (multi-team devices + solo commissioners) ──
   const isMultiTeamDevice=(controlledTeamNames||[]).length>1;
-  const defPages=Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0]));
-  const defHidden=Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,false]));
 
   // Global state used for single-team devices
-  const [globalPages,setGlobalPages]=useState(()=>({...defPages}));
-  const [globalHidden,setGlobalHidden]=useState(()=>({...defHidden}));
+  const [globalPages,setGlobalPages]=useState(()=>({...DEFAULT_WC_PAGES}));
+  const [globalHidden,setGlobalHidden]=useState(()=>({...DEFAULT_WC_HIDDEN}));
   // Per-team configs: { teamName: { pages: {w:num}, hidden: {w:bool} } }
   const [teamConfigs,setTeamConfigs]=useState({});
 
@@ -958,8 +959,8 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   },[draftOrder,rotationType,totalPicks,controlledTeamNames,_n]);
 
   // Derived view state — switches to the next controlled team's saved config
-  const pages=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.pages||defPages):globalPages;
-  const hidden=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.hidden||defHidden):globalHidden;
+  const pages=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.pages||DEFAULT_WC_PAGES):globalPages;
+  const hidden=isMultiTeamDevice?(teamConfigs[nextControlledTeam]?.hidden||DEFAULT_WC_HIDDEN):globalHidden;
 
   // Glow color — derived from next controlled team; null for sessionless viewers
   const glowColor=(controlledTeamNames||[]).length>0&&nextControlledTeam
@@ -968,7 +969,7 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   const setPage=(w,p)=>{
     if(isMultiTeamDevice&&nextControlledTeam){
       setTeamConfigs(tc=>({...tc,[nextControlledTeam]:{...(tc[nextControlledTeam]||{}),
-        pages:{...(tc[nextControlledTeam]?.pages||defPages),[w]:p}}}));
+        pages:{...(tc[nextControlledTeam]?.pages||DEFAULT_WC_PAGES),[w]:p}}}));
     } else {
       setGlobalPages(prev=>({...prev,[w]:p}));
     }
@@ -976,7 +977,7 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   const toggleHidden=(w)=>{
     if(isMultiTeamDevice&&nextControlledTeam){
       setTeamConfigs(tc=>{
-        const cur=tc[nextControlledTeam]?.hidden||defHidden;
+        const cur=tc[nextControlledTeam]?.hidden||DEFAULT_WC_HIDDEN;
         return {...tc,[nextControlledTeam]:{...(tc[nextControlledTeam]||{}),hidden:{...cur,[w]:!cur[w]}}};
       });
     } else {
