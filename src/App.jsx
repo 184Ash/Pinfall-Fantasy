@@ -686,6 +686,7 @@ export default function App({
         activePage={activePage} setActivePage={setActivePage} getRoster={getRoster}
         timerSec={timerSec} timerPaused={timerPaused} pauseTimer={pauseTimer} resumeTimer={resumeTimer}
         isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)} draftStarted={true}
+        draftComplete={draftComplete}
         getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam} showToast={showToast}
         chimeEnabled={chimeEnabled} setChimeEnabled={setChimeEnabled}/>
 
@@ -695,7 +696,7 @@ export default function App({
           getColor={getColor} availCount={availCount} reassignPick={reassignPick}
           draftOrder={draftOrder} rotationType={rotationType} totalPicks={totalPicks}
           isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}
-          picksLog={picksLog}
+          picksLog={picksLog} draftComplete={draftComplete}
           controlledTeamNames={isCommissioner?teams:(teamsProp||[]).filter(t=>session?.teamIds?.includes(t.id)).map(t=>t.name)}/>}
         {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
           setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}
@@ -736,7 +737,7 @@ export default function App({
 function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
   searchQ,setSearchQ,searchResults,picks,getColor,draftPick,draftCustom,
   activePage,setActivePage,getRoster,timerSec,timerPaused,pauseTimer,resumeTimer,
-  isCommissioner,canPickNow,draftStarted,getRosterStatus,picksPerTeam,showToast,
+  isCommissioner,canPickNow,draftStarted,draftComplete,getRosterStatus,picksPerTeam,showToast,
   chimeEnabled,setChimeEnabled}){
   const canDraftNow=isCommissioner||canPickNow;
   const clk=onClock?getColor(onClock):null;
@@ -760,31 +761,39 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
           </div>
         </div>
 
-        {/* On the clock */}
-        <div style={{padding:"6px 11px",background:"#070a0e",border:`1px solid ${clk?clk.bg+"55":"#1e2530"}`,borderRadius:7,flexShrink:0,minWidth:155,boxShadow:clk?`0 0 12px ${clk.bg}22`:"none",transition:"all .3s"}}>
-          <div style={{fontSize:8,letterSpacing:".2em",color:"#4a4020",marginBottom:1}}>ON THE CLOCK</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            {onClock&&<div className="pulse" style={{width:8,height:8,borderRadius:"50%",background:clk.bg,boxShadow:`0 0 7px ${clk.bg}`,flexShrink:0}}/>}
-            <span style={{fontSize:17,fontWeight:700,color:onClock?clk.text:"#555",letterSpacing:".04em"}}>{onClock||"—"}</span>
-          </div>
-          <div style={{fontSize:9,color:"#3a3820",marginTop:1,fontFamily:"'Barlow Condensed',sans-serif"}}>
-            Pick #{totalPicks+1} · Rd {round+1} · {rotationType==="snake"?"🐍 Snake":rotationType==="linear"?"→ Linear":"↕ Custom"}
-          </div>
-          {/* Slot dots */}
-          {clkStatus&&(
-            <div style={{display:"flex",gap:3,marginTop:4,alignItems:"center"}}>
-              {Array.from({length:picksPerTeam}).map((_,i)=>{
-                const filled=i<(picksPerTeam-clkStatus.remaining);
-                const isBonus=i===10;
-                return <div key={i} style={{width:isBonus?9:7,height:isBonus?9:7,borderRadius:isBonus?"2px":"50%",background:filled?(isBonus?"#c9a84c":clk.bg):"#1a1f26",border:`1px solid ${filled?(isBonus?"#c9a84c88":clk.bg+"66"):"#2a2f36"}`,transition:"all .2s",flexShrink:0}}/>;
-              })}
-              <span style={{fontSize:9,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",marginLeft:2}}>{clkStatus.remaining} left</span>
+        {/* On the clock / Draft Complete */}
+        <div style={{padding:"6px 11px",background:"#070a0e",border:`1px solid ${draftComplete?"#c9a84c55":clk?clk.bg+"55":"#1e2530"}`,borderRadius:7,flexShrink:0,minWidth:155,boxShadow:draftComplete?"0 0 12px #c9a84c22":clk?`0 0 12px ${clk.bg}22`:"none",transition:"all .3s"}}>
+          <div style={{fontSize:8,letterSpacing:".2em",color:"#4a4020",marginBottom:1}}>{draftComplete?"DRAFT STATUS":"ON THE CLOCK"}</div>
+          {draftComplete?(
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:17,fontWeight:700,color:"#c9a84c",letterSpacing:".04em"}}>Draft Complete</span>
             </div>
+          ):(
+            <>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {onClock&&<div className="pulse" style={{width:8,height:8,borderRadius:"50%",background:clk.bg,boxShadow:`0 0 7px ${clk.bg}`,flexShrink:0}}/>}
+                <span style={{fontSize:17,fontWeight:700,color:onClock?clk.text:"#555",letterSpacing:".04em"}}>{onClock||"—"}</span>
+              </div>
+              <div style={{fontSize:9,color:"#3a3820",marginTop:1,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                Pick #{totalPicks+1} · Rd {round+1} · {rotationType==="snake"?"🐍 Snake":rotationType==="linear"?"→ Linear":"↕ Custom"}
+              </div>
+              {/* Slot dots */}
+              {clkStatus&&(
+                <div style={{display:"flex",gap:3,marginTop:4,alignItems:"center"}}>
+                  {Array.from({length:picksPerTeam}).map((_,i)=>{
+                    const filled=i<(picksPerTeam-clkStatus.remaining);
+                    const isBonus=i===10;
+                    return <div key={i} style={{width:isBonus?9:7,height:isBonus?9:7,borderRadius:isBonus?"2px":"50%",background:filled?(isBonus?"#c9a84c":clk.bg):"#1a1f26",border:`1px solid ${filled?(isBonus?"#c9a84c88":clk.bg+"66"):"#2a2f36"}`,transition:"all .2s",flexShrink:0}}/>;
+                  })}
+                  <span style={{fontSize:9,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",marginLeft:2}}>{clkStatus.remaining} left</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Timer */}
-        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+        {/* Timer — hidden when draft is complete */}
+        {!draftComplete&&<div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
           <div style={{padding:"7px 12px",background:"#070a0e",border:`1px solid ${timerPaused?"#1a3a5c":timerSec>=60?"#3a1800":"#1e2530"}`,borderRadius:7,textAlign:"center",minWidth:82,boxShadow:timerSec>=120&&!timerPaused?`0 0 12px ${timerColor}44`:"none",transition:"all .5s"}}>
             <div style={{fontSize:8,letterSpacing:".2em",color:timerPaused?"#2a4a6a":"#4a4020",marginBottom:1}}>{timerPaused?"PAUSED":"PICK TIMER"}</div>
             <div style={{fontSize:22,fontWeight:700,color:timerPaused?"#4a7aaa":timerColor,lineHeight:1,transition:"color .5s"}}>{timerStr}</div>
@@ -815,13 +824,13 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
                 transition:"left .2s"}}/>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Search */}
         <div style={{width:"35%",minWidth:180,position:"relative"}}>
           <input className="inp" value={searchQ} onChange={e=>canDraftNow&&setSearchQ(e.target.value)}
             onKeyDown={e=>{if(!canDraftNow)return;if(e.key==="Enter"&&searchQ.trim()){const r=searchResults[0];if(r&&!r.isCustom&&!r.takenBy)draftPick(r.weight,r.seed);else if(r?.isCustom)draftCustom(searchQ.trim());}}}
-            placeholder={canDraftNow?`Search to draft for ${onClock||"…"} — or type any name`:"Wait for your turn to pick"}
+            placeholder={draftComplete?"Draft complete — rosters are locked":canDraftNow?`Search to draft for ${onClock||"…"} — or type any name`:"Wait for your turn to pick"}
             disabled={!canDraftNow}
             style={{opacity:canDraftNow?1:0.4,cursor:canDraftNow?"text":"not-allowed"}}/>
           {searchQ&&(
@@ -852,7 +861,7 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 
         {/* Stats */}
         <div style={{display:"flex",gap:5,flexShrink:0}}>
-          {[{v:totalPicks,l:"DRAFTED",c:"#c9a84c"},{v:draftOrder.length*picksPerTeam-totalPicks,l:"REMAIN",c:"#34d399"},{v:round+1,l:"ROUND",c:"#93c5fd"}].map(s=>(
+          {[{v:totalPicks,l:"DRAFTED",c:"#c9a84c"},{v:draftOrder.length*picksPerTeam-totalPicks,l:"REMAIN",c:"#34d399"},{v:draftComplete?picksPerTeam:round+1,l:"ROUND",c:"#93c5fd"}].map(s=>(
             <div key={s.l} style={{textAlign:"center",padding:"3px 8px",background:"#070a0e",border:"1px solid #1e2530",borderRadius:5,minWidth:46}}>
               <div style={{fontSize:18,fontWeight:700,color:s.c,lineHeight:1.1}}>{s.v}</div>
               <div style={{fontSize:8,color:"#3a3820",letterSpacing:".12em"}}>{s.l}</div>
@@ -918,7 +927,7 @@ const PAGE_SIZE = 12; // wrestlers per page per weight column
 
 function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
   availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow,picksLog,
-  controlledTeamNames}){
+  draftComplete,controlledTeamNames}){
   // ── Declared at top before any hooks to avoid Vite production TDZ ──
   const _n=draftOrder.length;
   const _round=_n>0?Math.floor(totalPicks/_n):0;
@@ -1079,8 +1088,8 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
         </div>
       )}
 
-      {/* ── Live draft queue ── */}
-      <div className="card" style={{marginBottom:14}}>
+      {/* ── Live draft queue — hidden when draft is complete ── */}
+      {!draftComplete&&<div className="card" style={{marginBottom:14}}>
         <div style={{padding:"6px 14px 5px",borderBottom:"1px solid #1a1f26",background:"#0d1219",
           display:"flex",alignItems:"center",gap:10,borderRadius:"8px 8px 0 0"}}>
           <span style={{fontSize:10,letterSpacing:".18em",color:"#6a5a30",
@@ -1133,7 +1142,7 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── Recent Picks Log ── */}
       {picksLog&&picksLog.length>0&&(
