@@ -204,6 +204,17 @@ export default function App({
   const round=Math.floor(totalPicks/n);
   const pos=totalPicks%n;
 
+  // ── Auto-detect draft completion if flag wasn't persisted to DB ──────────
+  useEffect(()=>{
+    if(draftComplete) return;
+    if(draftOrder.length===0||picksPerTeam===0) return;
+    if(Object.keys(picks).length>=draftOrder.length*picksPerTeam){
+      setDraftComplete(true);
+      if(timerRef.current) clearInterval(timerRef.current);
+      if(leagueId) saveSettings(leagueId,{draftComplete:true}).catch(()=>{});
+    }
+  },[picks,draftComplete,draftOrder.length,picksPerTeam,leagueId]);
+
   const onClock=useMemo(()=>{
     if(draftOrder.length===0) return "";
     if(rotationType==="snake"){
