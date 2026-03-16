@@ -62,7 +62,7 @@ function ReadOnlyLeague({ joinCode, leagueName, teams, settings, hasRecoveryEmai
   const claimedTeams = teams.filter(t => t.is_claimed);
   const unclaimedTeams = teams.filter(t => !t.is_claimed);
 
-  const subtitle = settings?.draftStarted ? "Draft live" : "Draft in progress";
+  const subtitle = settings?.draftComplete ? "Draft complete" : settings?.draftStarted ? "Draft live" : "Draft in progress";
 
   const handleSendLink = async () => {
     if (!recoveryEmail.trim()) return;
@@ -353,8 +353,10 @@ export default function LeaguePage() {
       if (data) {
         setLeague(data);
         setTeams(data.teams);
-        // If already past goToDraft, open to board not settings
-        if (data.settings?.draftStarted && Object.keys(data.settings).length > 0) {
+        if (data.settings?.draftComplete) {
+          setInitialPage("standings");
+        } else if (data.settings?.draftStarted && Object.keys(data.settings).length > 0) {
+          // If already past goToDraft, open to board not settings
           setInitialPage("board");
         }
       }
@@ -381,6 +383,14 @@ export default function LeaguePage() {
         (payload) => {
           const settings = payload.new?.settings_json;
           if (!settings) return;
+          // draftComplete fired — update state so routing re-evaluates
+          if (settings.draftComplete) {
+            setInitialPage("standings");
+            setLeague((prev) =>
+              prev ? { ...prev, settings: { ...prev.settings, ...settings } } : prev
+            );
+            return;
+          }
           // goToDraft fired — navigate everyone to App at settings page
           if (settings.goToDraft && !settings.draftStarted) {
             setInitialPage("settings");
@@ -454,6 +464,27 @@ export default function LeaguePage() {
     );
   }
 
+  // ── Draft complete — everyone sees full App (read-only for non-commissioners) ─
+  if (league.settings?.draftComplete) {
+    return (
+      <>
+        <App
+          leagueId={joinCode}
+          leagueName={league.leagueName}
+          teams={teams}
+          session={session}
+          settings={league.settings}
+          initialPage={initialPage}
+        />
+        {session && (
+          <button style={styles.leaveBtn} onClick={handleLeave}>
+            Leave
+          </button>
+        )}
+      </>
+    );
+  }
+
   // ── Pre-draft ─────────────────────────────────────────────────────
   if (!league.settings?.draftStarted && !league.settings?.goToDraft) {
 
@@ -467,10 +498,6 @@ export default function LeaguePage() {
             leagueName={league.leagueName}
             teams={teams}
             session={session}
-            onDraftStarted={async () => {
-              const updated = await fetchLeague(joinCode);
-              if (updated) setLeague(updated);
-            }}
           />
           <button style={styles.leaveBtn} onClick={handleLeave}>
             Leave

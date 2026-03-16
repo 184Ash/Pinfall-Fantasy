@@ -248,7 +248,6 @@ export default function App({
   });
 
   const isCommissioner=session?.role==="commissioner"||session?.role==="co_commissioner";
-  const draftStarted=true;
 
   const [wrestlers,setWrestlers]=useState(DEFAULT_WRESTLERS);
   const [picks,setPicks]=useState({});
@@ -257,6 +256,7 @@ export default function App({
   const [stateLoading,setStateLoading]=useState(!!leagueId);
   // draftHasStarted = true once first pick is made (or picks exist on load)
   const [draftHasStarted,setDraftHasStarted]=useState(false);
+  const [draftComplete,setDraftComplete]=useState(()=>!!(settings?.draftComplete));
   const [activePage,setActivePage]=useState(initialPage);
 
   // ── Load persisted draft state from Supabase on mount ────────────
@@ -298,9 +298,15 @@ export default function App({
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'leagues',filter:`id=eq.${leagueId}`},
         (payload)=>{
           const s=payload.new?.settings_json;
-          if(!s||typeof s.timerPaused!=='boolean') return;
-          timerPausedRef.current=s.timerPaused;
-          setTimerPaused(s.timerPaused);
+          if(!s) return;
+          if(typeof s.timerPaused==='boolean'){
+            timerPausedRef.current=s.timerPaused;
+            setTimerPaused(s.timerPaused);
+          }
+          if(s.draftComplete){
+            setDraftComplete(true);
+            if(timerRef.current) clearInterval(timerRef.current);
+          }
         })
       .subscribe();
     return ()=>ch.unsubscribe();
@@ -412,6 +418,7 @@ export default function App({
 
   // ── Draft actions ─────────────────────────────────────────────────────────
   const draftPick=async(weight,seed,forTeam,skipBonusCheck=false)=>{
+    if(draftComplete){showToast("Draft is complete — rosters are locked","err");return;}
     const team=forTeam||onClock;
     if(!isCommissioner&&!userCanPickNow(team)){showToast("You can only draft for your own team on your turn","err");return;}
     const key=pickKey(weight,seed);
@@ -465,10 +472,19 @@ export default function App({
     setPicks(p=>({...p,[key]:team}));
     if(!draftHasStarted){setDraftHasStarted(true);setActivePage("board");}
     const wr=allWrestlers.find(w=>w.weight===weight&&w.seed===seed);
-    showToast(`${wr?.name||"Wrestler"} → ${team}${isBonus?" ⭐ BONUS":""}`,isBonus?"info":"ok");
+    // Check if this pick completes the draft
+    const newTotal=totalPicks+1;
+    if(n>0&&newTotal>=picksPerTeam*n){
+      if(leagueId) saveSettings(leagueId,{draftComplete:true}).catch(()=>{});
+      setDraftComplete(true);
+      if(timerRef.current) clearInterval(timerRef.current);
+      showToast("🏆 Draft complete! All rosters are full.","ok");
+    } else {
+      showToast(`${wr?.name||"Wrestler"} → ${team}${isBonus?" ⭐ BONUS":""}`,isBonus?"info":"ok");
+    }
     setHlKey(key);setTimeout(()=>setHlKey(null),1200);
     setSearchQ("");
-    resetTimer();
+    if(!draftComplete) resetTimer();
   };
 
   const draftCustom=(rawName,forTeam)=>{
@@ -599,6 +615,15 @@ export default function App({
           padding:"9px 16px",borderRadius:6,fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",
           fontWeight:600,boxShadow:"0 8px 32px #00000099",maxWidth:320}}>
           {toast.msg}
+        </div>
+      )}
+      {draftComplete&&(
+        <div style={{background:"#0a1e0d",borderBottom:"2px solid #34d399",padding:"10px 20px",
+          textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          <span style={{color:"#34d399",fontWeight:700,fontFamily:"'Oswald',sans-serif",
+            fontSize:14,letterSpacing:".12em"}}>
+            🏆 DRAFT COMPLETE — ALL ROSTERS ARE LOCKED
+          </span>
         </div>
       )}
       <Header onClock={onClock} totalPicks={totalPicks} round={round} pos={pos}
