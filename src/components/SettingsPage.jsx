@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabase';
 import { saveSettings, requestRejoin, requestLateJoin, listenForRejoinApproval, clearLeagueData, resetDraft } from '../leagueService';
 import { DEFAULT_TEAMS } from '../constants';
@@ -57,20 +57,6 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
   const showJoinSection=!session&&!isCommissioner&&leagueId&&teamsProp&&teamsProp.length>0;
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOverIdx,setDragOverIdx]=useState(null);
-
-  // Preview next 8 picks
-  const pickPreview=useMemo(()=>{
-    const n=Math.max(draftOrder.length,1);
-    const total=Object.keys(picks).length;
-    return Array.from({length:Math.min(8,draftOrder.length*2)}).map((_,offset)=>{
-      const t=total+offset;
-      const r=Math.floor(t/n);const p=t%n;
-      let team;
-      if(rotationType==="linear") team=draftOrder[p];
-      else team=r%2===0?draftOrder[p]:draftOrder[n-1-p];
-      return {pick:total+offset+1,round:r+1,team};
-    });
-  },[draftOrder,rotationType,picks]);
 
   const handleRandomize=()=>{
     const shuffled=[...draftOrder];
@@ -153,8 +139,8 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
             <div style={{fontSize:13,fontWeight:600,color:"#c0b898",marginBottom:3}}>⭐ Bonus / Dark Horse Pick</div>
             <div style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1.5}}>
               {bonusPickEnabled
-                ?`Enabled — each team gets one extra pick at any weight class (${picksPerTeam} total picks per team).`
-                :`Disabled — strict 10-wrestler-per-team format (${picksPerTeam} picks per team).`}
+                ?`Enabled — each team gets 1 bonus pick at any weight class (${picksPerTeam} picks per team total).`
+                :`Disabled — strict 10 picks per team, one per weight class.`}
             </div>
           </div>
           <div style={{padding:"10px 22px",background:bonusPickEnabled?"#c9a84c22":"#1a1f26",
@@ -212,24 +198,6 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
                 <div style={{width:8,height:8,borderRadius:"50%",background:c.bg,boxShadow:`0 0 5px ${c.bg}`,flexShrink:0}}/>
                 <span style={{flex:1,fontSize:14,fontWeight:500,color:c.text,letterSpacing:".05em"}}>{t}</span>
                 <span style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>{r} picks</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Upcoming pick order preview ── */}
-      <div className="card" style={{padding:16,marginBottom:14}}>
-        <div className="sec-label" style={{marginBottom:10}}>UPCOMING PICK ORDER PREVIEW</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {pickPreview.map((p,i)=>{
-            const c=getColor(p.team);
-            return (
-              <div key={i} style={{padding:"5px 10px",background:`${c.bg}18`,border:`1px solid ${c.bg}33`,borderRadius:5,display:"flex",gap:7,alignItems:"center"}}>
-                <span style={{fontSize:9,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif",minWidth:30}}>Pk {p.pick}</span>
-                <span style={{width:6,height:6,borderRadius:"50%",background:c.bg,flexShrink:0}}/>
-                <span style={{fontSize:11,color:c.text,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>{p.team}</span>
-                <span style={{fontSize:9,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>Rd{p.round}</span>
               </div>
             );
           })}
