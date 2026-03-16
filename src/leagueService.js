@@ -366,8 +366,9 @@ export async function loadDraftState(leagueId) {
   // ── 2. Fetch picks for this league ───────────────────────────────
   const { data: picks, error: picksError } = await supabase
     .from('picks')
-    .select('wrestler_id, team_id, is_bonus, teams(name)')
+    .select('wrestler_id, team_id, is_bonus, picked_at, teams(name)')
     .eq('league_id', leagueId)
+    .order('picked_at', { ascending: true })
 
   if (picksError) throw new Error(picksError.message)
 
@@ -416,11 +417,29 @@ export async function loadDraftState(leagueId) {
     pointsMap[key] = pt.pts
   })
 
+  // ── 7. Build ordered picks log ────────────────────────────────────
+  const picksLog = picks
+    .map(pick => {
+      const wr = wrestlerLookup[pick.wrestler_id]
+      if (!wr) return null
+      return {
+        key: `${wr.weight}-${wr.seed}`,
+        teamName: pick.teams?.name ?? pick.team_id,
+        weight: wr.weight,
+        seed: wr.seed,
+        name: wr.name,
+        school: wr.school,
+        isBonus: pick.is_bonus,
+      }
+    })
+    .filter(Boolean)
+
   return {
     wrestlers: wrestlersByWeight,
     picks: picksMap,
     bonusKeys,
     points: pointsMap,
+    picksLog,
   }
 }
 

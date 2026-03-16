@@ -29,6 +29,27 @@ const DEFAULT_TEAMS = [
   "Crimson Eagles","Gold Rush","Blue Devils","Night Owls","Blaze Kings","Silver Foxes",
 ];
 
+// ─── CHIME ───────────────────────────────────────────────────────────────────
+function playChime(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const playNote=(freq,start,dur,vol=0.15)=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type="sine";osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,start);
+      gain.gain.linearRampToValueAtTime(vol,start+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001,start+dur);
+      osc.start(start);osc.stop(start+dur);
+    };
+    // Soft two-note chime: C5 then E5 (gentle major third)
+    playNote(523.25,ctx.currentTime,1.1);
+    playNote(659.25,ctx.currentTime+0.18,1.0,0.11);
+    setTimeout(()=>ctx.close(),2200);
+  }catch(e){}
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const pickKey = (w,s) => `${w}-${s}`;
 
@@ -253,6 +274,9 @@ export default function App({
   const [picks,setPicks]=useState({});
   const [bonusKeys,setBonusKeys]=useState([]);
   const [points,setPoints]=useState({});
+  const [picksLog,setPicksLog]=useState([]);
+  const wrestlersRef=useRef(wrestlers);
+  useEffect(()=>{wrestlersRef.current=wrestlers;},[wrestlers]);
   const [stateLoading,setStateLoading]=useState(!!leagueId);
   // draftHasStarted = true once first pick is made (or picks exist on load)
   const [draftHasStarted,setDraftHasStarted]=useState(false);
@@ -268,6 +292,7 @@ export default function App({
       if(Object.keys(state.picks).length>0){setPicks(state.picks);setDraftHasStarted(true);}
       if(state.bonusKeys.length>0) setBonusKeys(state.bonusKeys);
       if(Object.keys(state.points).length>0) setPoints(state.points);
+      if(state.picksLog&&state.picksLog.length>0) setPicksLog(state.picksLog);
     }).catch(err=>{
       console.error('Failed to load draft state:', err);
     }).finally(()=>{
@@ -281,7 +306,14 @@ export default function App({
       if (p[key]) return p; // already have it (own pick) — suppress
       return { ...p, [key]: teamName };
     });
-  }, []);
+    setPicksLog(prev => {
+      if (prev.some(e => e.key === key)) return prev; // already logged (own pick)
+      const [w, s] = key.split('-').map(Number);
+      const wr = (wrestlersRef.current[w] || []).find(x => x.seed === s);
+      return [...prev, { key, teamName, weight: w, seed: s, name: wr?.name || key, school: wr?.school || '', isBonus: false }];
+    });
+    resetTimer();
+  }, [resetTimer]);
 
   // ── Real-time sync — incoming points updates ─────────────────────
   const handleRemotePoints = useCallback(({ key, pts }) => {
@@ -339,13 +371,13 @@ export default function App({
   const [timerPaused,setTimerPaused]=useState(false);
   const timerRef=useRef(null);
   const timerPausedRef=useRef(false);
-  const resetTimer=()=>{
+  const resetTimer=useCallback(()=>{
     setTimerSec(0);
     setTimerPaused(false);
     timerPausedRef.current=false;
     if(timerRef.current) clearInterval(timerRef.current);
     timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
-  };
+  },[]);
   const pauseTimer=()=>{timerPausedRef.current=true;setTimerPaused(true);if(leagueId)saveSettings(leagueId,{timerPaused:true}).catch(()=>{});};
   const resumeTimer=()=>{timerPausedRef.current=false;setTimerPaused(false);if(leagueId)saveSettings(leagueId,{timerPaused:false}).catch(()=>{});};
   const [_timerInit]=useState(()=>{
@@ -354,6 +386,12 @@ export default function App({
     timerRef.current=setInterval(()=>{if(!timerPausedRef.current)setTimerSec(s=>s+1);},1000);
     return null;
   });
+
+  // ── Per-device chime — auto-disabled for solo commissioner ───────────────
+  // Solo commissioner = created the league, controls all picks, chime every pick = noise
+  const [chimeEnabled,setChimeEnabled]=useState(()=>session?.role!=="commissioner");
+  const chimeEnabledRef=useRef(chimeEnabled);
+  useEffect(()=>{chimeEnabledRef.current=chimeEnabled;},[chimeEnabled]);
 
   // ── Draft order computation ───────────────────────────────────────────────
   const totalPicks=Object.keys(picks).length;
@@ -396,6 +434,16 @@ export default function App({
   };
 
   const showToast=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),2600);};
+
+  // ── Chime trigger — fires when totalPicks increases and it's this device's turn ──
+  const chimePicksRef=useRef(null);
+  useEffect(()=>{
+    if(chimePicksRef.current===null){chimePicksRef.current=totalPicks;return;} // skip mount
+    if(totalPicks<=chimePicksRef.current){chimePicksRef.current=totalPicks;return;}
+    chimePicksRef.current=totalPicks;
+    if(chimeEnabledRef.current&&userCanPickNow(onClock)) playChime();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[totalPicks]);
 
   // ── All wrestlers flat list ───────────────────────────────────────────────
   const allWrestlers=useMemo(()=>{
@@ -470,8 +518,9 @@ export default function App({
       }
     }
     setPicks(p=>({...p,[key]:team}));
-    if(!draftHasStarted){setDraftHasStarted(true);setActivePage("board");}
     const wr=allWrestlers.find(w=>w.weight===weight&&w.seed===seed);
+    setPicksLog(prev=>[...prev,{key,teamName:team,weight,seed,name:wr?.name||key,school:wr?.school||'',isBonus}]);
+    if(!draftHasStarted){setDraftHasStarted(true);setActivePage("board");}
     // Check if this pick completes the draft
     const newTotal=totalPicks+1;
     if(n>0&&newTotal>=picksPerTeam*n){
@@ -633,14 +682,16 @@ export default function App({
         activePage={activePage} setActivePage={setActivePage} getRoster={getRoster}
         timerSec={timerSec} timerPaused={timerPaused} pauseTimer={pauseTimer} resumeTimer={resumeTimer}
         isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)} draftStarted={true}
-        getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam} showToast={showToast}/>
+        getRosterStatus={getRosterStatus} picksPerTeam={picksPerTeam} showToast={showToast}
+        chimeEnabled={chimeEnabled} setChimeEnabled={setChimeEnabled}/>
 
       <div style={{maxWidth:1600,margin:"0 auto",padding:"16px 16px 40px"}}>
         {activePage==="board"&&<BoardPage wrestlers={wrestlers} picks={picks} points={points}
           draftPick={draftPick} hlKey={hlKey} teams={teams}
           getColor={getColor} availCount={availCount} reassignPick={reassignPick}
           draftOrder={draftOrder} rotationType={rotationType} totalPicks={totalPicks}
-          isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}/>}
+          isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}
+          picksLog={picksLog}/>}
         {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
           setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}
           isCommissioner={isCommissioner}/>}
@@ -676,7 +727,8 @@ export default function App({
 function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
   searchQ,setSearchQ,searchResults,picks,getColor,draftPick,draftCustom,
   activePage,setActivePage,getRoster,timerSec,timerPaused,pauseTimer,resumeTimer,
-  isCommissioner,canPickNow,draftStarted,getRosterStatus,picksPerTeam,showToast}){
+  isCommissioner,canPickNow,draftStarted,getRosterStatus,picksPerTeam,showToast,
+  chimeEnabled,setChimeEnabled}){
   const canDraftNow=isCommissioner||canPickNow;
   const clk=onClock?getColor(onClock):null;
   const mins=Math.floor(timerSec/60);
@@ -686,13 +738,6 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
   const clkStatus=onClock?getRosterStatus(onClock):null;
   const n=Math.max(draftOrder.length,1);
 
-  // Peek: who picks next
-  const nextPos=(totalPicks+1)%n;
-  const nextRound=Math.floor((totalPicks+1)/n);
-  const nextTeam=draftOrder.length===0?"":(
-    rotationType==="linear"?draftOrder[nextPos]:
-    nextRound%2===0?draftOrder[nextPos]:draftOrder[n-1-nextPos]
-  );
 
   return (
     <div style={{background:"#0b0f14",borderBottom:"2px solid #c9a84c",position:"sticky",top:0,zIndex:100}}>
@@ -727,12 +772,6 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
               <span style={{fontSize:9,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",marginLeft:2}}>{clkStatus.remaining} left</span>
             </div>
           )}
-          {/* Up next preview */}
-          {nextTeam&&nextTeam!==onClock&&(
-            <div style={{fontSize:9,color:"#3a4028",fontFamily:"'Barlow Condensed',sans-serif",marginTop:3}}>
-              Up next: <span style={{color:getColor(nextTeam).text+"99"}}>{nextTeam}</span>
-            </div>
-          )}
         </div>
 
         {/* Timer */}
@@ -752,6 +791,21 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
               {timerPaused?"▶":"⏸"}
             </button>
           )}
+          {/* Chime toggle — per device, visible to all */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flexShrink:0}}
+            title={chimeEnabled?"Chime on — click to mute":"Chime off — click to enable"}>
+            <span style={{fontSize:10,lineHeight:1}}>{chimeEnabled?"🔔":"🔕"}</span>
+            <div onClick={()=>setChimeEnabled(v=>!v)}
+              style={{width:28,height:15,borderRadius:8,cursor:"pointer",flexShrink:0,
+                background:chimeEnabled?"#2a6a44":"#1a1f26",
+                border:`1px solid ${chimeEnabled?"#2aaa6444":"#2a2f36"}`,
+                position:"relative",transition:"background .2s"}}>
+              <div style={{position:"absolute",top:2,left:chimeEnabled?13:2,
+                width:9,height:9,borderRadius:"50%",
+                background:chimeEnabled?"#34d399":"#3a4040",
+                transition:"left .2s"}}/>
+            </div>
+          </div>
         </div>
 
         {/* Search */}
@@ -854,19 +908,10 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 const PAGE_SIZE = 12; // wrestlers per page per weight column
 
 function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
-  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow}){
+  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow,picksLog}){
   const [overrideKey,setOverrideKey]=useState(null);
   // Per-weight page index (0-based). Reset all to 0 whenever a new pick is made.
   const [pages,setPages]=useState(()=>Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0])));
-  const prevPicksRef=useRef(totalPicks);
-  if(prevPicksRef.current!==totalPicks){
-    prevPicksRef.current=totalPicks;
-    // Reset all pages to 0 on each pick (done synchronously during render is fine for a ref-guard)
-    const reset=Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0]));
-    // Use a deferred state update instead of setState-during-render:
-    setTimeout(()=>setPages(reset),0);
-  }
-
   const setPage=(w,p)=>setPages(prev=>({...prev,[w]:p}));
 
   // Find wrestler + current team for the modal title
@@ -1016,6 +1061,53 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
           )}
         </div>
       </div>
+
+      {/* ── Recent Picks Log ── */}
+      {picksLog&&picksLog.length>0&&(
+        <div className="card" style={{marginBottom:14}}>
+          <div style={{padding:"6px 14px 5px",borderBottom:"1px solid #1a1f26",background:"#0d1219",
+            display:"flex",alignItems:"center",gap:10,borderRadius:"8px 8px 0 0"}}>
+            <span style={{fontSize:10,letterSpacing:".18em",color:"#6a5a30",
+              fontFamily:"'Oswald',sans-serif"}}>RECENT PICKS</span>
+            <span style={{fontSize:10,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>
+              {picksLog.length} pick{picksLog.length!==1?"s":""}
+            </span>
+          </div>
+          <div style={{maxHeight:160,overflowY:"auto",
+            scrollbarWidth:"thin",scrollbarColor:"#c9a84c44 #0a0f16"}}>
+            {[...picksLog].reverse().map((p,i)=>{
+              const c=getColor(p.teamName);
+              const pickNum=picksLog.length-i;
+              const isFirst=i===0;
+              return (
+                <div key={p.key} style={{
+                  display:"flex",alignItems:"center",gap:8,
+                  padding:"5px 12px",
+                  background:isFirst?`${c.bg}18`:"transparent",
+                  borderBottom:i<picksLog.length-1?"1px solid #0f1318":"none",
+                  transition:"background .15s"}}>
+                  <span style={{fontSize:9,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif",
+                    minWidth:22,textAlign:"right",flexShrink:0}}>#{pickNum}</span>
+                  <span style={{width:8,height:8,borderRadius:"50%",flexShrink:0,
+                    background:c.bg,boxShadow:`0 0 6px ${c.bg}88`}}/>
+                  <span style={{fontSize:11,fontWeight:600,color:c.text,
+                    fontFamily:"'Barlow Condensed',sans-serif",
+                    minWidth:90,flexShrink:0,
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.teamName}</span>
+                  <span style={{fontSize:12,fontWeight:600,color:isFirst?"#e0d8b4":"#c0b898",
+                    fontFamily:"'Barlow Condensed',sans-serif",flex:1,
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                  <span style={{fontSize:10,color:"#4a4020",fontFamily:"'Barlow Condensed',sans-serif",
+                    flexShrink:0,whiteSpace:"nowrap"}}>
+                    {p.weight>0?`${p.weight}lb`:"Custom"} · #{p.seed}
+                  </span>
+                  {p.isBonus&&<span style={{fontSize:10,flexShrink:0}}>⭐</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Weight columns */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
@@ -2037,7 +2129,7 @@ function RosterPage({team,roster,getColor,picksPerTeam,allWrestlers,picks,setPic
                   <span style={{flex:1,fontSize:14,fontWeight:600,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.name}</span>
                   <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.school}</span>
                   {wr.pts>0&&!isH&&<span style={{fontSize:15,fontWeight:700,color:"#34d399"}}>{wr.pts}pt</span>}
-                  {isH&&(
+                  {isH&&isCommissioner&&(
                     <div style={{display:"flex",gap:3,flexShrink:0}}>
                       <button onClick={()=>{setReplaceTarget({key:wr.key,weight:wr.weight,seed:wr.seed,name:wr.name});setReplaceQ("");}}
                         style={{fontSize:9,padding:"2px 7px",background:"#0c1e14",border:"1px solid #1a4828",
@@ -2080,7 +2172,7 @@ function RosterPage({team,roster,getColor,picksPerTeam,allWrestlers,picks,setPic
                     #{wr.seed} {wr.name}
                   </span>
                   {wr.pts>0&&!isH&&<span style={{fontSize:11,fontWeight:700,color:"#34d399"}}>{wr.pts}pt</span>}
-                  {isH&&(
+                  {isH&&isCommissioner&&(
                     <button onClick={()=>{setReplaceTarget({key:wr.key,weight:wr.weight,seed:wr.seed,name:wr.name});setReplaceQ("");}}
                       style={{fontSize:9,padding:"1px 6px",background:"transparent",border:"1px solid #2a3820",
                         borderRadius:3,color:"#4a8060",fontFamily:"'Oswald',sans-serif",cursor:"pointer",letterSpacing:".05em"}}>
