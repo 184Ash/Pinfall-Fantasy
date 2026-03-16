@@ -872,19 +872,9 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 
       {/* Nav tabs */}
       <div style={{maxWidth:1600,margin:"0 auto",padding:"0 16px",display:"flex",gap:0,overflowX:"auto",marginBottom:-2}}>
-        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS",commissionerOnly:true}].map(tab=>{
+        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS"}].map(tab=>{
           const isActive=activePage===tab.id;
-          if(tab.commissionerOnly&&!isCommissioner){
-            return (
-              <CommissionerOnly key={tab.id} isCommissioner={false} label="Commissioner only">
-                <button className="tab-link"
-                  style={{padding:"7px 13px",fontSize:11,fontWeight:600,letterSpacing:".12em",
-                    color:"#2a2a20",borderBottom:"2px solid transparent",cursor:"not-allowed"}}>
-                  {tab.label}
-                </button>
-              </CommissionerOnly>
-            );
-          }
+          {/* All tabs are accessible; edit actions inside Settings are individually gated */}
           return (
             <button key={tab.id} className="tab-link"
               onClick={()=>setActivePage(tab.id)}
