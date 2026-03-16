@@ -250,8 +250,8 @@ export default function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,ro
         <div className="card" style={{padding:16,border:"1px solid #2A3A50",width:"100%",marginTop:12}}>
           <div className="sec-label" style={{marginBottom:10}}>JOIN DRAFT</div>
           {!showJoin?(
-            <button className="btn btn-secondary btn-md" style={{width:"100%"}} onClick={()=>setShowJoin(true)}>
-              🏷️ JOIN DRAFT
+            <button className="btn btn-secondary btn-md" style={{width:"100%",textAlign:"left",padding:"10px 16px"}} onClick={()=>setShowJoin(true)}>
+              🏷️ Joining late or got disconnected? <span style={{fontWeight:700}}>Join Draft →</span>
             </button>
           ):(
             <div>
