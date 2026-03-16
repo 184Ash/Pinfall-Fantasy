@@ -417,7 +417,8 @@ export async function loadDraftState(leagueId) {
     pointsMap[key] = pt.pts
   })
 
-  // ── 7. Build ordered picks log ────────────────────────────────────
+  // ── 7. Build ordered picks log (deduplicated by key) ─────────────
+  const seenLogKeys = new Set()
   const picksLog = picks
     .map(pick => {
       const wr = wrestlerLookup[pick.wrestler_id]
@@ -433,6 +434,11 @@ export async function loadDraftState(leagueId) {
       }
     })
     .filter(Boolean)
+    .filter(item => {
+      if (seenLogKeys.has(item.key)) return false
+      seenLogKeys.add(item.key)
+      return true
+    })
 
   return {
     wrestlers: wrestlersByWeight,

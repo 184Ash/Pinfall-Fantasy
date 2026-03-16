@@ -85,8 +85,13 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
   // ── Draft timeline: all past picks + current + upcoming ──────────────────
   const timeline=useMemo(()=>{
     const items=[];
-    (picksLog||[]).forEach((p,i)=>{
-      items.push({type:"past",pickNum:i+1,teamName:p.teamName,name:p.name,
+    const seenKeys=new Set();
+    let pickNum=0;
+    (picksLog||[]).forEach(p=>{
+      if(seenKeys.has(p.key)) return; // deduplicate
+      seenKeys.add(p.key);
+      pickNum++;
+      items.push({type:"past",pickNum,teamName:p.teamName,name:p.name,
         weight:p.weight,seed:p.seed,isBonus:p.isBonus,key:p.key});
     });
     if(!draftComplete){
