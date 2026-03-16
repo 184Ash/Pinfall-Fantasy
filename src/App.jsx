@@ -37,8 +37,7 @@ body{background:#070a0e;}
 .btn-lg{padding:9px 22px;font-size:14px;}
 .undo-x{cursor:pointer;border:none;background:none;color:#3a2a2a;transition:color .15s;font-size:13px;padding:1px 4px;}
 .undo-x:hover{color:#f87171;}
-.pulse{animation:pulseAnim 2.2s infinite;}
-@keyframes pulseAnim{0%,100%{opacity:1}50%{opacity:.45}}
+.pulse{opacity:.72;}
 .flash-row{animation:flashRow .7s ease-out;}
 @keyframes flashRow{0%{background:rgba(201,168,76,.3)}100%{background:transparent}}
 .slide-down{animation:slideDown .2s ease-out;}
