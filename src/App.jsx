@@ -262,6 +262,7 @@ export default function App({
   teams: teamsProp,
   settings,
   initialPage = "board",
+  commissionerEmail = null,
 }){
   const [teams,setTeams]=useState(()=>{
     if(teamsProp&&teamsProp.length>0) return teamsProp.map(t=>t.name);
@@ -711,7 +712,10 @@ export default function App({
           draftHasStarted={draftHasStarted}
           setDraftHasStarted={setDraftHasStarted}
           setActivePage={setActivePage}
-          isCommissioner={isCommissioner}/>}
+          isCommissioner={isCommissioner}
+          draftComplete={draftComplete}
+          hasRecoveryEmail={!!commissionerEmail}
+          commissionerEmail={commissionerEmail}/>}
         {teams.includes(activePage)&&<RosterPage team={activePage} roster={getRoster(activePage)}
           getColor={getColor} picksPerTeam={picksPerTeam}
           allWrestlers={allWrestlers} picks={picks} setPicks={setPicks} wrestlers={wrestlers}
@@ -1231,9 +1235,24 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
   bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,setBonusKeys,resetTimer,
   teamsProp,getRoster,getColor,showToast,picksPerTeam,wrestlers,leagueId,
   draftHasStarted,setDraftHasStarted,setActivePage,
-  isCommissioner}){
+  isCommissioner,draftComplete,hasRecoveryEmail,commissionerEmail}){
 
   const [starting,setStarting]=useState(false);
+  const [showRecovery,setShowRecovery]=useState(false);
+  const [recoveryEmail,setRecoveryEmail]=useState("");
+  const [recoverySent,setRecoverySent]=useState(false);
+  const [recoverySending,setRecoverySending]=useState(false);
+
+  const handleRecoveryLink=async()=>{
+    if(!recoveryEmail.trim()) return;
+    setRecoverySending(true);
+    await supabase.auth.signInWithOtp({
+      email:recoveryEmail.trim(),
+      options:{emailRedirectTo:`${window.location.origin}/auth/callback?league=${leagueId}`},
+    });
+    setRecoverySent(true);
+    setRecoverySending(false);
+  };
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOverIdx,setDragOverIdx]=useState(null);
 
@@ -1449,7 +1468,7 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
               {starting?"STARTING...":"🏁 START DRAFT"}
             </button>
           </div>
-        ):(
+        ):!draftComplete?(
           <div className="card" style={{padding:16,border:"1px solid #3a1515",width:"100%"}}>
             <div className="sec-label" style={{color:"#7a2020",marginBottom:10}}>DANGER ZONE</div>
             <button className="btn btn-danger btn-md" onClick={async()=>{
@@ -1473,8 +1492,60 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
               }
             }}>CLEAR ALL PICKS & SCORES</button>
           </div>
-        )}
+        ):null}
       </CommissionerOnly>
+
+      {/* ── Recover Commissioner Access (draft complete, visible to all) ── */}
+      {draftComplete&&hasRecoveryEmail&&(
+        <div className="card" style={{padding:16,border:"1px solid #2A3A50",width:"100%",marginTop:12}}>
+          <div className="sec-label" style={{marginBottom:10}}>COMMISSIONER ACCESS</div>
+          {!showRecovery?(
+            <button
+              className="btn btn-secondary btn-md"
+              style={{width:"100%"}}
+              onClick={()=>setShowRecovery(true)}>
+              🔑 RECOVER COMMISSIONER ACCESS
+            </button>
+          ):(
+            <div>
+              <div style={{fontSize:12,color:"#7A8A9A",marginBottom:12,lineHeight:"1.5"}}>
+                Enter your recovery email to receive a magic link that restores your commissioner session. Open the link on the device you want to use.
+              </div>
+              {recoverySent?(
+                <div style={{background:"#1A3A2A",border:"1px solid #2A6A3A",borderRadius:6,
+                  color:"#4CAF7D",fontSize:13,padding:"12px 14px",lineHeight:"1.5"}}>
+                  ✓ Check your email for the magic link. Open it on the device you want to use as commissioner.
+                </div>
+              ):(
+                <>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={recoveryEmail}
+                    onChange={e=>setRecoveryEmail(e.target.value)}
+                    style={{width:"100%",background:"#0D1520",border:"1px solid #2A3A50",
+                      borderRadius:6,color:"#E8EDF2",fontSize:15,padding:"11px 14px",
+                      outline:"none",boxSizing:"border-box",marginBottom:10}}
+                  />
+                  <div style={{display:"flex",gap:8}}>
+                    <button
+                      className="btn btn-secondary btn-md"
+                      style={{flex:1}}
+                      onClick={()=>{setShowRecovery(false);setRecoveryEmail("");}}
+                    >Cancel</button>
+                    <button
+                      className="btn btn-primary btn-md"
+                      style={{flex:2,opacity:(!recoveryEmail.trim()||recoverySending)?0.5:1}}
+                      disabled={!recoveryEmail.trim()||recoverySending}
+                      onClick={handleRecoveryLink}
+                    >{recoverySending?"Sending...":"Send Recovery Link"}</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

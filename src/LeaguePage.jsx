@@ -475,6 +475,7 @@ export default function LeaguePage() {
           session={session}
           settings={league.settings}
           initialPage={initialPage}
+          commissionerEmail={league.commissionerEmail}
         />
         {session && (
           <button style={styles.leaveBtn} onClick={handleLeave}>
@@ -560,20 +561,7 @@ export default function LeaguePage() {
     );
   }
 
-  // ── Post-draft, no session → read only ────────────────────────────
-  if (!session) {
-    return (
-      <ReadOnlyLeague
-        joinCode={joinCode}
-        leagueName={league.leagueName}
-        teams={teams}
-        settings={league.settings}
-        hasRecoveryEmail={!!league.commissionerEmail}
-      />
-    );
-  }
-
-  // ── Draft live or goToDraft → main App ───────────────────────────
+  // ── Draft live or goToDraft → main App (all users, session or not) ─
   return (
     <>
       <App
@@ -583,10 +571,13 @@ export default function LeaguePage() {
         session={session}
         settings={league.settings}
         initialPage={initialPage}
+        commissionerEmail={league.commissionerEmail}
       />
-      <button style={styles.leaveBtn} onClick={handleLeave}>
-        Leave
-      </button>
+      {session && (
+        <button style={styles.leaveBtn} onClick={handleLeave}>
+          Leave
+        </button>
+      )}
     </>
   );
 }
