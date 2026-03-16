@@ -692,7 +692,8 @@ export default function App({
           getColor={getColor} availCount={availCount} reassignPick={reassignPick}
           draftOrder={draftOrder} rotationType={rotationType} totalPicks={totalPicks}
           isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}
-          picksLog={picksLog}/>}
+          picksLog={picksLog}
+          controlledTeamNames={isCommissioner?teams:(teamsProp||[]).filter(t=>session?.teamIds?.includes(t.id)).map(t=>t.name)}/>}
         {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
           setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}
           isCommissioner={isCommissioner}/>}
@@ -913,11 +914,53 @@ function Header({onClock,totalPicks,round,pos,teams,draftOrder,rotationType,
 const PAGE_SIZE = 12; // wrestlers per page per weight column
 
 function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
-  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow,picksLog}){
+  availCount,reassignPick,teams,draftOrder,rotationType,totalPicks,isCommissioner,canPickNow,picksLog,
+  controlledTeamNames}){
   const [overrideKey,setOverrideKey]=useState(null);
-  // Per-weight page index (0-based). Reset all to 0 whenever a new pick is made.
-  const [pages,setPages]=useState(()=>Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0])));
-  const setPage=(w,p)=>setPages(prev=>({...prev,[w]:p}));
+
+  // ── Compute onClock inside BoardPage for per-team config switching ──
+  const _n=draftOrder.length;
+  const _round=_n>0?Math.floor(totalPicks/_n):0;
+  const _pos=_n>0?totalPicks%_n:0;
+  const onClock=useMemo(()=>{
+    if(!_n) return "";
+    if(rotationType==="snake") return _round%2===0?draftOrder[_pos]:draftOrder[_n-1-_pos];
+    return draftOrder[_pos];
+  },[draftOrder,rotationType,_round,_pos,_n]);
+
+  // ── Per-team config switching (multi-team devices + solo commissioners) ──
+  const isMultiTeamDevice=(controlledTeamNames||[]).length>1;
+  const defPages=Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,0]));
+  const defHidden=Object.fromEntries(WEIGHT_CLASSES.map(w=>[w,false]));
+
+  // Global state used for single-team devices
+  const [globalPages,setGlobalPages]=useState(()=>({...defPages}));
+  const [globalHidden,setGlobalHidden]=useState(()=>({...defHidden}));
+  // Per-team configs: { teamName: { pages: {w:num}, hidden: {w:bool} } }
+  const [teamConfigs,setTeamConfigs]=useState({});
+
+  // Derived view state — automatically switches when onClock changes for multi-team
+  const pages=isMultiTeamDevice?(teamConfigs[onClock]?.pages||defPages):globalPages;
+  const hidden=isMultiTeamDevice?(teamConfigs[onClock]?.hidden||defHidden):globalHidden;
+
+  const setPage=(w,p)=>{
+    if(isMultiTeamDevice&&onClock){
+      setTeamConfigs(tc=>({...tc,[onClock]:{...(tc[onClock]||{}),
+        pages:{...(tc[onClock]?.pages||defPages),[w]:p}}}));
+    } else {
+      setGlobalPages(prev=>({...prev,[w]:p}));
+    }
+  };
+  const toggleHidden=(w)=>{
+    if(isMultiTeamDevice&&onClock){
+      setTeamConfigs(tc=>{
+        const cur=tc[onClock]?.hidden||defHidden;
+        return {...tc,[onClock]:{...(tc[onClock]||{}),hidden:{...cur,[w]:!cur[w]}}};
+      });
+    } else {
+      setGlobalHidden(prev=>({...prev,[w]:!prev[w]}));
+    }
+  };
 
   // Find wrestler + current team for the modal title
   const overrideMeta=useMemo(()=>{
@@ -1138,7 +1181,7 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
                 <div style={{fontSize:8,color:"#3a3820",letterSpacing:".12em"}}>AVAIL</div>
               </div>
             </div>
-            {pageWrs.map((wr,i)=>{
+            {!hidden[w]&&pageWrs.map((wr,i)=>{
               const key=pickKey(w,wr.seed);
               const tb=picks[key];
               const tc=tb?getColor(tb):null;
@@ -1196,31 +1239,46 @@ function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
                 </div>
               );
             })}
-            {/* Pagination footer */}
-            {totalPages>1&&(
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                padding:"5px 8px",borderTop:"1px solid #0f1318",background:"#080c10"}}>
-                <button onClick={()=>setPage(w,pg-1)} disabled={pg===0}
+            {/* Weight class footer — pagination + hide toggle (always visible) */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"5px 8px",borderTop:"1px solid #0f1318",background:"#080c10"}}>
+              {totalPages>1
+                ?<button onClick={()=>setPage(w,pg-1)} disabled={pg===0}
                   style={{width:26,height:26,borderRadius:4,border:"1px solid #1e2530",
                     background:pg===0?"transparent":"#0d1520",color:pg===0?"#1e2530":"#c9a84c",
                     cursor:pg===0?"default":"pointer",fontSize:13,display:"flex",
                     alignItems:"center",justifyContent:"center",flexShrink:0}}>‹</button>
-                <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                  {Array.from({length:totalPages}).map((_,pi)=>(
-                    <button key={pi} onClick={()=>setPage(w,pi)}
-                      style={{width:pi===pg?20:8,height:8,borderRadius:4,border:"none",
-                        background:pi===pg?"#c9a84c":"#1e2530",cursor:"pointer",
-                        transition:"all .2s",padding:0,flexShrink:0}}/>
-                  ))}
-                </div>
-                <button onClick={()=>setPage(w,pg+1)} disabled={pg===totalPages-1}
+                :<div style={{width:26}}/>
+              }
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                {totalPages>1&&Array.from({length:totalPages}).map((_,pi)=>(
+                  <button key={pi} onClick={()=>setPage(w,pi)}
+                    style={{width:pi===pg?20:8,height:8,borderRadius:4,border:"none",
+                      background:pi===pg?"#c9a84c":"#1e2530",cursor:"pointer",
+                      transition:"all .2s",padding:0,flexShrink:0}}/>
+                ))}
+                <button onClick={()=>toggleHidden(w)}
+                  title={hidden[w]?"Show wrestlers":"Hide wrestlers"}
+                  style={{width:22,height:22,borderRadius:3,
+                    border:`1px solid ${hidden[w]?"#2a3a50":"#3a4830"}`,
+                    background:"transparent",
+                    color:hidden[w]?"#3a4a5a":"#7a9860",
+                    cursor:"pointer",fontSize:10,display:"flex",
+                    alignItems:"center",justifyContent:"center",
+                    flexShrink:0,padding:0,transition:"color .15s,border-color .15s"}}>
+                  {hidden[w]?"▸":"▾"}
+                </button>
+              </div>
+              {totalPages>1
+                ?<button onClick={()=>setPage(w,pg+1)} disabled={pg===totalPages-1}
                   style={{width:26,height:26,borderRadius:4,border:"1px solid #1e2530",
                     background:pg===totalPages-1?"transparent":"#0d1520",
                     color:pg===totalPages-1?"#1e2530":"#c9a84c",
                     cursor:pg===totalPages-1?"default":"pointer",fontSize:13,display:"flex",
                     alignItems:"center",justifyContent:"center",flexShrink:0}}>›</button>
-              </div>
-            )}
+                :<div style={{width:26}}/>
+              }
+            </div>
           </div>
           );
         })}
