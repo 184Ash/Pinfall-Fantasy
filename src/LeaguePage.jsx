@@ -360,7 +360,7 @@ export default function LeaguePage() {
           setInitialPage("board");
         }
       }
-      setSession(getSession());
+      setSession(getSession(joinCode));
       setLoading(false);
     };
     load();
@@ -425,7 +425,7 @@ export default function LeaguePage() {
     if (result.success) {
       const updated = await fetchLeague(joinCode);
       if (updated) setTeams(updated.teams);
-      setSession(getSession());
+      setSession(getSession(joinCode));
     } else if (result.reason === "already_claimed") {
       alert("Someone just claimed that team — please choose another.");
     }
@@ -434,7 +434,7 @@ export default function LeaguePage() {
   const handleClaimAnother = async (teamId, displayName) => {
     const result = await claimAdditionalTeam(joinCode, teamId, displayName);
     if (result.success) {
-      setSession(getSession());
+      setSession(getSession(joinCode));
       const updated = await fetchLeague(joinCode);
       if (updated) setTeams(updated.teams);
     } else if (result.reason === "already_claimed") {
