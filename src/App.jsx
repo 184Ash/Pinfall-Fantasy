@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_WRESTLERS } from './wrestlers';
-import { loadDraftState, savePick, savePoints, clearLeagueData, resetDraft, saveSettings } from './leagueService';
+import { loadDraftState, savePick, savePoints, clearLeagueData, resetDraft, saveSettings, requestRejoin, requestLateJoin, listenForRejoinApproval } from './leagueService';
 import { supabase } from './supabase';
 import { useRealtimePicks } from './hooks/useRealtimePicks';
 import { useRealtimePoints } from './hooks/useRealtimePoints';
@@ -715,7 +715,8 @@ export default function App({
           isCommissioner={isCommissioner}
           draftComplete={draftComplete}
           hasRecoveryEmail={!!commissionerEmail}
-          commissionerEmail={commissionerEmail}/>}
+          commissionerEmail={commissionerEmail}
+          session={session}/>}
         {teams.includes(activePage)&&<RosterPage team={activePage} roster={getRoster(activePage)}
           getColor={getColor} picksPerTeam={picksPerTeam}
           allWrestlers={allWrestlers} picks={picks} setPicks={setPicks} wrestlers={wrestlers}
@@ -1235,13 +1236,22 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
   bonusPickEnabled,setBonusPickEnabled,picks,setPicks,setPoints,setBonusKeys,resetTimer,
   teamsProp,getRoster,getColor,showToast,picksPerTeam,wrestlers,leagueId,
   draftHasStarted,setDraftHasStarted,setActivePage,
-  isCommissioner,draftComplete,hasRecoveryEmail,commissionerEmail}){
+  isCommissioner,draftComplete,hasRecoveryEmail,commissionerEmail,session}){
 
   const [starting,setStarting]=useState(false);
+
+  // ── Commissioner recovery state ──
   const [showRecovery,setShowRecovery]=useState(false);
   const [recoveryEmail,setRecoveryEmail]=useState("");
   const [recoverySent,setRecoverySent]=useState(false);
   const [recoverySending,setRecoverySending]=useState(false);
+
+  // ── Join Draft state (no-session members) ──
+  const [showJoin,setShowJoin]=useState(false);
+  const [rejoinTeamId,setRejoinTeamId]=useState("");
+  const [rejoinSent,setRejoinSent]=useState(false);
+  const [lateJoinNames,setLateJoinNames]=useState({});
+  const [lateJoinSent,setLateJoinSent]=useState({});
 
   const handleRecoveryLink=async()=>{
     if(!recoveryEmail.trim()) return;
@@ -1253,6 +1263,25 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
     setRecoverySent(true);
     setRecoverySending(false);
   };
+
+  const handleRejoin=async()=>{
+    if(!rejoinTeamId) return;
+    const requestId=await requestRejoin(leagueId,rejoinTeamId);
+    listenForRejoinApproval(requestId,leagueId,rejoinTeamId,'member',()=>{window.location.reload();});
+    setRejoinSent(true);
+  };
+
+  const handleLateJoin=async(team)=>{
+    const name=(lateJoinNames[team.id]||'').trim();
+    if(!name) return;
+    const requestId=await requestLateJoin(leagueId,team.id,name);
+    listenForRejoinApproval(requestId,leagueId,team.id,'member',()=>{window.location.reload();});
+    setLateJoinSent(prev=>({...prev,[team.id]:true}));
+  };
+
+  const claimedTeams=(teamsProp||[]).filter(t=>t.is_claimed);
+  const unclaimedTeams=(teamsProp||[]).filter(t=>!t.is_claimed);
+  const showJoinSection=!session&&!isCommissioner&&leagueId&&teamsProp&&teamsProp.length>0;
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOverIdx,setDragOverIdx]=useState(null);
 
@@ -1494,6 +1523,107 @@ function SettingsPage({teams,setTeams,draftOrder,setDraftOrder,rotationType,setR
           </div>
         ):null}
       </CommissionerOnly>
+
+      {/* ── Join Draft (no session, non-commissioner) ── */}
+      {showJoinSection&&(
+        <div className="card" style={{padding:16,border:"1px solid #2A3A50",width:"100%",marginTop:12}}>
+          <div className="sec-label" style={{marginBottom:10}}>JOIN DRAFT</div>
+          {!showJoin?(
+            <button className="btn btn-secondary btn-md" style={{width:"100%"}} onClick={()=>setShowJoin(true)}>
+              🏷️ JOIN DRAFT
+            </button>
+          ):(
+            <div>
+              {/* Rejoin — reclaim a previously held team */}
+              {claimedTeams.length>0&&(
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#E8EDF2",marginBottom:4}}>Already have a team?</div>
+                  <div style={{fontSize:12,color:"#7A8A9A",marginBottom:12,lineHeight:"1.5"}}>
+                    Select your team and request to rejoin — the commissioner will approve your access.
+                  </div>
+                  {!rejoinSent?(
+                    <>
+                      <select
+                        value={rejoinTeamId}
+                        onChange={e=>setRejoinTeamId(e.target.value)}
+                        style={{width:"100%",background:"#0D1520",border:"1px solid #2A3A50",
+                          borderRadius:6,color:"#E8EDF2",fontSize:14,padding:"10px 12px",
+                          marginBottom:10,outline:"none",boxSizing:"border-box"}}
+                      >
+                        <option value="">Select your team...</option>
+                        {claimedTeams.map(t=>(
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-secondary btn-md"
+                        style={{width:"100%",opacity:rejoinTeamId?1:0.4}}
+                        disabled={!rejoinTeamId}
+                        onClick={handleRejoin}
+                      >Request to Rejoin</button>
+                    </>
+                  ):(
+                    <div style={{background:"#1A3A2A",border:"1px solid #2A6A3A",borderRadius:6,
+                      color:"#4CAF7D",fontSize:13,padding:"12px 14px",lineHeight:"1.5"}}>
+                      ✓ Request sent — keep this window open. You'll be redirected when the commissioner approves.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Late join — claim an unclaimed team */}
+              {unclaimedTeams.length>0&&(
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#E8EDF2",marginBottom:4}}>Claim an open team</div>
+                  <div style={{fontSize:12,color:"#7A8A9A",marginBottom:12,lineHeight:"1.5"}}>
+                    Pick an unclaimed team, enter your name, and submit — the commissioner will approve your access.
+                  </div>
+                  {unclaimedTeams.map(team=>(
+                    <div key={team.id} style={{background:"#0D1520",border:"1px solid #2A3A50",
+                      borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                      <div style={{fontSize:11,color:"#C9A84C",letterSpacing:"1px",
+                        textTransform:"uppercase",fontWeight:700,marginBottom:8}}>
+                        {team.name}
+                      </div>
+                      {lateJoinSent[team.id]?(
+                        <div style={{background:"#1A3A2A",border:"1px solid #2A6A3A",borderRadius:6,
+                          color:"#4CAF7D",fontSize:13,padding:"10px 12px",lineHeight:"1.5"}}>
+                          ✓ Request sent — keep this window open. You'll be redirected when approved.
+                        </div>
+                      ):(
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <input
+                            style={{flex:1,background:"#1A2535",border:"1px solid #2A3A50",borderRadius:6,
+                              color:"#E8EDF2",fontSize:14,padding:"9px 12px",outline:"none",boxSizing:"border-box"}}
+                            type="text"
+                            placeholder="Your name..."
+                            maxLength={40}
+                            value={lateJoinNames[team.id]||''}
+                            onChange={e=>setLateJoinNames(prev=>({...prev,[team.id]:e.target.value}))}
+                          />
+                          <button
+                            className="btn btn-secondary btn-md"
+                            style={{whiteSpace:"nowrap",flexShrink:0,
+                              opacity:(lateJoinNames[team.id]||'').trim()?1:0.4}}
+                            disabled={!(lateJoinNames[team.id]||'').trim()}
+                            onClick={()=>handleLateJoin(team)}
+                          >Request to Join</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                style={{background:"none",border:"none",color:"#4A5A6A",fontSize:12,
+                  cursor:"pointer",textDecoration:"underline",marginTop:8,display:"block"}}
+                onClick={()=>{setShowJoin(false);setRejoinTeamId("");setRejoinSent(false);}}
+              >← Back</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Recover Commissioner Access (draft complete, visible to all) ── */}
       {draftComplete&&hasRecoveryEmail&&(
