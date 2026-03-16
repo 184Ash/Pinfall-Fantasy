@@ -234,7 +234,7 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
             · {rotationType==="snake"?"🐍 Snake":"→ Linear"}
           </span>}
           {/* Sync-to-live button — only shown when user has scrolled away */}
-          {showSync&&(
+          {showSync&&!draftComplete&&(
             <button onClick={syncToLive}
               style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,
                 padding:"2px 9px",background:"#0d1520",border:"1px solid #c9a84c55",
