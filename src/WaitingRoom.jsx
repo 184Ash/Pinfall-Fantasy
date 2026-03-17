@@ -162,7 +162,6 @@ export default function WaitingRoom({
   leagueName,
   teams: initialTeams,
   session,
-  onDraftStarted,
 }) {
   const [teams, setTeams] = useState(initialTeams || []);
   const [starting, setStarting] = useState(false);

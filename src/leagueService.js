@@ -124,7 +124,52 @@ export async function requestRejoin(leagueId, teamId) {
   return data.id
 }
 
+export async function requestLateJoin(leagueId, teamId, teamName) {
+  // Temporarily store the requested name on the team row so the commissioner
+  // can see who wants to join in the approval banner
+  await supabase.from('teams')
+    .update({ claimed_by: teamName })
+    .eq('id', teamId)
+
+  const { data, error } = await supabase
+    .from('rejoin_requests')
+    .insert({ league_id: leagueId, team_id: teamId, status: 'pending' })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data.id
+}
+
 export async function approveRejoin(requestId) {
+  // Fetch the request to get the team_id
+  const { data: req, error: reqError } = await supabase
+    .from('rejoin_requests')
+    .select('team_id')
+    .eq('id', requestId)
+    .single()
+
+  if (reqError) throw new Error(reqError.message)
+
+  // Check if this is a late-join (team not yet claimed) vs a session-restore rejoin
+  const { data: team } = await supabase
+    .from('teams')
+    .select('is_claimed, claimed_by')
+    .eq('id', req.team_id)
+    .single()
+
+  if (team && !team.is_claimed && team.claimed_by) {
+    // Late-join — finalize the claim now that the commissioner has approved
+    await supabase.from('teams')
+      .update({
+        is_claimed: true,
+        claimed_at: new Date().toISOString(),
+        name: team.claimed_by,
+        role: 'member',
+      })
+      .eq('id', req.team_id)
+  }
+
   const { error } = await supabase
     .from('rejoin_requests')
     .update({ status: 'approved' })
@@ -321,8 +366,9 @@ export async function loadDraftState(leagueId) {
   // ── 2. Fetch picks for this league ───────────────────────────────
   const { data: picks, error: picksError } = await supabase
     .from('picks')
-    .select('wrestler_id, team_id, is_bonus, teams(name)')
+    .select('wrestler_id, team_id, is_bonus, picked_at, teams(name)')
     .eq('league_id', leagueId)
+    .order('picked_at', { ascending: true })
 
   if (picksError) throw new Error(picksError.message)
 
@@ -371,11 +417,35 @@ export async function loadDraftState(leagueId) {
     pointsMap[key] = pt.pts
   })
 
+  // ── 7. Build ordered picks log (deduplicated by key) ─────────────
+  const seenLogKeys = new Set()
+  const picksLog = picks
+    .map(pick => {
+      const wr = wrestlerLookup[pick.wrestler_id]
+      if (!wr) return null
+      return {
+        key: `${wr.weight}-${wr.seed}`,
+        teamName: pick.teams?.name ?? pick.team_id,
+        weight: wr.weight,
+        seed: wr.seed,
+        name: wr.name,
+        school: wr.school,
+        isBonus: pick.is_bonus,
+      }
+    })
+    .filter(Boolean)
+    .filter(item => {
+      if (seenLogKeys.has(item.key)) return false
+      seenLogKeys.add(item.key)
+      return true
+    })
+
   return {
     wrestlers: wrestlersByWeight,
     picks: picksMap,
     bonusKeys,
     points: pointsMap,
+    picksLog,
   }
 }
 

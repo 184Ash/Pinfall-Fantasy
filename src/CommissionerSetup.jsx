@@ -238,7 +238,6 @@ const styles = {
 const ROTATION_OPTIONS = [
   { value: "snake", label: "Snake", desc: "1→N then N→1, alternating each round" },
   { value: "linear", label: "Linear", desc: "1→N repeating every round" },
-  { value: "third_round_reversal", label: "Third Round Reversal", desc: "Snake, but reverses again on round 3" },
 ];
 
 export default function CommissionerSetup({ onConfirm, initialData }) {
