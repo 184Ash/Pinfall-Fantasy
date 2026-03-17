@@ -141,7 +141,7 @@ export default function Header({onClock,totalPicks,round,pos,teams,draftOrder,ro
 
       {/* Nav tabs */}
       <div style={{maxWidth:1600,margin:"0 auto",padding:"0 16px",display:"flex",gap:0,overflowX:"auto",marginBottom:-2}}>
-        {[{id:"board",label:"DRAFT BOARD"},{id:"scores",label:"📥 SCORES"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS"}].map(tab=>{
+        {[{id:"board",label:"DRAFT BOARD"},{id:"standings",label:"🏆 STANDINGS"},{id:"settings",label:"⚙ SETTINGS"}].map(tab=>{
           const isActive=activePage===tab.id;
           {/* All tabs are accessible; edit actions inside Settings are individually gated */}
           return (

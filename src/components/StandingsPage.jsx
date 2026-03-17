@@ -1,15 +1,55 @@
 import { useState } from 'react';
 
 // ─── STANDINGS PAGE ───────────────────────────────────────────────────────────
-// ─── STANDINGS PAGE ───────────────────────────────────────────────────────────
-export default function StandingsPage({teamScores,getColor,getRoster}){
+export default function StandingsPage({teamScores,getColor,getRoster,isCommissioner,leagueId}){
   const [expanded,setExpanded]=useState(null);
+  const [syncing,setSyncing]=useState(false);
+  const [syncResult,setSyncResult]=useState(null); // {pointsWritten, unmatched} | {error}
   const leader=teamScores[0]?.total||0;
+
+  const handleSync=async()=>{
+    setSyncing(true);
+    setSyncResult(null);
+    try{
+      const res=await fetch('/api/sync-scores',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({leagueId}),
+      });
+      const data=await res.json();
+      setSyncResult(res.ok?data:{error:data.error||'Sync failed'});
+    }catch(e){
+      setSyncResult({error:e.message});
+    }finally{
+      setSyncing(false);
+    }
+  };
+
   return (
     <div>
-      <div style={{marginBottom:16}}>
-        <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c"}}>LIVE STANDINGS</h2>
-        <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Updates automatically as scores are imported</p>
+      <div style={{marginBottom:16,display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+        <div>
+          <h2 style={{fontSize:20,fontWeight:700,letterSpacing:".1em",color:"#c9a84c"}}>LIVE STANDINGS</h2>
+          <p style={{color:"#4a4020",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",marginTop:2}}>Updates automatically after each sync</p>
+        </div>
+        {isCommissioner&&(
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            <button className="btn" onClick={handleSync} disabled={syncing}
+              style={{padding:"8px 16px",background:syncing?"#1a1f26":"#c9a84c",color:syncing?"#4a4020":"#070a0e",
+                borderRadius:6,fontSize:12,fontWeight:700,letterSpacing:".08em",
+                border:"1px solid #c9a84c44",opacity:syncing?0.6:1}}>
+              {syncing?"⏳ SYNCING...":"🔄 SYNC SCORES"}
+            </button>
+            {syncResult&&(
+              syncResult.error
+                ?<div style={{fontSize:11,color:"#f87171",fontFamily:"'Barlow Condensed',sans-serif"}}>Error: {syncResult.error}</div>
+                :<div style={{fontSize:11,color:"#34d399",fontFamily:"'Barlow Condensed',sans-serif"}}>
+                  ✓ {syncResult.pointsWritten} wrestlers updated
+                  {syncResult.unmatched?.length>0&&<span style={{color:"#fbbf24"}}> · {syncResult.unmatched.length} unmatched</span>}
+                </div>
+            )}
+          </div>
+        )}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {teamScores.map((ts,i)=>{
@@ -39,7 +79,7 @@ export default function StandingsPage({teamScores,getColor,getRoster}){
               {isExp&&(
                 <div style={{borderTop:"1px solid #1a1f26",padding:"10px 16px"}}>
                   {ts.breakdown.length===0
-                    ?<div style={{fontSize:12,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>No points yet — import scores on the Scores page</div>
+                    ?<div style={{fontSize:12,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif"}}>No points yet{isCommissioner?" — click Sync Scores after each round":""}</div>
                     :<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                       {ts.breakdown.sort((a,b)=>b.pts-a.pts).map(wr=>(
                         <div key={`${wr.weight}-${wr.seed}`} style={{padding:"5px 10px",background:`${c.bg}18`,border:`1px solid ${c.bg}33`,borderRadius:6,display:"flex",gap:7,alignItems:"center"}}>

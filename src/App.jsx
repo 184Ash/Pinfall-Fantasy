@@ -10,7 +10,6 @@ import { pickKey, buildNameIndex, fuzzyFind, playChime } from './utils/scorePars
 import Header from './components/Header';
 import BoardPage from './components/BoardPage';
 import SettingsPage from './components/SettingsPage';
-import ScoresPage from './components/ScoresPage';
 import StandingsPage from './components/StandingsPage';
 import SetupPage from './components/SetupPage';
 import RosterPage from './components/RosterPage';
@@ -509,10 +508,7 @@ export default function App({
           isCommissioner={isCommissioner} canPickNow={userCanPickNow(onClock)}
           picksLog={picksLog} draftComplete={draftComplete}
           controlledTeamNames={isCommissioner?teams:(teamsProp||[]).filter(t=>session?.teamIds?.includes(t.id)).map(t=>t.name)}/>}
-        {activePage==="scores"&&<ScoresPage wrestlers={wrestlers} picks={picks} points={points}
-          setPoints={setPoints} getColor={getColor} allWrestlers={allWrestlers} leagueId={leagueId}
-          isCommissioner={isCommissioner}/>}
-        {activePage==="standings"&&<StandingsPage teamScores={teamScores} getColor={getColor} getRoster={getRoster}/>}
+        {activePage==="standings"&&<StandingsPage teamScores={teamScores} getColor={getColor} getRoster={getRoster} isCommissioner={isCommissioner} leagueId={leagueId}/>}
 
         {activePage==="settings"&&<SettingsPage
           teams={teams} setTeams={setTeams}
