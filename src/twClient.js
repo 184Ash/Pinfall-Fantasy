@@ -1,6 +1,8 @@
 // src/twClient.js
 // FloArena API client for 2025 NCAA DI Wrestling Championships
 
+import fetch from 'node-fetch';
+
 const BASE_URL = 'https://prod-web-api.flowrestling.org';
 const EVENT_ID = '13956840';
 

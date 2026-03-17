@@ -7,6 +7,13 @@ import { createClient } from '@supabase/supabase-js';
 import { getAllWeightClasses, WEIGHT_CLASS_IDS } from '../src/twClient.js';
 import { scoreWeightClass } from '../src/scoringEngine.js';
 import { buildNameIndex, fuzzyFind } from '../src/fuzzyMatch.js';
+import pkg from '@next/env';
+const { loadEnvConfig } = pkg;
+
+// Load .env.local when running locally
+if (process.env.NODE_ENV !== 'production') {
+  loadEnvConfig(process.cwd());
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -99,8 +106,7 @@ export default async function handler(req, res) {
       if (!name) { unmatched.push({ participantId, pts }); continue; }
 
       // Try fuzzy match — search only within this weight class for accuracy
-      const weightIndex = nameIndex.filter(e => e.weight === weight);
-      const match = fuzzyFind(name, weightIndex.length > 0 ? weightIndex : nameIndex);
+      const match = fuzzyFind(name, nameIndex);
 
       if (!match) {
         unmatched.push({ name, team, weight, pts });
