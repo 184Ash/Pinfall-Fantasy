@@ -1,22 +1,22 @@
 // src/twClient.js
-// FloArena API client for 2025 NCAA DI Wrestling Championships
+// FloArena API client for 2026 NCAA DI Wrestling Championships
 
 import fetch from 'node-fetch';
 
 const BASE_URL = 'https://prod-web-api.flowrestling.org';
-const EVENT_ID = '13956840';
+const EVENT_ID = '15175319';
 
 export const WEIGHT_CLASS_IDS = {
-  125: 'wc-4c822030-af7f-4598-a02e-c020a3c5a531',
-  133: 'wc-5663f0b8-6655-4635-9a06-c917c8dbcc22',
-  141: 'wc-4e497a0f-6eab-4452-a240-666a87369961',
-  149: 'wc-5d140f20-1a7e-4186-bce7-3f25336183c0',
-  157: 'wc-18a1dc2f-1264-4fdc-9765-2e59825a485a',
-  165: 'wc-905976fb-de19-4646-afc7-a726ae0ebd24',
-  174: 'wc-3c3c8621-5f98-48aa-993e-e33789c837ab',
-  184: 'wc-6dc3a655-435e-4039-95d0-fd04303520bc',
-  197: 'wc-da88bf34-6b16-48a0-8a1a-6ad70308620b',
-  285: 'wc-de379e44-2973-4b64-a424-cc556113dd11',
+  125: '32DB3iFXozO08ZuIdr',
+  133: '32D9jODEYbQ4bqWMOU',
+  141: '32D3LCGs6tYLouqB44',
+  149: '32DTMflZPhteOSIaGy',
+  157: '32D50WG5LOlE8rFzoC',
+  165: '32Da2gG1VkUPb4q1L6',
+  174: '32DD55vVQ3MKfD39Gu',
+  184: '32DgfSEDo9Q770806B',
+  197: '32Dd1A2hGLoLwYzSeb',
+  285: '32DzxCwJSlG7SOSsj3',
 };
 
 async function fetchWithRetry(url, retries = 3, delayMs = 1000) {
