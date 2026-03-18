@@ -174,7 +174,7 @@ export default function LandingPage() {
             { icon: "🏆", title: "Full Tournament Draft Board", desc: "All 10 weight classes, 330 seeded wrestlers, snake or linear rotation. The whole tournament in one board." },
             { icon: "⚡", title: "Live Draft Sync", desc: "Every pick appears instantly for everyone in your league. No refreshing, no calling out picks in a group chat." },
             { icon: "🙋", title: "Claim Your Team", desc: "Open the link, enter your name, and claim your spot. No accounts, no passcodes — just one link for the whole league." },
-            { icon: "📊", title: "Easy Score Updates", desc: "Paste your score file or update totals directly in the app. Standings refresh instantly for everyone in your league." },
+            { icon: "🔄", title: "Live Score Sync", desc: "One button pulls live results straight from FloArena. Standings update instantly for every team in your league — no manual entry, no spreadsheets." },
             { icon: "🛡", title: "Commissioner Controls", desc: "Full admin access to reassign picks, manage the waiting room, and run the draft from start to finish." },
             { icon: "💾", title: "Persistent State", desc: "Your draft lives in the cloud. Close the tab, reopen the link — everything is exactly where you left it." },
           ].map((f, i) => (
@@ -199,7 +199,7 @@ export default function LandingPage() {
               { n: "1", title: "Create a League", desc: "Name your league, set your team count, choose your draft format and rotation type." },
               { n: "2", title: "Share the Link", desc: "You get a unique league URL. Send it to your group chat — that's it. No passcodes to hand out." },
               { n: "3", title: "Claim & Draft", desc: "Everyone opens the link, claims their team, and waits for the commissioner to start the draft." },
-              { n: "4", title: "Watch & Score", desc: "Update scores after each session. Standings refresh for the whole league instantly." },
+              { n: "4", title: "Watch & Score", desc: "Hit the Sync button between sessions and live results flow in automatically. Standings update for the whole league in seconds." },
             ].map((s, i) => (
               <div key={i} className="lp-step">
                 <div className="lp-step-num">{s.n}</div>
