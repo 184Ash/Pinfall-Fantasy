@@ -372,11 +372,14 @@ export async function loadDraftState(leagueId) {
 
   if (picksError) throw new Error(picksError.message)
 
-  // ── 3. Fetch points for this league ──────────────────────────────
+  // ── 3. Fetch scores from global_scores for this league's wrestlers ───────────
+  // global_scores is keyed by wrestler_id only (no league_id), so we fetch
+  // all rows whose UUID belongs to this league's roster.
+  const wrestlerIds = wrestlers.map(wr => wr.id);
   const { data: points, error: pointsError } = await supabase
-    .from('points')
+    .from('global_scores')
     .select('wrestler_id, pts')
-    .eq('league_id', leagueId)
+    .in('wrestler_id', wrestlerIds);
 
   if (pointsError) throw new Error(pointsError.message)
 

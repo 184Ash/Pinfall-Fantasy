@@ -1,7 +1,9 @@
 // api/sync-scores.js
 // Vercel serverless function — triggered by commissioner "Sync Scores" button.
+//
+// Global model: ONE sync call updates ALL leagues simultaneously.
 // Fetches all 10 weight classes from FloArena, scores them, fuzzy-matches to
-// our wrestlers, and upserts points into Supabase.
+// every wrestler in the DB (across all leagues), and upserts into global_scores.
 
 import { createClient } from '@supabase/supabase-js';
 import { getAllWeightClasses, WEIGHT_CLASS_IDS } from '../src/twClient.js';
@@ -20,8 +22,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
+
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -32,56 +35,76 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ── 1. Fetch wrestlers for this league from Supabase ─────────────
-    const { data: wrestlers, error: wrestlersError } = await supabase
-      .from('wrestlers')
-      .select('id, weight, seed, name, school')
-      .eq('league_id', leagueId);
+    // ── 1. Cooldown check against sync_meta ──────────────────────────────────
+    const { data: meta } = await supabase
+      .from('sync_meta')
+      .select('last_synced_at')
+      .eq('id', 1)
+      .single();
 
-    if (wrestlersError) throw new Error(wrestlersError.message);
-    if (!wrestlers || wrestlers.length === 0) {
-      return res.status(400).json({ error: 'No wrestlers found for this league' });
+    if (meta?.last_synced_at) {
+      const elapsed = Date.now() - new Date(meta.last_synced_at).getTime();
+      if (elapsed < COOLDOWN_MS) {
+        const minutesLeft = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
+        return res.status(429).json({
+          error: `Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}`,
+          lastSyncedAt: meta.last_synced_at,
+        });
+      }
     }
 
-    // Shape wrestlers into { 125: [{seed, name, school}, ...], ... }
-    // for buildNameIndex
-    const wrestlersByWeight = {};
-    const wrestlerLookup = {}; // "weight-seed" -> wrestler row
-    wrestlers.forEach(wr => {
-      if (!wrestlersByWeight[wr.weight]) wrestlersByWeight[wr.weight] = [];
-      wrestlersByWeight[wr.weight].push({ seed: wr.seed, name: wr.name, school: wr.school });
-      wrestlerLookup[`${wr.weight}-${wr.seed}`] = wr;
+    // ── 2. Fetch ALL wrestlers across all leagues ─────────────────────────────
+    const { data: allWrestlers, error: wrestlersError } = await supabase
+      .from('wrestlers')
+      .select('id, weight, seed, name, school, league_id');
+
+    if (wrestlersError) throw new Error(wrestlersError.message);
+    if (!allWrestlers || allWrestlers.length === 0) {
+      return res.status(400).json({ error: 'No wrestlers found in database' });
+    }
+
+    // Build a deduplicated name index (one entry per unique weight+seed combination)
+    // and a multi-UUID map so one fuzzy match can update all leagues at once.
+    const wrestlersByWeight = {}; // { weight: [{seed, name, school}] } — deduped
+    const uuidsByKey = {};        // "weight-seed" -> [uuid, uuid, ...] (one per league)
+    const seenKeys = new Set();
+
+    allWrestlers.forEach(wr => {
+      const key = `${wr.weight}-${wr.seed}`;
+
+      if (!uuidsByKey[key]) uuidsByKey[key] = [];
+      uuidsByKey[key].push(wr.id);
+
+      // Add to name index only once per unique weight+seed
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        if (!wrestlersByWeight[wr.weight]) wrestlersByWeight[wr.weight] = [];
+        wrestlersByWeight[wr.weight].push({ seed: wr.seed, name: wr.name, school: wr.school });
+      }
     });
 
     const nameIndex = buildNameIndex(wrestlersByWeight);
 
-    // ── 2. Fetch all brackets + placements from FloArena ─────────────
+    // ── 3. Fetch brackets + placements from FloArena ──────────────────────────
     const { brackets, placements } = await getAllWeightClasses();
 
-    // ── 3. Score each weight class ────────────────────────────────────
-    // allScores: { participantId: { pts, name, team, weight } }
-    const allScores = {};
+    // ── 4. Score each weight class ────────────────────────────────────────────
+    const allScores = {}; // participantId -> { pts, name, team, weight }
 
     for (const weight of Object.keys(WEIGHT_CLASS_IDS).map(Number)) {
-      const matches = brackets[weight] ?? {};
+      const matches         = brackets[weight]   ?? {};
       const weightPlacements = placements[weight] ?? [];
 
-      // Build participantId -> name/team lookup from matches
+      // Build participantId -> name/team lookup from match participants + placements
       const participantInfo = {};
       for (const match of Object.values(matches)) {
         for (const p of [match.topParticipant, match.bottomParticipant]) {
-          if (p && p.id) {
-            participantInfo[p.id] = { name: p.name, team: p.team };
-          }
+          if (p?.id) participantInfo[p.id] = { name: p.name, team: p.team };
         }
       }
-      // Also from placements
       for (const p of weightPlacements) {
         if (p.participantId) {
-          participantInfo[p.participantId] = {
-            name: p.name,
-            team: p.teamName,
-          };
+          participantInfo[p.participantId] = { name: p.name, team: p.teamName };
         }
       }
 
@@ -98,53 +121,58 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 4. Fuzzy-match each participant to our wrestlers ──────────────
-    const pointsMap = {}; // "weight-seed": pts
+    // ── 5. Fuzzy-match each participant to wrestler UUIDs (all leagues) ───────
+    const rowMap   = {}; // wrestler_id -> { wrestler_id, pts, updated_at }
     const unmatched = [];
+    const now = new Date().toISOString();
 
     for (const [participantId, { pts, name, team, weight }] of Object.entries(allScores)) {
       if (!name) { unmatched.push({ participantId, pts }); continue; }
 
-      // Try fuzzy match — search only within this weight class for accuracy
       const match = fuzzyFind(name, nameIndex);
-
       if (!match) {
         unmatched.push({ name, team, weight, pts });
         continue;
       }
 
-      const key = `${match.entry.weight}-${match.entry.seed}`;
-      // If multiple participants map to the same key, take the higher pts
-      if (!pointsMap[key] || pts > pointsMap[key]) {
-        pointsMap[key] = pts;
+      const key   = `${match.entry.weight}-${match.entry.seed}`;
+      const uuids = uuidsByKey[key] ?? [];
+
+      for (const wrestlerId of uuids) {
+        // If multiple participants somehow map to the same UUID, keep highest pts
+        if (!rowMap[wrestlerId] || pts > rowMap[wrestlerId].pts) {
+          rowMap[wrestlerId] = { wrestler_id: wrestlerId, pts, updated_at: now };
+        }
       }
     }
 
-    // ── 5. Upsert points into Supabase ────────────────────────────────
-    // Reuse the same savePoints logic inline (service role, no import issues)
-    const lookup = {};
-    wrestlers.forEach(wr => { lookup[`${wr.weight}-${wr.seed}`] = wr.id; });
+    const rows = Object.values(rowMap);
 
-    const rows = Object.entries(pointsMap)
-      .filter(([key, pts]) => lookup[key] && pts > 0)
-      .map(([key, pts]) => ({
-        league_id: leagueId,
-        wrestler_id: lookup[key],
-        pts,
-      }));
-
+    // ── 6. Upsert into global_scores ──────────────────────────────────────────
     if (rows.length > 0) {
       const { error: upsertError } = await supabase
-        .from('points')
-        .upsert(rows, { onConflict: 'league_id,wrestler_id' });
+        .from('global_scores')
+        .upsert(rows, { onConflict: 'wrestler_id' });
 
       if (upsertError) throw new Error(upsertError.message);
     }
 
-    // ── 6. Return result ──────────────────────────────────────────────
+    // ── 7. Write sync_meta ────────────────────────────────────────────────────
+    const lastSyncedAt = now;
+    const { error: metaError } = await supabase
+      .from('sync_meta')
+      .upsert(
+        { id: 1, last_synced_at: lastSyncedAt, synced_by: leagueId },
+        { onConflict: 'id' }
+      );
+
+    if (metaError) throw new Error(metaError.message);
+
+    // ── 8. Return result ──────────────────────────────────────────────────────
     return res.status(200).json({
       success: true,
       pointsWritten: rows.length,
+      lastSyncedAt,
       unmatched: unmatched.length > 0 ? unmatched : undefined,
     });
 
