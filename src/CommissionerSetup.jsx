@@ -435,16 +435,14 @@ export default function CommissionerSetup({ onConfirm, initialData }) {
           {/* Warning or confirmation based on whether email is entered */}
           {!recoveryEmail.trim() ? (
             <div style={styles.warningBox}>
-              ⚠ Without a recovery email, you will lose commissioner access if
-              you close your browser after the draft. Everyone — including you —
-              will have read-only access only.{" "}
-              <strong>Add a recovery email if you plan to import scores
-              during the tournament.</strong>
+              ⚠ Only needed if you lose commissioner access mid-draft. Without
+              one, you won't be able to recover your session if you close your
+              browser before the draft is complete.
             </div>
           ) : (
             <div style={styles.warningBoxGreen}>
-              ✓ If you lose your session after the draft, enter this email on
-              the league page to receive a magic link and restore commissioner
+              ✓ If you lose your session mid-draft, enter this email on the
+              league page to receive a magic link and restore commissioner
               access.
             </div>
           )}
