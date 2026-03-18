@@ -112,46 +112,44 @@ export default function StandingsPage({ teamScores, getColor, getRoster, isCommi
           }
         </div>
 
-        {isCommissioner && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end', gap: 6 }}>
-            <button
-              className="btn"
-              onClick={handleSync}
-              disabled={syncing || cooldownMins > 0}
-              style={{
-                padding: '8px 16px',
-                background: (syncing || cooldownMins > 0) ? '#1a1f26' : '#c9a84c',
-                color:      (syncing || cooldownMins > 0) ? '#4a4020' : '#070a0e',
-                borderRadius: 6, fontSize: 12, fontWeight: 700, letterSpacing: '.08em',
-                border: '1px solid #c9a84c44',
-                opacity: (syncing || cooldownMins > 0) ? 0.6 : 1,
-              }}
-            >
-              {syncing ? '⏳ SYNCING...' : '🔄 SYNC SCORES'}
-            </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end', gap: 6 }}>
+          <button
+            className="btn"
+            onClick={handleSync}
+            disabled={syncing || cooldownMins > 0}
+            style={{
+              padding: '8px 16px',
+              background: (syncing || cooldownMins > 0) ? '#1a1f26' : '#c9a84c',
+              color:      (syncing || cooldownMins > 0) ? '#4a4020' : '#070a0e',
+              borderRadius: 6, fontSize: 12, fontWeight: 700, letterSpacing: '.08em',
+              border: '1px solid #c9a84c44',
+              opacity: (syncing || cooldownMins > 0) ? 0.6 : 1,
+            }}
+          >
+            {syncing ? '⏳ SYNCING...' : '🔄 SYNC SCORES'}
+          </button>
 
-            {/* Cooldown countdown (shown even without a fresh sync attempt) */}
-            {cooldownMins > 0 && !syncing && (
-              <div style={{ fontSize: 11, color: '#fbbf24', fontFamily: "'Barlow Condensed',sans-serif" }}>
-                Next sync available in {cooldownMins} min{cooldownMins !== 1 ? 's' : ''}
-              </div>
-            )}
+          {/* Cooldown countdown (shown even without a fresh sync attempt) */}
+          {cooldownMins > 0 && !syncing && (
+            <div style={{ fontSize: 11, color: '#fbbf24', fontFamily: "'Barlow Condensed',sans-serif" }}>
+              Next sync available in {cooldownMins} min{cooldownMins !== 1 ? 's' : ''}
+            </div>
+          )}
 
-            {/* Sync result feedback */}
-            {syncResult && (
-              syncResult.error
-                ? <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'Barlow Condensed',sans-serif" }}>
-                    {syncResult.error}
-                  </div>
-                : <div style={{ fontSize: 11, color: '#34d399', fontFamily: "'Barlow Condensed',sans-serif" }}>
-                    ✓ {syncResult.pointsWritten} wrestlers updated
-                    {syncResult.unmatched?.length > 0 && (
-                      <span style={{ color: '#fbbf24' }}> · {syncResult.unmatched.length} unmatched</span>
-                    )}
-                  </div>
-            )}
-          </div>
-        )}
+          {/* Sync result feedback */}
+          {syncResult && (
+            syncResult.error
+              ? <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'Barlow Condensed',sans-serif" }}>
+                  {syncResult.error}
+                </div>
+              : <div style={{ fontSize: 11, color: '#34d399', fontFamily: "'Barlow Condensed',sans-serif" }}>
+                  ✓ {syncResult.pointsWritten} wrestlers updated
+                  {syncResult.unmatched?.length > 0 && (
+                    <span style={{ color: '#fbbf24' }}> · {syncResult.unmatched.length} unmatched</span>
+                  )}
+                </div>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -198,7 +196,7 @@ export default function StandingsPage({ teamScores, getColor, getRoster, isCommi
                 <div style={{ borderTop: '1px solid #1a1f26', padding: '10px 16px' }}>
                   {ts.breakdown.length === 0
                     ? <div style={{ fontSize: 12, color: '#3a3820', fontFamily: "'Barlow Condensed',sans-serif" }}>
-                        No points yet{isCommissioner ? ' — click Sync Scores after each round' : ''}
+                        No points yet — click Sync Scores after each round
                       </div>
                     : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {ts.breakdown.sort((a, b) => b.pts - a.pts).map(wr => (
