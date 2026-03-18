@@ -34,6 +34,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'leagueId is required' });
   }
 
+  // Diagnostic: verify env vars are present (logged server-side only)
+  const urlSet  = !!process.env.SUPABASE_URL;
+  const keySet  = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const urlHint = process.env.SUPABASE_URL?.slice(-12) ?? 'MISSING';
+  const keyHint = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-8) ?? 'MISSING';
+  console.log(`[sync-scores] env check — SUPABASE_URL ends: ${urlHint}, KEY ends: ${keyHint}`);
+  if (!urlSet || !keySet) {
+    return res.status(500).json({ error: `Missing env vars — URL:${urlSet} KEY:${keySet}` });
+  }
+
   try {
     // ── 1. Cooldown check against sync_meta ──────────────────────────────────
     const { data: meta } = await supabase
