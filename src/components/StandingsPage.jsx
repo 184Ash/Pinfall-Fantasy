@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ function minutesUntilNextSync(lastSyncedAt) {
 
 // ─── STANDINGS PAGE ───────────────────────────────────────────────────────────
 export default function StandingsPage({ teamScores, getColor, getRoster, isCommissioner, leagueId }) {
+  const isMobile = useIsMobile();
   const [expanded,      setExpanded]      = useState(null);
   const [syncing,       setSyncing]       = useState(false);
   const [syncResult,    setSyncResult]    = useState(null); // {pointsWritten, lastSyncedAt, unmatched} | {error}
@@ -97,7 +99,7 @@ export default function StandingsPage({ teamScores, getColor, getRoster, isCommi
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: isMobile ? 'stretch' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '.1em', color: '#c9a84c' }}>LIVE STANDINGS</h2>
           {lastSyncedAt
@@ -111,7 +113,7 @@ export default function StandingsPage({ teamScores, getColor, getRoster, isCommi
         </div>
 
         {isCommissioner && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end', gap: 6 }}>
             <button
               className="btn"
               onClick={handleSync}

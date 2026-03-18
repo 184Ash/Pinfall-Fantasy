@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { WEIGHT_CLASSES } from '../constants';
 import { pickKey } from '../utils/scoreParser';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // ─── ROSTER PAGE ──────────────────────────────────────────────────────────────
 export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestlers,picks,setPicks,
   wrestlers,bonusKeys,setBonusKeys,bonusPickEnabled,showToast,isCommissioner}){
+  const isMobile = useIsMobile();
   const c=getColor(team);
   const total=roster.reduce((s,w)=>s+w.pts,0);
 
@@ -201,7 +203,8 @@ export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestle
       <div style={{padding:"16px 20px",marginBottom:16,
         background:`linear-gradient(135deg,${c.bg}1a 0%,#0b0f14 55%)`,
         border:`1px solid ${c.bg}33`,borderLeft:`5px solid ${c.bg}`,
-        borderRadius:12,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+        borderRadius:12,display:"flex",alignItems:isMobile?"flex-start":"center",
+        flexDirection:isMobile?"column":"row",gap:isMobile?10:16,flexWrap:"wrap"}}>
         <div style={{width:44,height:44,borderRadius:"50%",
           background:`radial-gradient(circle at 35% 35%,${c.bg},${c.bg}66)`,
           display:"flex",alignItems:"center",justifyContent:"center",
@@ -230,7 +233,7 @@ export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestle
       </div>
 
       {/* Weight grid */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(5,1fr)",gap:10,marginBottom:12}}>
         {WEIGHT_CLASSES.map(w=>{
           const wrs=byW[w]||[];
           return (

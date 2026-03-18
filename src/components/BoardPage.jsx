@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { WEIGHT_CLASSES, DEFAULT_WC_PAGES, DEFAULT_WC_HIDDEN, PAGE_SIZE } from '../constants';
 import { pickKey } from '../utils/scoreParser';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // ─── BOARD PAGE ───────────────────────────────────────────────────────────────
 export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getColor,
@@ -11,6 +12,7 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
   const _round=_n>0?Math.floor(totalPicks/_n):0;
   const _pos=_n>0?totalPicks%_n:0;
 
+  const isMobile = useIsMobile();
   const [overrideKey,setOverrideKey]=useState(null);
 
   // ── Compute onClock inside BoardPage for per-team config switching ──
@@ -326,7 +328,7 @@ export default function BoardPage({wrestlers,picks,points,draftPick,hlKey,getCol
       </div>
 
       {/* Weight columns */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,borderRadius:8,
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(5,1fr)",gap:10,borderRadius:8,
         transition:'box-shadow 0.9s ease',
         boxShadow:glowColor
           ?`0 0 0 1px ${glowColor.bg}28, 0 0 28px 5px ${glowColor.bg}18, 0 0 75px 18px ${glowColor.bg}0e, 0 0 160px 55px ${glowColor.bg}08`
