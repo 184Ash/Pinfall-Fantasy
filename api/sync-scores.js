@@ -53,13 +53,24 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 2. Fetch ALL wrestlers across all leagues ─────────────────────────────
-    const { data: allWrestlers, error: wrestlersError } = await supabase
-      .from('wrestlers')
-      .select('id, weight, seed, name, school, league_id');
+    // ── 2. Fetch ALL wrestlers across all leagues (paginated) ─────────────────
+    const allWrestlers = [];
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('wrestlers')
+        .select('id, weight, seed, name, school, league_id')
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      allWrestlers.push(...data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
 
-    if (wrestlersError) throw new Error(wrestlersError.message);
-    if (!allWrestlers || allWrestlers.length === 0) {
+    console.log(`[sync-scores] Fetched ${allWrestlers.length} wrestlers total`);
+    if (allWrestlers.length === 0) {
       return res.status(400).json({ error: 'No wrestlers found in database' });
     }
 
