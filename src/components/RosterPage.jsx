@@ -86,6 +86,15 @@ export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestle
   // ── Hover state for button reveal ─────────────────────────────────────────
   const [hoveredKey,setHoveredKey]=useState(null);
 
+  const statusColor=(s)=>{
+    if(!s) return '#3a3820';
+    if(s==='Eliminated') return '#f87171';
+    if(s==='Champion'||s.includes('Place')) return '#c9a84c';
+    if(s.includes('Champ')||s==='Finals') return '#60a5fa';
+    if(s.includes('Cons')||s==='3rd Place') return '#fbbf24';
+    return '#6a8a6a';
+  };
+
   const WrCard=({wr,isBonus})=>{
     const isH=hoveredKey===wr.key;
     return (
@@ -105,6 +114,12 @@ export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestle
               fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{wr.name}</div>
             <div style={{fontSize:9,color:"#3a3820",fontFamily:"'Barlow Condensed',sans-serif",
               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{wr.school}</div>
+            {wr.status&&(
+              <div style={{fontSize:9,color:statusColor(wr.status),fontFamily:"'Barlow Condensed',sans-serif",
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>
+                {wr.status}
+              </div>
+            )}
           </div>
           {wr.pts>0&&!isH&&(
             <span style={{fontSize:11,fontWeight:700,color:"#34d399",flexShrink:0}}>{wr.pts}pt</span>

@@ -376,7 +376,7 @@ export async function loadDraftState(leagueId) {
   // global_scores is keyed by (weight, seed) — 330 rows shared across all leagues.
   const { data: points, error: pointsError } = await supabase
     .from('global_scores')
-    .select('weight, seed, pts');
+    .select('weight, seed, pts, status');
 
   if (pointsError) throw new Error(pointsError.message)
 
@@ -408,10 +408,13 @@ export async function loadDraftState(leagueId) {
     if (pick.is_bonus) bonusKeys.push(key)
   })
 
-  // ── 6. Shape points into { "weight-seed": pts } format ───────────
+  // ── 6. Shape points and status into { "weight-seed": value } maps ───────────
   const pointsMap = {}
+  const statusMap = {}
   ;(points || []).forEach(pt => {
-    pointsMap[`${pt.weight}-${pt.seed}`] = pt.pts
+    const key = `${pt.weight}-${pt.seed}`
+    pointsMap[key] = pt.pts
+    if (pt.status) statusMap[key] = pt.status
   })
 
   // ── 7. Build ordered picks log (deduplicated by key) ─────────────
@@ -442,6 +445,7 @@ export async function loadDraftState(leagueId) {
     picks: picksMap,
     bonusKeys,
     points: pointsMap,
+    matchStatus: statusMap,
     picksLog,
   }
 }

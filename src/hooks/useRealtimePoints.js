@@ -16,8 +16,8 @@ export function useRealtimePoints(leagueId, wrestlers, onPointsChanged) {
         "postgres_changes",
         { event: "*", schema: "public", table: "global_scores" },
         (payload) => {
-          const { weight, seed, pts } = payload.new;
-          onPointsChanged({ key: `${weight}-${seed}`, pts: Number(pts) });
+          const { weight, seed, pts, status } = payload.new;
+          onPointsChanged({ key: `${weight}-${seed}`, pts: Number(pts), status: status ?? undefined });
         }
       )
       .subscribe();

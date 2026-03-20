@@ -77,6 +77,7 @@ export default function App({
   const [picks,setPicks]=useState({});
   const [bonusKeys,setBonusKeys]=useState([]);
   const [points,setPoints]=useState({});
+  const [matchStatus,setMatchStatus]=useState({});
   const [picksLog,setPicksLog]=useState([]);
   const wrestlersRef=useRef(wrestlers);
   useEffect(()=>{wrestlersRef.current=wrestlers;},[wrestlers]);
@@ -95,6 +96,7 @@ export default function App({
       if(Object.keys(state.picks).length>0){setPicks(state.picks);setDraftHasStarted(true);}
       if(state.bonusKeys.length>0) setBonusKeys(state.bonusKeys);
       if(Object.keys(state.points).length>0) setPoints(state.points);
+      if(Object.keys(state.matchStatus||{}).length>0) setMatchStatus(state.matchStatus);
       if(state.picksLog&&state.picksLog.length>0) setPicksLog(state.picksLog);
     }).catch(err=>{
       console.error('Failed to load draft state:', err);
@@ -140,8 +142,9 @@ export default function App({
   }, [resetTimer]);
 
   // ── Real-time sync — incoming points updates ─────────────────────
-  const handleRemotePoints = useCallback(({ key, pts }) => {
+  const handleRemotePoints = useCallback(({ key, pts, status }) => {
     setPoints(p => ({ ...p, [key]: pts }));
+    if (status !== undefined) setMatchStatus(m => ({ ...m, [key]: status }));
   }, []);
 
   useRealtimePicks(leagueId, wrestlers, teamsProp, handleRemotePick);
@@ -391,7 +394,7 @@ export default function App({
     [...WEIGHT_CLASSES,0].forEach(w=>{
       (wrestlers[w]||[]).forEach(wr=>{
         const key=pickKey(w,wr.seed);
-        if(picks[key]===team) out.push({...wr,weight:w,pts:points[key]||0,key});
+        if(picks[key]===team) out.push({...wr,weight:w,pts:points[key]||0,key,status:matchStatus[key]||null});
       });
     });
     return out;
