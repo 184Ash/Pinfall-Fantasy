@@ -51,9 +51,10 @@ function getRoundLabel(wins, losses) {
 /**
  * Derive each participant's status string from bracket data.
  * Uses win/loss record to determine bracket side and round.
+ * Looks up opponent seed + school via nameIndex when available.
  * Returns { participantId: statusString }.
  */
-function computeMatchStatus(matches, placements) {
+function computeMatchStatus(matches, placements, nameIndex) {
   // Build win/loss record from completed matches
   const record = {}; // id -> { wins, losses }
   const ensure = (id) => { if (!record[id]) record[id] = { wins: 0, losses: 0 }; };
@@ -68,14 +69,24 @@ function computeMatchStatus(matches, placements) {
     else if (bot.winner) { record[bot.id].wins++; record[top.id].losses++; }
   }
 
-  // Build upcoming opponent (last name) per participant
-  const nextOpponent = {}; // id -> lastName
+  // Build upcoming opponent string per participant
+  // Format: "#3 Peterson · Iowa" when seed+school available, else just last name
+  const nextOpponent = {};
+  const opponentStr = (name) => {
+    if (!name) return null;
+    const lastName = name.split(' ').pop();
+    if (nameIndex) {
+      const m = fuzzyFind(name, nameIndex);
+      if (m) return `#${m.entry.seed} ${lastName} · ${m.entry.school}`;
+    }
+    return lastName;
+  };
   for (const match of Object.values(matches)) {
     if (match.state !== 'upcoming') continue;
     const top = match.topParticipant;
     const bot = match.bottomParticipant;
-    if (top?.id && bot?.name) nextOpponent[top.id] = bot.name.split(' ').pop();
-    if (bot?.id && top?.name) nextOpponent[bot.id] = top.name.split(' ').pop();
+    if (top?.id && bot?.name) nextOpponent[top.id] = opponentStr(bot.name);
+    if (bot?.id && top?.name) nextOpponent[bot.id] = opponentStr(top.name);
   }
 
   const statusMap = {};
@@ -188,7 +199,7 @@ export default async function handler(req, res) {
       }
 
       const weightPts    = scoreWeightClass(matches, weightPlacements);
-      const weightStatus = computeMatchStatus(matches, weightPlacements);
+      const weightStatus = computeMatchStatus(matches, weightPlacements, nameIndex);
 
       for (const [id, info] of Object.entries(participantInfo)) {
         allParticipants[id] = {
