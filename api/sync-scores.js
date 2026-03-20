@@ -95,6 +95,16 @@ export default async function handler(req, res) {
       const matches         = brackets[weight]   ?? {};
       const weightPlacements = placements[weight] ?? [];
 
+      // Diagnostic: log first match shape so we can verify field names
+      const sampleMatches = Object.values(matches);
+      if (sampleMatches.length > 0) {
+        const s = sampleMatches[0];
+        console.log(`[sync-scores] ${weight}lb sample match — state:${s.state} top:${JSON.stringify(s.topParticipant ?? s.top ?? null)?.slice(0,80)} winType:${s.winType}`);
+      } else {
+        console.log(`[sync-scores] ${weight}lb — no matches returned from API`);
+      }
+      console.log(`[sync-scores] ${weight}lb — ${sampleMatches.length} matches, ${weightPlacements.length} placements`);
+
       // Build participantId -> name/team lookup from match participants + placements
       const participantInfo = {};
       for (const match of Object.values(matches)) {
@@ -109,6 +119,9 @@ export default async function handler(req, res) {
       }
 
       const weightPts = scoreWeightClass(matches, weightPlacements);
+
+      const scoredCount = Object.values(weightPts).filter(p => p > 0).length;
+      console.log(`[sync-scores] ${weight}lb — ${scoredCount} wrestlers scored > 0`);
 
       for (const [participantId, pts] of Object.entries(weightPts)) {
         if (pts > 0) {
@@ -146,6 +159,7 @@ export default async function handler(req, res) {
       }
     }
 
+    console.log(`[sync-scores] Total scored: ${Object.keys(allScores).length}, fuzzy matched: ${Object.keys(rowMap).length}, unmatched: ${unmatched.length}`);
     const rows = Object.values(rowMap);
 
     // ── 6. Upsert into global_scores ──────────────────────────────────────────
