@@ -295,9 +295,16 @@ export default function RosterPage({team,roster,getColor,picksPerTeam,allWrestle
                     {wr.weight>0?`${wr.weight}lb`:"?"}
                   </span>
                   <span style={{fontSize:10,color:"#5a5030",fontFamily:"'Barlow Condensed',sans-serif",minWidth:16}}>#{wr.seed}</span>
-                  <span style={{flex:1,fontSize:14,fontWeight:600,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.name}</span>
-                  <span style={{fontSize:11,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.school}</span>
-                  {wr.pts>0&&!isH&&<span style={{fontSize:15,fontWeight:700,color:"#34d399"}}>{wr.pts}pt</span>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:600,color:"#c9a84c",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.name}</div>
+                    <div style={{fontSize:9,color:"#4a4030",fontFamily:"'Barlow Condensed',sans-serif"}}>{wr.school}</div>
+                    {wr.status&&(
+                      <div style={{fontSize:9,color:statusColor(wr.status),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+                        {wr.status}
+                      </div>
+                    )}
+                  </div>
+                  {wr.pts>0&&!isH&&<span style={{fontSize:15,fontWeight:700,color:"#34d399",flexShrink:0}}>{wr.pts}pt</span>}
                   {isH&&isCommissioner&&(
                     <div style={{display:"flex",gap:3,flexShrink:0}}>
                       <button onClick={()=>{setReplaceTarget({key:wr.key,weight:wr.weight,seed:wr.seed,name:wr.name});setReplaceQ("");}}
