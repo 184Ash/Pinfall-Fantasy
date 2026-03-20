@@ -372,14 +372,11 @@ export async function loadDraftState(leagueId) {
 
   if (picksError) throw new Error(picksError.message)
 
-  // ── 3. Fetch scores from global_scores for this league's wrestlers ───────────
-  // global_scores is keyed by wrestler_id only (no league_id), so we fetch
-  // all rows whose UUID belongs to this league's roster.
-  const wrestlerIds = wrestlers.map(wr => wr.id);
+  // ── 3. Fetch scores from global_scores ───────────────────────────────────────
+  // global_scores is keyed by (weight, seed) — 330 rows shared across all leagues.
   const { data: points, error: pointsError } = await supabase
     .from('global_scores')
-    .select('wrestler_id, pts')
-    .in('wrestler_id', wrestlerIds);
+    .select('weight, seed, pts');
 
   if (pointsError) throw new Error(pointsError.message)
 
@@ -413,11 +410,8 @@ export async function loadDraftState(leagueId) {
 
   // ── 6. Shape points into { "weight-seed": pts } format ───────────
   const pointsMap = {}
-  points.forEach(pt => {
-    const wr = wrestlerLookup[pt.wrestler_id]
-    if (!wr) return
-    const key = `${wr.weight}-${wr.seed}`
-    pointsMap[key] = pt.pts
+  ;(points || []).forEach(pt => {
+    pointsMap[`${pt.weight}-${pt.seed}`] = pt.pts
   })
 
   // ── 7. Build ordered picks log (deduplicated by key) ─────────────
