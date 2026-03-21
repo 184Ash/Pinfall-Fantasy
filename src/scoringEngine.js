@@ -110,8 +110,11 @@ export function scoreWeightClass(matches, placements) {
     const loser  = top.winner ? bot : bot.winner ? top : null;
     if (!winner || !loser) continue;
 
-    // 1pt advancement per win (all brackets)
-    add(winner.id, 1.0);
+    // Advancement: 1pt for champ bracket win, 0.5pt for consolation win
+    const topPriorLoss = lossCount[top.id] ?? 0;
+    const botPriorLoss = lossCount[bot.id] ?? 0;
+    const isCons = topPriorLoss > 0 || botPriorLoss > 0;
+    add(winner.id, isCons ? 0.5 : 1.0);
     // Bonus for win type
     add(winner.id, BONUS_POINTS[match.winType] ?? 0);
 
