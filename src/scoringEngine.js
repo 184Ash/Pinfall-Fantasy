@@ -15,7 +15,8 @@ const BONUS_POINTS = {
   DQ:        2.0,  // Disqualification
   FM:        2.0,  // Flagrant misconduct
   MFF:       0.0,  // Medical forfeit (no bonus)
-  'M FOR-L': 2.0,  // Medical forfeit – loss (opponent forfeits, treated as forfeit win)
+  'M FOR':   2.0,  // Medical forfeit (opponent forfeits)
+  'M FOR-L': 2.0,  // Medical forfeit – loss variant
   'M FOR-W': 0.0,  // Medical forfeit – win side variant (no bonus to the forfeiter)
 };
 
