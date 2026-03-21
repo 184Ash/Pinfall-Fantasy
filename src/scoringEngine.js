@@ -29,85 +29,56 @@ const PLACE_TO_NUM = {
   '5th': 5, '6th': 6, '7th': 7, '8th': 8,
 };
 
-// ── Advancement points by bracket side ───────────────────────────────────────
-// 1pt per championship bracket win, 0.5pt per consolation bracket win.
-// Placement matches (3rd/5th/7th) award 0 advancement (they use placement pts).
-const ADVANCEMENT_POINTS = {
-  championship: 1.0,
-  consolation:  0.5,
-  placement:    0.0,
-};
-
-/**
- * Classify a match as 'championship', 'consolation', or 'placement'.
- */
-function getMatchCategory(match) {
-  const mt = (
-    match.matchType         ||
-    match.params?.matchType ||
-    match.bracket_type      ||
-    ''
-  ).toLowerCase();
-
-  if (mt === 'placement' || mt === 'consolation_placement') return 'placement';
-  if (mt === 'consolation' || mt === 'consi')               return 'consolation';
-  if (mt === 'championship' || mt === 'champ')              return 'championship';
-
-  const rn = (
-    match.roundName         ||
-    match.params?.roundName ||
-    match.round?.name       ||
-    match.round_name        ||
-    ''
-  ).toLowerCase();
-
-  if (rn.includes('place') || rn.includes('3rd') || rn.includes('5th') || rn.includes('7th')) {
-    return 'placement';
-  }
-  if (rn.includes('consolation') || rn.includes('consi') || rn.includes('cons')) {
-    return 'consolation';
-  }
-
-  return 'championship';
-}
-
 /**
  * Score one weight class.
  *
- * Total = advancement pts (per win) + bonus pts (per win type) + placement pts (when placed).
- * Example: QF winner with 2 falls = 2 advancement + 4 bonus = 6pts live,
- *          then placement pts added on top when the tournament ends.
+ * Bracket side (champ vs cons) is derived from win/loss record — NOT from
+ * FloArena's roundName, which is null for most matches.
+ *
+ * Matches are processed in matchNumber order so loss counts are accurate
+ * before each match is scored:
+ *   - Both participants have 0 prior losses → championship match → winner gets 1pt
+ *   - Either participant has 1+ prior loss  → consolation match  → winner gets 0.5pt
+ *
+ * Total = advancement (1 or 0.5 per win) + bonus (fall=2, TF=1.5, MD=1) + placement pts.
  *
  * @param {Object} matches    - keyed by match UUID, from getBracket()
  * @param {Array}  placements - array of { place, participantId, name, teamName }
  * @returns {Object} { participantId: totalPts }
  */
 export function scoreWeightClass(matches, placements) {
-  const pts = {};
+  const pts      = {};
+  const lossCount = {}; // id → cumulative losses (updated as matches are processed)
 
   const add = (id, amount) => {
     if (!id) return;
     pts[id] = (pts[id] ?? 0) + amount;
   };
 
-  for (const match of Object.values(matches)) {
-    if (match.state !== 'completed') continue;
+  // Sort completed matches in bracket order so earlier rounds are processed first
+  const completed = Object.values(matches)
+    .filter(m => m.state === 'completed' && m.topParticipant?.id && m.bottomParticipant?.id)
+    .sort((a, b) => (a.matchNumber ?? a.x ?? 0) - (b.matchNumber ?? b.x ?? 0));
 
+  for (const match of completed) {
     const top = match.topParticipant;
     const bot = match.bottomParticipant;
-    if (!top?.id || !bot?.id) continue;
 
     const winner = top.winner ? top : bot.winner ? bot : null;
-    if (!winner) continue;
+    const loser  = top.winner ? bot : bot.winner ? top : null;
+    if (!winner || !loser) continue;
 
-    // Advancement: 1pt (champ) or 0.5pt (cons) per win
-    const category   = getMatchCategory(match);
-    const advancement = ADVANCEMENT_POINTS[category] ?? 1.0;
+    // Determine bracket side from prior loss counts
+    const topPriorLosses = lossCount[top.id] ?? 0;
+    const botPriorLosses = lossCount[bot.id] ?? 0;
+    const isCons         = topPriorLosses > 0 || botPriorLosses > 0;
+    const advancement    = isCons ? 0.5 : 1.0;
+
     add(winner.id, advancement);
+    add(winner.id, BONUS_POINTS[match.winType] ?? 0);
 
-    // Bonus: fall=2, TF=1.5, MD=1, decision=0
-    const bonus = BONUS_POINTS[match.winType] ?? 0.0;
-    add(winner.id, bonus);
+    // Record the loss AFTER scoring so this match is correctly classified
+    lossCount[loser.id] = (lossCount[loser.id] ?? 0) + 1;
   }
 
   // Placement pts added once when FloArena records official placement
@@ -116,8 +87,7 @@ export function scoreWeightClass(matches, placements) {
     const placeNum = typeof place === 'number'
       ? place
       : (PLACE_TO_NUM[place] ?? parseInt(place, 10));
-    const placePts = PLACEMENT_POINTS[placeNum] ?? 0;
-    add(participantId, placePts);
+    add(participantId, PLACEMENT_POINTS[placeNum] ?? 0);
   }
 
   return pts;
