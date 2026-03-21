@@ -115,7 +115,8 @@ export function scoreWeightClass(matches, placements) {
     if (placedIds.has(id)) continue;
     const w = winsMap[id]  ?? 0;
     const l = lossMap[id]  ?? 0;
-    pts[id] = getMilestone(w, l) + (bonusMap[id] ?? 0);
+    const m = getMilestone(w, l);
+    pts[id] = m > 0 ? m + (bonusMap[id] ?? 0) : 0;
   }
 
   return pts;
