@@ -4,7 +4,7 @@
 //         placements array from getPlacements()
 // Output: { participantId: totalPts }
 
-// ── Win-type bonus points (per NCAA team scoring rules) ───────────────────────
+// ── Win-type bonus points ─────────────────────────────────────────────────────
 const BONUS_POINTS = {
   F:   2.0,  // Fall
   TF:  1.5,  // Technical fall
@@ -17,68 +17,105 @@ const BONUS_POINTS = {
   MFF: 0.0,  // Medical forfeit (no bonus)
 };
 
-// ── Placement points (incremental, not cumulative) ────────────────────────────
+// ── Final placement points ────────────────────────────────────────────────────
 const PLACEMENT_POINTS = {
-  1: 16,
-  2: 12,
-  3: 10,
-  4:  9,
-  5:  7,
-  6:  6,
-  7:  4,
-  8:  3,
+  1: 16, 2: 12, 3: 10, 4: 9, 5: 7, 6: 6, 7: 4, 8: 3,
 };
 
-// FloArena may return ordinal strings or numeric values for placement
 const PLACE_TO_NUM = {
   '1st': 1, '2nd': 2, '3rd': 3, '4th': 4,
   '5th': 5, '6th': 6, '7th': 7, '8th': 8,
 };
 
+// ── Live milestone points (non-cumulative — replaces previous value) ──────────
+// Score updates immediately after each match. Bonus pts stack on top.
+// Championship bracket (0 losses):
+//   1 win  → 0  pts (not yet guaranteed placement)
+//   2 wins → 6  pts (won QF, in SF)
+//   3 wins → 12 pts (won SF, guaranteed finalist)
+//   4 wins → 16 pts (Champion)
+// Consolation bracket (1 loss):
+//   1 win  → 3  pts (blood round win, guaranteed 8th)
+//   2 wins → 4  pts
+//   3 wins → 6  pts
+//   4 wins → 7  pts
+//   5 wins → 9  pts (guaranteed top 4)
+function getMilestone(wins, losses) {
+  if (losses === 0) {
+    if (wins >= 4) return 16;
+    if (wins === 3) return 12;
+    if (wins === 2) return 6;
+    return 0;
+  }
+  if (losses === 1) {
+    if (wins >= 5) return 9;
+    if (wins === 4) return 7;
+    if (wins === 3) return 6;
+    if (wins === 2) return 4;
+    if (wins === 1) return 3;
+  }
+  return 0;
+}
 
 /**
- * Score one weight class.
+ * Score one weight class with live milestone scoring.
+ *
+ * Score = milestone(wins, losses) + Σ bonus_pts_per_win
+ * When officially placed: score = PLACEMENT_POINTS[place] + Σ bonus_pts
+ *
  * @param {Object} matches    - keyed by match UUID, from getBracket()
  * @param {Array}  placements - array of { place, participantId, name, teamName }
  * @returns {Object} { participantId: totalPts }
  */
 export function scoreWeightClass(matches, placements) {
-  const pts = {};
+  const winsMap  = {}; // id → wins
+  const lossMap  = {}; // id → losses
+  const bonusMap = {}; // id → cumulative bonus pts
 
-  const add = (id, amount) => {
-    if (!id) return;
-    pts[id] = (pts[id] ?? 0) + amount;
+  const ensure = (id) => {
+    if (winsMap[id]  === undefined) winsMap[id]  = 0;
+    if (lossMap[id]  === undefined) lossMap[id]  = 0;
+    if (bonusMap[id] === undefined) bonusMap[id] = 0;
   };
 
   for (const match of Object.values(matches)) {
-    // Only score completed bouts
     if (match.state !== 'completed') continue;
-
     const top = match.topParticipant;
     const bot = match.bottomParticipant;
+    if (!top?.id || !bot?.id) continue;
 
-    // Bye: one participant slot is missing/null — 0 points (per spec)
-    if (!top || !bot) continue;
+    ensure(top.id); ensure(bot.id);
 
-    // Find winner
     const winner = top.winner ? top : bot.winner ? bot : null;
-    if (!winner) continue;
+    const loser  = top.winner ? bot : bot.winner ? top : null;
+    if (!winner || !loser) continue;
 
-    // Bonus points based on win type (fall, TF, MD, forfeit, etc.)
-    // Placement points come from the placements endpoint — NOT cumulative with per-win advancement.
-    // Each wrestler's final score = PLACEMENT_POINTS[place] + sum of bonus pts.
-    const bonus = BONUS_POINTS[match.winType] ?? 0.0;
-    add(winner.id, bonus);
+    winsMap[winner.id]++;
+    lossMap[loser.id]++;
+    bonusMap[winner.id] += BONUS_POINTS[match.winType] ?? 0;
   }
 
-  // ── Placement points come entirely from the placements endpoint ───────────
+  const pts = {};
+
+  // ── Officially placed wrestlers ───────────────────────────────────────────
+  const placedIds = new Set();
   for (const { place, participantId } of placements) {
-    const placeNum =
-      typeof place === 'number'
-        ? place
-        : PLACE_TO_NUM[place] ?? parseInt(place, 10);
+    if (!participantId) continue;
+    const placeNum = typeof place === 'number'
+      ? place
+      : (PLACE_TO_NUM[place] ?? parseInt(place, 10));
     const placePts = PLACEMENT_POINTS[placeNum] ?? 0;
-    add(participantId, placePts);
+    ensure(participantId);
+    pts[participantId] = placePts + bonusMap[participantId];
+    placedIds.add(participantId);
+  }
+
+  // ── In-progress wrestlers: live milestone ─────────────────────────────────
+  for (const id of new Set([...Object.keys(winsMap), ...Object.keys(lossMap)])) {
+    if (placedIds.has(id)) continue;
+    const w = winsMap[id]  ?? 0;
+    const l = lossMap[id]  ?? 0;
+    pts[id] = getMilestone(w, l) + (bonusMap[id] ?? 0);
   }
 
   return pts;
