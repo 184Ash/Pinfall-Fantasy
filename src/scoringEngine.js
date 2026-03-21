@@ -6,15 +6,17 @@
 
 // ── Win-type bonus points ─────────────────────────────────────────────────────
 const BONUS_POINTS = {
-  F:   2.0,  // Fall
-  TF:  1.5,  // Technical fall
-  MD:  1.0,  // Major decision
-  DEC: 0.0,  // Decision
-  FOR: 2.0,  // Forfeit
-  DEF: 2.0,  // Default
-  DQ:  2.0,  // Disqualification
-  FM:  2.0,  // Flagrant misconduct
-  MFF: 0.0,  // Medical forfeit (no bonus)
+  F:         2.0,  // Fall
+  TF:        1.5,  // Technical fall
+  MD:        1.0,  // Major decision
+  DEC:       0.0,  // Decision
+  FOR:       2.0,  // Forfeit
+  DEF:       2.0,  // Default
+  DQ:        2.0,  // Disqualification
+  FM:        2.0,  // Flagrant misconduct
+  MFF:       0.0,  // Medical forfeit (no bonus)
+  'M FOR-L': 2.0,  // Medical forfeit – loss (opponent forfeits, treated as forfeit win)
+  'M FOR-W': 0.0,  // Medical forfeit – win side variant (no bonus to the forfeiter)
 };
 
 // ── Placement points ──────────────────────────────────────────────────────────
