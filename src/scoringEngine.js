@@ -19,7 +19,6 @@ const BONUS_POINTS = {
 
 // ── Placement points ──────────────────────────────────────────────────────────
 // Added once when FloArena officially records the placement.
-// These are flat values — NOT cumulative with each other.
 const PLACEMENT_POINTS = {
   1: 16, 2: 12, 3: 10, 4: 9, 5: 7, 6: 6, 7: 4, 8: 3,
 };
@@ -30,17 +29,59 @@ const PLACE_TO_NUM = {
 };
 
 /**
+ * Returns guaranteed minimum placement points for a wrestler's current
+ * bracket position (before official placement is recorded by FloArena).
+ *
+ * Champ bracket (0 losses):
+ *   wins=3 (won QF, in SF)     → guaranteed 4th min  = 9pts
+ *   wins=4 (won SF, in Finals) → guaranteed 2nd min  = 12pts
+ *   wins<3                     → not guaranteed (blood round risk)
+ *
+ * Cons bracket (1 loss):
+ *   wins=1  blood round win    → guaranteed 8th = 3pts
+ *   wins=2  Cons R2 win        → guaranteed 7th = 4pts
+ *   wins=3  Cons R3 win        → guaranteed 6th = 6pts
+ *   wins=4  Cons R4 win        → guaranteed 5th = 7pts
+ *   wins=5  Cons SF win        → guaranteed 4th = 9pts (in 3rd place match)
+ */
+function getLiveGuaranteedPlacement(wins, losses) {
+  if (losses >= 2) return 0; // Eliminated
+
+  if (losses === 0) {
+    // Championship bracket
+    if (wins >= 4) return PLACEMENT_POINTS[2]; // In Finals → guaranteed 2nd
+    if (wins === 3) return PLACEMENT_POINTS[4]; // In Champ SF → guaranteed 4th
+    return 0; // wins < 3: blood round risk if they lose, not guaranteed
+  }
+
+  if (losses === 1) {
+    // Consolation bracket
+    if (wins >= 5) return PLACEMENT_POINTS[4]; // In 3rd place match → guaranteed 4th
+    if (wins === 4) return PLACEMENT_POINTS[5]; // Cons SF → guaranteed 5th
+    if (wins === 3) return PLACEMENT_POINTS[6]; // Cons R4 → guaranteed 6th
+    if (wins === 2) return PLACEMENT_POINTS[7]; // Cons R3 → guaranteed 7th
+    if (wins === 1) return PLACEMENT_POINTS[8]; // Blood round win → guaranteed 8th
+    return 0;
+  }
+
+  return 0;
+}
+
+/**
  * Score one weight class.
  *
- * Bracket side (champ vs cons) is derived from win/loss record — NOT from
- * FloArena's roundName, which is null for most matches.
+ * Scoring formula:
+ *   total = wins × 1pt (all brackets)
+ *         + bonus pts per win (fall=2, TF=1.5, MD=1)
+ *         + live guaranteed placement pts (based on bracket position)
+ *         + official placement pts (replaces live pts when FloArena records result)
  *
- * Matches are processed in matchNumber order so loss counts are accurate
- * before each match is scored:
- *   - Both participants have 0 prior losses → championship match → winner gets 1pt
- *   - Either participant has 1+ prior loss  → consolation match  → winner gets 0.5pt
+ * Example — Josh Barr (197lb, in Finals, 4 champ wins, 2 TF + 2 MD bonus):
+ *   4 × 1pt + (2×1.5 + 2×1.0) + 12 (guaranteed 2nd) = 4 + 5 + 12 = 21pts
  *
- * Total = advancement (1 or 0.5 per win) + bonus (fall=2, TF=1.5, MD=1) + placement pts.
+ * Bracket side (champ vs cons) is derived from win/loss record so matches are
+ * processed in matchNumber order — NOT relying on FloArena's roundName field
+ * (which is null for most matches).
  *
  * @param {Object} matches    - keyed by match UUID, from getBracket()
  * @param {Array}  placements - array of { place, participantId, name, teamName }
@@ -48,14 +89,15 @@ const PLACE_TO_NUM = {
  */
 export function scoreWeightClass(matches, placements) {
   const pts      = {};
-  const lossCount = {}; // id → cumulative losses (updated as matches are processed)
+  const winCount  = {}; // id → total wins (for live placement lookup)
+  const lossCount = {}; // id → total losses (for live placement lookup)
 
   const add = (id, amount) => {
-    if (!id) return;
+    if (!id || !amount) return;
     pts[id] = (pts[id] ?? 0) + amount;
   };
 
-  // Sort completed matches in bracket order so earlier rounds are processed first
+  // Sort completed matches in bracket order so loss counts are accurate
   const completed = Object.values(matches)
     .filter(m => m.state === 'completed' && m.topParticipant?.id && m.bottomParticipant?.id)
     .sort((a, b) => (a.matchNumber ?? a.x ?? 0) - (b.matchNumber ?? b.x ?? 0));
@@ -68,28 +110,33 @@ export function scoreWeightClass(matches, placements) {
     const loser  = top.winner ? bot : bot.winner ? top : null;
     if (!winner || !loser) continue;
 
-    // Determine bracket side from prior loss counts
-    const topPriorLosses = lossCount[top.id] ?? 0;
-    const botPriorLosses = lossCount[bot.id] ?? 0;
-    const isCons         = topPriorLosses > 0 || botPriorLosses > 0;
-    // Championship wins: 3pts. Consolation wins: 0pts advancement
-    // (consolation survival is reflected in placement pts at the end)
-    const advancement    = isCons ? 0.0 : 3.0;
-
-    add(winner.id, advancement);
+    // 1pt advancement per win (all brackets)
+    add(winner.id, 1.0);
+    // Bonus for win type
     add(winner.id, BONUS_POINTS[match.winType] ?? 0);
 
-    // Record the loss AFTER scoring so this match is correctly classified
-    lossCount[loser.id] = (lossCount[loser.id] ?? 0) + 1;
+    winCount[winner.id]  = (winCount[winner.id]  ?? 0) + 1;
+    lossCount[loser.id]  = (lossCount[loser.id]  ?? 0) + 1;
   }
 
-  // Placement pts added once when FloArena records official placement
+  // Official placement pts (added when FloArena records the final result)
+  const placedIds = new Set();
   for (const { place, participantId } of placements) {
     if (!participantId) continue;
     const placeNum = typeof place === 'number'
       ? place
       : (PLACE_TO_NUM[place] ?? parseInt(place, 10));
     add(participantId, PLACEMENT_POINTS[placeNum] ?? 0);
+    placedIds.add(participantId);
+  }
+
+  // Live guaranteed placement for non-officially-placed wrestlers
+  const allIds = new Set([...Object.keys(winCount), ...Object.keys(lossCount)]);
+  for (const id of allIds) {
+    if (placedIds.has(id)) continue; // official placement already applied
+    const w = winCount[id]  ?? 0;
+    const l = lossCount[id] ?? 0;
+    add(id, getLiveGuaranteedPlacement(w, l));
   }
 
   return pts;
