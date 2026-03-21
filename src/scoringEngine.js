@@ -35,52 +35,6 @@ const PLACE_TO_NUM = {
   '5th': 5, '6th': 6, '7th': 7, '8th': 8,
 };
 
-// ── Advancement points by bracket category ────────────────────────────────────
-const ADVANCEMENT_POINTS = {
-  championship: 1.0,
-  consolation:  0.5,
-  placement:    0.0,  // 3rd/5th/7th place matches — no advancement points
-};
-
-/**
- * Classify a match as 'championship', 'consolation', or 'placement'.
- *
- * FloArena match objects may expose bracket type through different fields
- * depending on API version. We check several common field locations in order.
- */
-function getMatchCategory(match) {
-  // Check explicit matchType field (various possible locations)
-  const mt = (
-    match.matchType          ||
-    match.params?.matchType  ||
-    match.bracket_type       ||
-    ''
-  ).toLowerCase();
-
-  if (mt === 'placement' || mt === 'consolation_placement') return 'placement';
-  if (mt === 'consolation' || mt === 'consi')               return 'consolation';
-  if (mt === 'championship' || mt === 'champ')              return 'championship';
-
-  // Fall back to checking the round name string
-  const rn = (
-    match.roundName          ||
-    match.params?.roundName  ||
-    match.round?.name        ||
-    match.round_name         ||
-    ''
-  ).toLowerCase();
-
-  // Placement matches: "3rd Place", "5th Place", "7th Place", etc.
-  if (rn.includes('place') || rn.includes('3rd') || rn.includes('5th') || rn.includes('7th')) {
-    return 'placement';
-  }
-  if (rn.includes('consolation') || rn.includes('consi')) {
-    return 'consolation';
-  }
-
-  // Default: treat as championship bracket
-  return 'championship';
-}
 
 /**
  * Score one weight class.
@@ -110,13 +64,9 @@ export function scoreWeightClass(matches, placements) {
     const winner = top.winner ? top : bot.winner ? bot : null;
     if (!winner) continue;
 
-    // Advancement points based on bracket type
-    const category   = getMatchCategory(match);
-    const advancement = ADVANCEMENT_POINTS[category] ?? 1.0;
-    add(winner.id, advancement);
-
-    // Bonus points based on win type
-    // Awarded for all wins (including placement matches per spec — bonus is separate from advancement)
+    // Bonus points based on win type (fall, TF, MD, forfeit, etc.)
+    // Placement points come from the placements endpoint — NOT cumulative with per-win advancement.
+    // Each wrestler's final score = PLACEMENT_POINTS[place] + sum of bonus pts.
     const bonus = BONUS_POINTS[match.winType] ?? 0.0;
     add(winner.id, bonus);
   }
