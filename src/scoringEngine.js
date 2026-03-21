@@ -72,7 +72,9 @@ export function scoreWeightClass(matches, placements) {
     const topPriorLosses = lossCount[top.id] ?? 0;
     const botPriorLosses = lossCount[bot.id] ?? 0;
     const isCons         = topPriorLosses > 0 || botPriorLosses > 0;
-    const advancement    = isCons ? 0.5 : 1.0;
+    // Championship wins: 3pts. Consolation wins: 0pts advancement
+    // (consolation survival is reflected in placement pts at the end)
+    const advancement    = isCons ? 0.0 : 3.0;
 
     add(winner.id, advancement);
     add(winner.id, BONUS_POINTS[match.winType] ?? 0);
