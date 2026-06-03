@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local tooling (Claude Code sandboxes/config, Vercel project link)
+.claude/
+.vercel
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
