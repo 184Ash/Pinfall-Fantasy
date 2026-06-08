@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import CommissionerSetup from "./CommissionerSetup";
 import LinkGenerated from "./LinkGenerated";
 import { createLeague, fetchLeague } from "./leagueService";
+import { LEAGUE_CREATION_OPEN } from "./constants";
 
 const styles = {
   loading: {
@@ -81,6 +82,12 @@ export default function CreateLeaguePage() {
 
   const handleConfirm = async (formData) => {
     setSavedFormData(formData);
+    // Off-season: the live DB is read-only, so creation would fail at the RLS
+    // layer. Show a friendly closed notice instead of a database error.
+    if (!LEAGUE_CREATION_OPEN) {
+      setPhase("closed");
+      return;
+    }
     setPhase("loading");
     try {
       const data = await createLeague(formData);
@@ -136,6 +143,24 @@ export default function CreateLeaguePage() {
         teams={result.teams}
         onGoToLeague={handleGoToLeague}
       />
+    );
+  }
+
+  // ── Closed (off-season) ───────────────────────────────────────────
+  if (phase === "closed") {
+    return (
+      <div style={styles.errorBox}>
+        <div style={{ ...styles.errorTitle, color: "#C9A84C" }}>
+          League creation is closed for the off-season
+        </div>
+        <div style={styles.errorMsg}>
+          New leagues open each spring for the NCAA Division I Championships. In the
+          meantime, explore the completed 2026 league to see Pinfall Fantasy in action.
+        </div>
+        <button style={styles.retryBtn} onClick={() => navigate("/join/W6S75")}>
+          Explore the 2026 League →
+        </button>
+      </div>
     );
   }
 

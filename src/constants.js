@@ -31,3 +31,8 @@ export const TEAM_SOFT_CAP = 20; // warn above this
 export const TEAM_HARD_CAP = 30; // block above this
 
 export const PAGE_SIZE = 12; // wrestlers per page per weight column
+
+// Off-season gate: when false, the public app is a read-only showcase and new
+// league creation is disabled (the live DB enforces read-only RLS). Flip to true
+// and redeploy when a new tournament season opens.
+export const LEAGUE_CREATION_OPEN = false;
