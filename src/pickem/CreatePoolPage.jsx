@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPool } from "./pickemService";
 import { PICKEM_CREATION_OPEN, PICKEM_SEASON, PICK_MODES, DEFAULT_SCORING } from "./pickemConstants";
+import ConferencePicker from "./ConferencePicker";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
@@ -33,6 +34,7 @@ export default function CreatePoolPage() {
   const [commissionerName, setCommissionerName] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [defaultPickMode, setDefaultPickMode] = useState("matches");
+  const [conferences, setConferences] = useState(["big-ten"]);
 
   const handleCreate = async () => {
     if (!poolName.trim() || !commissionerName.trim()) {
@@ -48,6 +50,7 @@ export default function CreatePoolPage() {
         commissionerName: commissionerName.trim(),
         recoveryEmail: recoveryEmail.trim() || null,
         defaultPickMode,
+        conferences,
       });
       setResult(data);
       setPhase("done");
@@ -185,6 +188,13 @@ export default function CreatePoolPage() {
                 </div>
               </button>
             ))}
+          </div>
+
+          <label style={{ display: "block", fontSize: 10, letterSpacing: ".18em", color: "#6a5a30", marginBottom: 8 }}>
+            POOL SCOPE <span style={{ color: "#3a4250" }}>(WHICH CONFERENCES ARE IN PLAY)</span>
+          </label>
+          <div style={{ marginBottom: 24 }}>
+            <ConferencePicker selected={conferences} onChange={setConferences} pickMode={defaultPickMode} />
           </div>
 
           <div style={{ background: "#070a0e", border: "1px solid #1e2530", borderRadius: 8,

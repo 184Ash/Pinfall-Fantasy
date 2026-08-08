@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinfall Pick'em — 2026-27 conference load</title>
+<style>
+  :root{
+    --surface-0:#0d0c0a; --surface-1:#141310; --surface-2:#1e1c17; --line:#2e2b24;
+    --text-primary:#f5f2e8; --text-secondary:#a8a294; --text-muted:#6f6a5e;
+    --series-1:#c98500; --accent:#e6c15c;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--surface-0);color:var(--text-primary);
+    font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 72px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--text-secondary);margin:0 0 6px;font-size:14px}
+  .caveat{color:var(--text-muted);font-size:12.5px;margin:0 0 26px;
+    border-left:2px solid var(--line);padding-left:10px}
+  h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--text-muted);margin:34px 0 12px;font-weight:600}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px}
+  .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:8px;padding:3px}
+  .seg button{background:none;border:0;color:var(--text-secondary);padding:7px 14px;
+    border-radius:6px;font:inherit;font-size:13.5px;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--series-1);color:#12100b;font-weight:600}
+  .presets{display:flex;flex-wrap:wrap;gap:8px}
+  .presets button{background:var(--surface-2);border:1px solid var(--line);
+    color:var(--text-secondary);border-radius:999px;padding:6px 13px;font:inherit;
+    font-size:13px;cursor:pointer}
+  .presets button:hover{border-color:var(--series-1);color:var(--text-primary)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(246px,1fr));gap:10px}
+  .conf{position:relative;text-align:left;background:var(--surface-1);
+    border:1px solid var(--line);border-radius:11px;padding:13px 14px;cursor:pointer;
+    color:inherit;font:inherit;transition:border-color .12s,background .12s}
+  .conf:hover{border-color:#4a4437}
+  .conf[aria-pressed=true]{border-color:var(--series-1);background:var(--surface-2)}
+  .conf .row1{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--text-muted);flex:none}
+  .conf[aria-pressed=true] .dot{background:var(--series-1);border-color:var(--series-1)}
+  .cname{font-weight:600;font-size:14.5px}
+  .tvtag{margin-left:auto;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 7px;border-radius:4px;border:1px solid var(--line);color:var(--text-muted)}
+  .tvtag.linear{color:var(--warning);border-color:#5a4a1c}
+  .cstats{font-size:12.5px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+  .ctag{font-size:12px;color:var(--text-muted);margin-top:5px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;
+    margin-top:14px}
+  .tile{background:var(--surface-1);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .tile .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)}
+  .tile .v{font-size:27px;font-weight:650;letter-spacing:-.02em;margin-top:3px;
+    font-variant-numeric:tabular-nums}
+  .tile .n{font-size:12px;color:var(--text-secondary);margin-top:1px}
+  .verdict{display:flex;gap:11px;align-items:flex-start;margin-top:12px;padding:13px 15px;
+    border-radius:11px;background:var(--surface-1);border:1px solid var(--line)}
+  .verdict .ico{font-size:17px;line-height:1.3;flex:none}
+  .verdict .lab{font-weight:650}
+  .verdict .txt{color:var(--text-secondary);font-size:13.5px}
+  figure{margin:0}
+  figcaption{font-size:13px;color:var(--text-secondary);margin-bottom:14px}
+  .chart{position:relative;background:var(--surface-1);border:1px solid var(--line);
+    border-radius:11px;padding:20px 18px 10px}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:190px}
+  .bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;
+    position:relative;cursor:default}
+  .bar{background:var(--series-1);border-radius:4px 4px 0 0;min-height:2px;
+    transition:height .18s ease}
+  .bcol.zero .bar{background:var(--line)}
+  .blab{text-align:center;font-size:10.5px;color:var(--text-muted);margin-top:7px;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bval{text-align:center;font-size:11px;color:var(--text-secondary);margin-bottom:4px;
+    font-variant-numeric:tabular-nums;height:14px}
+  .bcol:hover .bar{filter:brightness(1.22)}
+  .tip{position:fixed;pointer-events:none;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;
+    box-shadow:0 8px 26px #000a;opacity:0;transition:opacity .1s;z-index:20;max-width:260px}
+  .tip b{color:var(--accent)}
+  .tip .tl{color:var(--text-secondary);display:flex;justify-content:space-between;gap:14px}
+  details{margin-top:14px;border:1px solid var(--line);border-radius:11px;
+    background:var(--surface-1);padding:0 15px}
+  summary{cursor:pointer;padding:12px 0;font-size:13.5px;color:var(--text-secondary)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;
+    font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase}
+  .foot{color:var(--text-muted);font-size:12px;margin-top:30px;line-height:1.65}
+</style></head><body>
+<div class="wrap">
+  <h1>2026-27 NCAA D1 dual meets — <span>how big is the slate?</span></h1>
+  <p class="sub">In-conference duals only. Toggle conferences the way a commissioner would and watch the weekly pick load move.</p>
+  <p class="caveat">Built Aug 8, 2026. Only 28 of 282 duals have a published date — the rest are projected from each conference's known format. The shape of the season is reliable; specific dates are not.</p>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Pick mode">
+      <button id="m-duals" aria-pressed="true">Duals Only</button>
+      <button id="m-matches" aria-pressed="false">Full Card</button>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <h2>Conferences</h2>
+  <div class="grid" id="grid"></div>
+
+  <h2>What that costs your players</h2>
+  <div class="tiles" id="tiles"></div>
+  <div class="verdict" id="verdict"></div>
+
+  <h2>Weekly load</h2>
+  <figure>
+    <figcaption id="cap"></figcaption>
+    <div class="chart"><div class="bars" id="bars"></div></div>
+  </figure>
+
+  <details id="tabwrap"><summary>Table view — duals per week</summary>
+    <table id="tab"></table>
+  </details>
+
+  <p class="foot">
+    Bouts assume a full 10-weight card per dual. “Typical week” averages the weeks that actually have duals inside Jan 4 – Feb 21, when every conference is live.<br>
+    Conference dual counts exclude non-conference duals, open tournaments and championships — a real team wrestles 6–10 more duals beyond these.
+  </p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const CONFS = [{"id": "big-ten", "name": "Big Ten", "short": "B1G", "teams": 14, "duals": 56, "bouts": 560, "weeks": 6, "avg": 9.3, "peak": 10, "tier": "linear", "tv": "~19 of 56 conference duals on Big Ten Network; rest on B1G+", "rr": false, "maturity": 75, "release": "opponents only (June 2026); dates due Sept 2026", "tag": "Deepest league, only one with real linear TV.", "weekly": [0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 10, 9, 10, 9, 0, 0]}, {"id": "eiwa", "name": "Eastern Intercollegiate Wrestling Association", "short": "EIWA", "teams": 12, "duals": 42, "bouts": 420, "weeks": 11, "avg": 3.8, "peak": 9, "tier": "stream", "tv": "No conference rights deal; stream follows the HOME school (ESPN+/Flo/NEC Front Row/YouTube). Lehigh home also on Service Electric", "rr": false, "maturity": 19, "release": "Franklin & Marshall only; Army-Navy date via WrestleStat", "tag": "Twelve teams, two divisions, Fri\u2013Sun sprawl. Army\u2013Navy headlines.", "weekly": [1, 1, 0, 0, 1, 5, 0, 0, 2, 5, 4, 3, 9, 7, 4, 0]}, {"id": "mac", "name": "Mid-American Conference", "short": "MAC", "teams": 11, "duals": 40, "bouts": 400, "weeks": 11, "avg": 3.6, "peak": 6, "tier": "stream", "tv": "No linear TV. ESPN+ backbone for MAC-member hosts; PA affiliates on school/PSAC streams + Flo", "rr": false, "maturity": 40, "release": "Lock Haven + Edinboro full slates posted", "tag": "Partial round robin, heavy Thursday nights, streams scattered by host.", "weekly": [0, 0, 0, 2, 2, 4, 0, 2, 2, 4, 3, 6, 6, 4, 5, 0]}, {"id": "big-12", "name": "Big 12", "short": "B12", "teams": 9, "duals": 36, "bouts": 360, "weeks": 10, "avg": 3.6, "peak": 9, "tier": "stream", "tv": "In-conference duals are ESPN+ only; Wyoming home on Mountain West Network, UNI home on FloWrestling", "rr": true, "maturity": 22, "release": "2 of 9 schools have posted opponents; no dates", "tag": "Gutted to nine by realignment. Clean round robin, ESPN+ only.", "weekly": [0, 0, 1, 0, 0, 1, 0, 0, 2, 7, 9, 5, 4, 4, 2, 1]}, {"id": "pac-12", "name": "Pac-12 Conference", "short": "P12", "teams": 9, "duals": 36, "bouts": 360, "weeks": 10, "avg": 3.6, "peak": 6, "tier": "stream", "tv": "No linear TV window. Fragmented by host: ESPN+, FloWrestling, Mountain West Network, Midco", "rr": true, "maturity": 0, "release": "none \u2014 format itself is projected", "tag": "Rebuilt 4 \u2192 9 teams. Newest league, least certain schedule.", "weekly": [0, 0, 0, 1, 1, 2, 0, 0, 5, 3, 4, 6, 4, 5, 5, 0]}, {"id": "socon", "name": "Southern Conference", "short": "SoCon", "teams": 9, "duals": 36, "bouts": 360, "weeks": 9, "avg": 4.0, "peak": 9, "tier": "stream", "tv": "No linear TV at all. ESPN+ primary; App State home on Flo, Campbell home on YouTube", "rr": true, "maturity": 0, "release": "none", "tag": "Full round robin across nine southern schools. No TV at all.", "weekly": [1, 0, 0, 0, 0, 1, 0, 0, 1, 4, 4, 5, 9, 7, 4, 0]}, {"id": "acc", "name": "Atlantic Coast Conference", "short": "ACC", "teams": 7, "duals": 21, "bouts": 210, "weeks": 7, "avg": 3.0, "peak": 3, "tier": "linear", "tv": "ACC Friday Night Duals on ACC Network (~3 conference duals); rest on ACCNX", "rr": true, "maturity": 14, "release": "UNC home slate only (July 2026)", "tag": "Smallest slate in D1 \u2014 three duals a week for seven weeks.", "weekly": [0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0]}, {"id": "ivy", "name": "Ivy League", "short": "IVY", "teams": 6, "duals": 15, "bouts": 150, "weeks": 5, "avg": 3.0, "peak": 5, "tier": "stream", "tv": "All 15 conference duals on ESPN+ (Ivy-ESPN deal); tournament final on ESPNews", "rr": true, "maturity": 0, "release": "none", "tag": "Fifteen duals in five weekends. The tidiest add-on there is.", "weekly": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 2, 3, 1, 0]}];
+const AXIS  = [{"tag": "2026-W46", "mon": "2026-11-09"}, {"tag": "2026-W47", "mon": "2026-11-16"}, {"tag": "2026-W48", "mon": "2026-11-23"}, {"tag": "2026-W49", "mon": "2026-11-30"}, {"tag": "2026-W50", "mon": "2026-12-07"}, {"tag": "2026-W51", "mon": "2026-12-14"}, {"tag": "2026-W52", "mon": "2026-12-21"}, {"tag": "2026-W53", "mon": "2026-12-28"}, {"tag": "2027-W01", "mon": "2027-01-04"}, {"tag": "2027-W02", "mon": "2027-01-11"}, {"tag": "2027-W03", "mon": "2027-01-18"}, {"tag": "2027-W04", "mon": "2027-01-25"}, {"tag": "2027-W05", "mon": "2027-02-01"}, {"tag": "2027-W06", "mon": "2027-02-08"}, {"tag": "2027-W07", "mon": "2027-02-15"}, {"tag": "2027-W08", "mon": "2027-02-22"}];
+const PRESETS = [
+  {label:'Televised only', ids:['big-ten','acc']},
+  {label:'Blue chip', ids:['big-ten','big-12']},
+  {label:'East coast', ids:['eiwa','acc','ivy']},
+  {label:'Everything', ids:CONFS.map(c=>c.id)},
+  {label:'Clear', ids:[]},
+];
+const BANDS = [
+  {max:10,  label:'Light',      ico:'\u25CF', col:'var(--good)',     txt:'A couple of minutes a week. Nobody will fall behind.'},
+  {max:30,  label:'Standard',   ico:'\u25CF', col:'var(--good)',     txt:'The sweet spot for a casual pool — enough to matter, not enough to be a chore.'},
+  {max:75,  label:'Heavy',      ico:'\u25B2', col:'var(--warning)',  txt:'Committed players only. Consider trimming a conference or switching to Duals Only.'},
+  {max:150, label:'Very heavy', ico:'\u25B2', col:'var(--serious)',  txt:'Expect people to miss weeks. Autopick or partial credit becomes close to mandatory.'},
+  {max:1e9, label:'Extreme',    ico:'\u25A0', col:'var(--critical)', txt:'Almost nobody finishes a card this size. Strongly consider Duals Only.'},
+];
+const PEAK = AXIS.map((w,i)=> (w.tag>='2027-W01'&&w.tag<='2027-W07')?i:-1).filter(i=>i>=0);
+
+let sel = new Set(['big-ten']);
+let mode = 'duals';
+const per = ()=> mode==='matches' ? 10 : 1;
+const fmt = n => n.toLocaleString('en-US');
+
+function summarize(){
+  const picked = CONFS.filter(c=>sel.has(c.id));
+  const weekly = AXIS.map((_,i)=>picked.reduce((s,c)=>s+c.weekly[i],0));
+  const duals  = picked.reduce((s,c)=>s+c.duals,0);
+  const peak   = weekly.length?Math.max(...weekly):0;
+  // Average over weeks in the peak window that ACTUALLY have duals — otherwise a
+  // conference that finishes early (the Big Ten ends Feb 14) reads artificially light.
+  const busy   = PEAK.filter(i=>weekly[i]>0);
+  const typ    = busy.length ? busy.reduce((s,i)=>s+weekly[i],0)/busy.length : 0;
+  return {picked, weekly, duals,
+    teams: picked.reduce((s,c)=>s+c.teams,0),
+    liveWeeks: weekly.filter(Boolean).length,
+    peak, peakIdx: weekly.indexOf(peak), typ};
+}
+
+function renderGrid(){
+  document.getElementById('grid').innerHTML = CONFS.map(c=>`
+    <button class="conf" aria-pressed="${sel.has(c.id)}" data-id="${c.id}">
+      <div class="row1"><span class="dot"></span><span class="cname">${c.short}</span>
+        <span class="tvtag ${c.tier}">${c.tier==='linear'?'TV':'stream'}</span></div>
+      <div class="cstats">${c.teams} teams · ${c.duals} duals · ~${Math.round(c.avg*per())} picks/wk</div>
+      <div class="ctag">${c.tag}</div>
+    </button>`).join('');
+  document.querySelectorAll('.conf').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id; sel.has(id)?sel.delete(id):sel.add(id); render();
+  });
+}
+
+function render(){
+  renderGrid();
+  const s = summarize(), p = per();
+  const typPicks = Math.round(s.typ*p), peakPicks = s.peak*p;
+  const band = BANDS.find(b=>typPicks<=b.max);
+
+  document.getElementById('tiles').innerHTML = [
+    ['Conferences', s.picked.length || '—', `${s.teams} teams`],
+    ['Duals', fmt(s.duals), `${s.liveWeeks} active weeks`],
+    ['Season picks', fmt(s.duals*p), mode==='matches'?'one per bout':'one per dual'],
+    ['Typical week', fmt(typPicks), 'Jan 4 – Feb 21'],
+    ['Busiest week', fmt(peakPicks), s.peakIdx>=0&&s.peak?wkLabel(s.peakIdx):'—'],
+  ].map(([k,v,n])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+
+  document.getElementById('verdict').innerHTML = s.duals
+    ? `<span class="ico" style="color:${band.col}">${band.ico}</span>
+       <div><div class="lab" style="color:${band.col}">${band.label} load</div>
+       <div class="txt">${band.txt}</div></div>`
+    : `<span class="ico" style="color:var(--text-muted)">\u25CB</span>
+       <div><div class="lab">Nothing selected</div>
+       <div class="txt">Turn on at least one conference to build a slate.</div></div>`;
+
+  const max = Math.max(1, ...s.weekly);
+  document.getElementById('cap').textContent = s.duals
+    ? `Duals per week across the selected ${s.picked.length===1?'conference':'conferences'}. `
+      + `Peaks at ${s.peak} duals the week of ${wkLabel(s.peakIdx)}`
+      + (mode==='matches'?` — ${fmt(s.peak*10)} individual picks in one week.`:'.')
+    : 'No conferences selected.';
+
+  document.getElementById('bars').innerHTML = AXIS.map((w,i)=>{
+    const v=s.weekly[i], h=Math.round(v/max*150);
+    return `<div class="bcol ${v?'':'zero'}" data-i="${i}">
+      <div class="bval">${v&&(v===s.peak||v>=max*0.6)?v:''}</div>
+      <div class="bar" style="height:${v?h+'px':'2px'}"></div>
+      <div class="blab">${short(w.mon)}</div></div>`;
+  }).join('');
+  wireTips(s);
+
+  document.getElementById('tab').innerHTML =
+    `<thead><tr><th>Week of</th><th>Duals</th>${s.picked.map(c=>`<th>${c.short}</th>`).join('')}<th>Picks</th></tr></thead><tbody>`
+    + AXIS.map((w,i)=>s.weekly[i]?`<tr><td>${long(w.mon)}</td><td>${s.weekly[i]}</td>`
+        + s.picked.map(c=>`<td>${c.weekly[i]||''}</td>`).join('')
+        + `<td>${fmt(s.weekly[i]*p)}</td></tr>`:'').join('')
+    + `</tbody>`;
+}
+
+function wireTips(s){
+  const tip=document.getElementById('tip');
+  document.querySelectorAll('.bcol').forEach(col=>{
+    col.onmouseenter=e=>{
+      const i=+col.dataset.i, v=s.weekly[i];
+      if(!v){tip.style.opacity=0;return;}
+      tip.innerHTML=`<div style="margin-bottom:5px">Week of <b>${long(AXIS[i].mon)}</b></div>`
+        + s.picked.filter(c=>c.weekly[i]).map(c=>`<div class="tl"><span>${c.short}</span><span>${c.weekly[i]}</span></div>`).join('')
+        + `<div class="tl" style="border-top:1px solid var(--line);margin-top:5px;padding-top:5px">
+             <span>${mode==='matches'?'Match picks':'Dual picks'}</span><b>${fmt(v*per())}</b></div>`;
+      tip.style.opacity=1;
+    };
+    col.onmousemove=e=>{
+      tip.style.left=Math.min(e.clientX+14, innerWidth-tip.offsetWidth-10)+'px';
+      tip.style.top=Math.max(8, e.clientY-tip.offsetHeight-12)+'px';
+    };
+    col.onmouseleave=()=>tip.style.opacity=0;
+  });
+}
+
+const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function short(iso){const[y,m,d]=iso.split('-');return M[+m-1]+' '+(+d)}
+function long(iso){const[y,m,d]=iso.split('-');return M[+m-1]+' '+(+d)+', '+y}
+function wkLabel(i){return i>=0?long(AXIS[i].mon):'—'}
+
+document.getElementById('presets').innerHTML =
+  PRESETS.map((p,i)=>`<button data-p="${i}">${p.label}</button>`).join('');
+document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>{
+  sel = new Set(PRESETS[+b.dataset.p].ids); render();
+});
+['duals','matches'].forEach(m=>{
+  document.getElementById('m-'+m).onclick=()=>{
+    mode=m;
+    document.getElementById('m-duals').setAttribute('aria-pressed', m==='duals');
+    document.getElementById('m-matches').setAttribute('aria-pressed', m==='matches');
+    render();
+  };
+});
+render();
+</script></body></html>

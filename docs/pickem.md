@@ -17,6 +17,16 @@ later without a schema change (`matchWin`, `perfectCard`, `dualWin`).
 `predicted_win_type` is reserved on the picks table for a future
 "call the pin" bonus.
 
+## Pool scope (conferences)
+
+A pool's slate is scoped by conference: `settings_json.conferences` holds an
+array of conference ids from `src/pickem/conferences.js` (the 2026-27 schedule
+dataset — see `docs/dual-schedule-scale.md` for the full scale analysis).
+`ConferencePicker` renders the selection UI on the create page and in the
+Manage tab's Pool Scope card: presets, per-conference picks/week pricing that
+follows the pick mode, a running load-band total, and a hard warning on
+Full Card + 3-plus conferences (peak weeks blow past 250 picks).
+
 ## Data model (`supabase/pickem_schema.sql`)
 
 ```
@@ -61,5 +71,8 @@ persists only via the creating device's localStorage).
 - Weekly winner highlight + season week-win counts
 - Commissioner-editable scoring values in the Manage tab
 - Auto-import dual results (Flo API, like the draft's sync pipeline)
+- Auto-build weekly slates from the schedule dataset once real dates publish
+  (needs a `conference` column + `source_dual_id` on `pickem_duals`; re-scrape
+  late Sept 2026 per dual-schedule-scale.md)
 - Locking picks per-dual instead of per-week (staggered start times)
 - Hide others' picks until lock (currently only your own picks render anyway)

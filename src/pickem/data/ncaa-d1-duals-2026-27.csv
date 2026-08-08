@@ -1,0 +1,298 @@
+dual_id,conference,home,home_name,away,away_name,date,iso_week,status,confidence,probability,bouts
+big-ten-001,big-ten,iowa,Iowa,michigan-state,Michigan State,,,tbd,official,scheduled,10
+big-ten-002,big-ten,iowa,Iowa,nebraska,Nebraska,,,tbd,official,scheduled,10
+big-ten-003,big-ten,iowa,Iowa,northwestern,Northwestern,,,tbd,official,scheduled,10
+big-ten-004,big-ten,iowa,Iowa,ohio-state,Ohio State,,,tbd,official,scheduled,10
+big-ten-005,big-ten,illinois,Illinois,iowa,Iowa,,,tbd,official,scheduled,10
+big-ten-006,big-ten,penn-state,Penn State,iowa,Iowa,,,tbd,official,scheduled,10
+big-ten-007,big-ten,rutgers,Rutgers,iowa,Iowa,,,tbd,official,scheduled,10
+big-ten-008,big-ten,wisconsin,Wisconsin,iowa,Iowa,,,tbd,official,scheduled,10
+big-ten-009,big-ten,minnesota,Minnesota,illinois,Illinois,,,tbd,official,scheduled,10
+big-ten-010,big-ten,minnesota,Minnesota,maryland,Maryland,,,tbd,official,scheduled,10
+big-ten-011,big-ten,minnesota,Minnesota,penn-state,Penn State,,,tbd,official,scheduled,10
+big-ten-012,big-ten,minnesota,Minnesota,rutgers,Rutgers,,,tbd,official,scheduled,10
+big-ten-013,big-ten,michigan,Michigan,minnesota,Minnesota,,,tbd,official,scheduled,10
+big-ten-014,big-ten,nebraska,Nebraska,minnesota,Minnesota,,,tbd,official,scheduled,10
+big-ten-015,big-ten,purdue,Purdue,minnesota,Minnesota,,,tbd,official,scheduled,10
+big-ten-016,big-ten,wisconsin,Wisconsin,minnesota,Minnesota,,,tbd,official,scheduled,10
+big-ten-017,big-ten,rutgers,Rutgers,indiana,Indiana,,,tbd,official,scheduled,10
+big-ten-018,big-ten,rutgers,Rutgers,northwestern,Northwestern,,,tbd,official,scheduled,10
+big-ten-019,big-ten,rutgers,Rutgers,penn-state,Penn State,,,tbd,official,scheduled,10
+big-ten-020,big-ten,maryland,Maryland,rutgers,Rutgers,,,tbd,official,scheduled,10
+big-ten-021,big-ten,nebraska,Nebraska,rutgers,Rutgers,,,tbd,official,scheduled,10
+big-ten-022,big-ten,wisconsin,Wisconsin,rutgers,Rutgers,,,tbd,official,scheduled,10
+big-ten-023,big-ten,penn-state,Penn State,maryland,Maryland,,,tbd,official,scheduled,10
+big-ten-024,big-ten,penn-state,Penn State,michigan,Michigan,,,tbd,official,scheduled,10
+big-ten-025,big-ten,penn-state,Penn State,wisconsin,Wisconsin,,,tbd,official,scheduled,10
+big-ten-026,big-ten,michigan-state,Michigan State,penn-state,Penn State,,,tbd,official,scheduled,10
+big-ten-027,big-ten,ohio-state,Ohio State,penn-state,Penn State,,,tbd,official,scheduled,10
+big-ten-028,big-ten,northwestern,Northwestern,ohio-state,Ohio State,,,tbd,official,scheduled,10
+big-ten-029,big-ten,northwestern,Northwestern,michigan-state,Michigan State,,,tbd,official,scheduled,10
+big-ten-030,big-ten,northwestern,Northwestern,indiana,Indiana,,,tbd,official,scheduled,10
+big-ten-031,big-ten,northwestern,Northwestern,purdue,Purdue,,,tbd,official,scheduled,10
+big-ten-032,big-ten,illinois,Illinois,northwestern,Northwestern,,,tbd,official,scheduled,10
+big-ten-033,big-ten,maryland,Maryland,northwestern,Northwestern,,,tbd,official,scheduled,10
+big-ten-034,big-ten,maryland,Maryland,michigan-state,Michigan State,,,tbd,official,scheduled,10
+big-ten-035,big-ten,maryland,Maryland,nebraska,Nebraska,,,tbd,official,scheduled,10
+big-ten-036,big-ten,illinois,Illinois,maryland,Maryland,,,tbd,official,scheduled,10
+big-ten-037,big-ten,purdue,Purdue,maryland,Maryland,,,tbd,official,scheduled,10
+big-ten-038,big-ten,purdue,Purdue,indiana,Indiana,,,tbd,official,scheduled,10
+big-ten-039,big-ten,purdue,Purdue,nebraska,Nebraska,,,tbd,official,scheduled,10
+big-ten-040,big-ten,michigan,Michigan,purdue,Purdue,,,tbd,official,scheduled,10
+big-ten-041,big-ten,michigan-state,Michigan State,purdue,Purdue,,,tbd,official,scheduled,10
+big-ten-042,big-ten,ohio-state,Ohio State,purdue,Purdue,,,tbd,official,scheduled,10
+big-ten-043,big-ten,michigan-state,Michigan State,michigan,Michigan,,,tbd,projected,scheduled,10
+big-ten-044,big-ten,michigan-state,Michigan State,indiana,Indiana,,,tbd,projected,scheduled,10
+big-ten-045,big-ten,ohio-state,Ohio State,michigan-state,Michigan State,,,tbd,projected,scheduled,10
+big-ten-046,big-ten,illinois,Illinois,michigan,Michigan,,,tbd,projected,scheduled,10
+big-ten-047,big-ten,indiana,Indiana,illinois,Illinois,,,tbd,projected,scheduled,10
+big-ten-048,big-ten,nebraska,Nebraska,illinois,Illinois,,,tbd,projected,scheduled,10
+big-ten-049,big-ten,ohio-state,Ohio State,illinois,Illinois,,,tbd,projected,scheduled,10
+big-ten-050,big-ten,indiana,Indiana,michigan,Michigan,,,tbd,projected,scheduled,10
+big-ten-051,big-ten,indiana,Indiana,ohio-state,Ohio State,,,tbd,projected,scheduled,10
+big-ten-052,big-ten,indiana,Indiana,wisconsin,Wisconsin,,,tbd,projected,scheduled,10
+big-ten-053,big-ten,michigan,Michigan,wisconsin,Wisconsin,,,tbd,projected,scheduled,10
+big-ten-054,big-ten,michigan,Michigan,nebraska,Nebraska,,,tbd,projected,scheduled,10
+big-ten-055,big-ten,nebraska,Nebraska,wisconsin,Wisconsin,,,tbd,projected,scheduled,10
+big-ten-056,big-ten,wisconsin,Wisconsin,ohio-state,Ohio State,,,tbd,projected,scheduled,10
+big-12-001,big-12,iowa-state,Iowa State,arizona-state,Arizona State,,2027-W01,tbd,official,scheduled,10
+big-12-002,big-12,iowa-state,Iowa State,wyoming,Wyoming,,2027-W03,tbd,official,scheduled,10
+big-12-003,big-12,iowa-state,Iowa State,oklahoma,Oklahoma,,2027-W04,tbd,official,scheduled,10
+big-12-004,big-12,iowa-state,Iowa State,oklahoma-state,Oklahoma State,,2027-W05,tbd,official,scheduled,10
+big-12-005,big-12,northern-iowa,Northern Iowa,wyoming,Wyoming,,2027-W02,tbd,official,scheduled,10
+big-12-006,big-12,northern-iowa,Northern Iowa,oklahoma-state,Oklahoma State,,2027-W04,tbd,official,scheduled,10
+big-12-007,big-12,northern-iowa,Northern Iowa,oklahoma,Oklahoma,,2027-W04,tbd,official,scheduled,10
+big-12-008,big-12,northern-iowa,Northern Iowa,iowa-state,Iowa State,,2027-W07,tbd,official,scheduled,10
+big-12-009,big-12,west-virginia,West Virginia,arizona-state,Arizona State,,2027-W01,tbd,projected,scheduled,10
+big-12-010,big-12,missouri,Missouri,arizona-state,Arizona State,,2027-W02,tbd,projected,scheduled,10
+big-12-011,big-12,utah-valley,Utah Valley,arizona-state,Arizona State,,2027-W02,tbd,projected,scheduled,10
+big-12-012,big-12,arizona-state,Arizona State,northern-iowa,Northern Iowa,,2027-W03,tbd,projected,scheduled,10
+big-12-013,big-12,arizona-state,Arizona State,wyoming,Wyoming,,2027-W03,tbd,projected,scheduled,10
+big-12-014,big-12,arizona-state,Arizona State,oklahoma,Oklahoma,,2027-W06,tbd,projected,scheduled,10
+big-12-015,big-12,oklahoma-state,Oklahoma State,arizona-state,Arizona State,,2026-W48,tbd,projected,scheduled,10
+big-12-016,big-12,missouri,Missouri,iowa-state,Iowa State,,2027-W08,tbd,projected,scheduled,10
+big-12-017,big-12,utah-valley,Utah Valley,iowa-state,Iowa State,,2027-W03,tbd,projected,scheduled,10
+big-12-018,big-12,west-virginia,West Virginia,iowa-state,Iowa State,,2027-W06,tbd,projected,scheduled,10
+big-12-019,big-12,missouri,Missouri,northern-iowa,Northern Iowa,,2027-W05,tbd,projected,scheduled,10
+big-12-020,big-12,utah-valley,Utah Valley,northern-iowa,Northern Iowa,,2027-W03,tbd,projected,scheduled,10
+big-12-021,big-12,west-virginia,West Virginia,northern-iowa,Northern Iowa,,2027-W06,tbd,projected,scheduled,10
+big-12-022,big-12,oklahoma,Oklahoma,oklahoma-state,Oklahoma State,,2027-W02,tbd,projected,scheduled,10
+big-12-023,big-12,oklahoma,Oklahoma,west-virginia,West Virginia,,2027-W03,tbd,projected,scheduled,10
+big-12-024,big-12,oklahoma,Oklahoma,missouri,Missouri,,2027-W06,tbd,projected,scheduled,10
+big-12-025,big-12,oklahoma,Oklahoma,wyoming,Wyoming,,2027-W07,tbd,projected,scheduled,10
+big-12-026,big-12,utah-valley,Utah Valley,oklahoma,Oklahoma,,2027-W03,tbd,projected,scheduled,10
+big-12-027,big-12,oklahoma-state,Oklahoma State,missouri,Missouri,,2027-W03,tbd,projected,scheduled,10
+big-12-028,big-12,oklahoma-state,Oklahoma State,west-virginia,West Virginia,,2026-W51,tbd,projected,scheduled,10
+big-12-029,big-12,oklahoma-state,Oklahoma State,wyoming,Wyoming,,2027-W05,tbd,projected,scheduled,10
+big-12-030,big-12,utah-valley,Utah Valley,oklahoma-state,Oklahoma State,,2027-W04,tbd,projected,scheduled,10
+big-12-031,big-12,missouri,Missouri,utah-valley,Utah Valley,,2027-W02,tbd,projected,scheduled,10
+big-12-032,big-12,missouri,Missouri,west-virginia,West Virginia,,2027-W05,tbd,projected,scheduled,10
+big-12-033,big-12,wyoming,Wyoming,missouri,Missouri,,2027-W04,tbd,projected,scheduled,10
+big-12-034,big-12,west-virginia,West Virginia,utah-valley,Utah Valley,,2027-W02,tbd,projected,scheduled,10
+big-12-035,big-12,wyoming,Wyoming,utah-valley,Utah Valley,,2027-W02,tbd,projected,scheduled,10
+big-12-036,big-12,wyoming,Wyoming,west-virginia,West Virginia,,2027-W03,tbd,projected,scheduled,10
+acc-001,acc,north-carolina,North Carolina,virginia,Virginia,2027-01-15,2027-W02,confirmed,official,scheduled,10
+acc-002,acc,north-carolina,North Carolina,nc-state,NC State,2027-01-29,2027-W04,confirmed,official,scheduled,10
+acc-003,acc,north-carolina,North Carolina,virginia-tech,Virginia Tech,2027-02-05,2027-W05,confirmed,official,scheduled,10
+acc-004,acc,virginia,Virginia,nc-state,NC State,,2027-W01,tbd,projected,scheduled,10
+acc-005,acc,virginia-tech,Virginia Tech,pitt,Pitt,,2027-W01,tbd,projected,scheduled,10
+acc-006,acc,duke,Duke,stanford,Stanford,,2027-W01,tbd,projected,scheduled,10
+acc-007,acc,nc-state,NC State,stanford,Stanford,,2027-W02,tbd,projected,scheduled,10
+acc-008,acc,pitt,Pitt,duke,Duke,,2027-W02,tbd,projected,scheduled,10
+acc-009,acc,stanford,Stanford,virginia-tech,Virginia Tech,,2027-W03,tbd,projected,scheduled,10
+acc-010,acc,stanford,Stanford,virginia,Virginia,,2027-W03,tbd,projected,scheduled,10
+acc-011,acc,pitt,Pitt,north-carolina,North Carolina,,2027-W03,tbd,projected,scheduled,10
+acc-012,acc,virginia,Virginia,duke,Duke,,2027-W04,tbd,projected,scheduled,10
+acc-013,acc,pitt,Pitt,stanford,Stanford,,2027-W04,tbd,projected,scheduled,10
+acc-014,acc,nc-state,NC State,pitt,Pitt,,2027-W05,tbd,projected,scheduled,10
+acc-015,acc,virginia-tech,Virginia Tech,virginia,Virginia,,2027-W05,tbd,projected,scheduled,10
+acc-016,acc,nc-state,NC State,duke,Duke,,2027-W06,tbd,projected,scheduled,10
+acc-017,acc,duke,Duke,north-carolina,North Carolina,,2027-W06,tbd,projected,scheduled,10
+acc-018,acc,virginia,Virginia,pitt,Pitt,,2027-W06,tbd,projected,scheduled,10
+acc-019,acc,virginia-tech,Virginia Tech,nc-state,NC State,,2027-W07,tbd,projected,scheduled,10
+acc-020,acc,duke,Duke,virginia-tech,Virginia Tech,,2027-W07,tbd,projected,scheduled,10
+acc-021,acc,stanford,Stanford,north-carolina,North Carolina,,2027-W07,tbd,projected,scheduled,10
+eiwa-001,eiwa,hofstra,Hofstra,sacred-heart,Sacred Heart,,2026-W46,tbd,projected,scheduled,10
+eiwa-002,eiwa,drexel,Drexel,morgan-state,Morgan State,,2026-W47,tbd,projected,scheduled,10
+eiwa-003,eiwa,liu,LIU,binghamton,Binghamton,,2026-W50,tbd,projected,scheduled,10
+eiwa-004,eiwa,lehigh,Lehigh,franklin-marshall,Franklin & Marshall,2026-12-18,2026-W51,confirmed,official,scheduled,10
+eiwa-005,eiwa,morgan-state,Morgan State,navy,Navy,,2026-W51,tbd,projected,scheduled,10
+eiwa-006,eiwa,morgan-state,Morgan State,bucknell,Bucknell,,2026-W51,tbd,projected,scheduled,10
+eiwa-007,eiwa,hofstra,Hofstra,bucknell,Bucknell,,2026-W51,tbd,projected,scheduled,10
+eiwa-008,eiwa,hofstra,Hofstra,morgan-state,Morgan State,,2026-W51,tbd,projected,scheduled,10
+eiwa-009,eiwa,bucknell,Bucknell,liu,LIU,,2027-W01,tbd,projected,scheduled,10
+eiwa-010,eiwa,binghamton,Binghamton,hofstra,Hofstra,,2027-W01,tbd,projected,scheduled,10
+eiwa-011,eiwa,franklin-marshall,Franklin & Marshall,binghamton,Binghamton,2027-01-15,2027-W02,confirmed,official,scheduled,10
+eiwa-012,eiwa,american,American,lehigh,Lehigh,,2027-W02,tbd,projected,scheduled,10
+eiwa-013,eiwa,navy,Navy,lehigh,Lehigh,,2027-W02,tbd,projected,scheduled,10
+eiwa-014,eiwa,drexel,Drexel,binghamton,Binghamton,,2027-W02,tbd,projected,scheduled,10
+eiwa-015,eiwa,liu,LIU,american,American,,2027-W02,tbd,projected,scheduled,10
+eiwa-016,eiwa,franklin-marshall,Franklin & Marshall,sacred-heart,Sacred Heart,2027-01-24,2027-W03,confirmed,official,scheduled,10
+eiwa-017,eiwa,american,American,army,Army West Point,,2027-W03,tbd,projected,scheduled,10
+eiwa-018,eiwa,bucknell,Bucknell,army,Army West Point,,2027-W03,tbd,projected,scheduled,10
+eiwa-019,eiwa,navy,Navy,american,American,,2027-W03,tbd,projected,scheduled,10
+eiwa-020,eiwa,morgan-state,Morgan State,franklin-marshall,Franklin & Marshall,2027-01-31,2027-W04,confirmed,official,scheduled,10
+eiwa-021,eiwa,drexel,Drexel,sacred-heart,Sacred Heart,,2027-W04,tbd,projected,scheduled,10
+eiwa-022,eiwa,army,Army West Point,morgan-state,Morgan State,,2027-W04,tbd,projected,scheduled,10
+eiwa-023,eiwa,franklin-marshall,Franklin & Marshall,drexel,Drexel,2027-02-06,2027-W05,confirmed,official,scheduled,10
+eiwa-024,eiwa,binghamton,Binghamton,sacred-heart,Sacred Heart,,2027-W05,tbd,projected,scheduled,10
+eiwa-025,eiwa,hofstra,Hofstra,drexel,Drexel,,2027-W05,tbd,projected,scheduled,10
+eiwa-026,eiwa,lehigh,Lehigh,army,Army West Point,,2027-W05,tbd,projected,scheduled,10
+eiwa-027,eiwa,lehigh,Lehigh,morgan-state,Morgan State,,2027-W05,tbd,projected,scheduled,10
+eiwa-028,eiwa,bucknell,Bucknell,navy,Navy,,2027-W05,tbd,projected,scheduled,10
+eiwa-029,eiwa,morgan-state,Morgan State,american,American,,2027-W05,tbd,projected,scheduled,10
+eiwa-030,eiwa,hofstra,Hofstra,army,Army West Point,,2027-W05,tbd,projected,scheduled,10
+eiwa-031,eiwa,liu,LIU,army,Army West Point,,2027-W05,tbd,projected,scheduled,10
+eiwa-032,eiwa,liu,LIU,franklin-marshall,Franklin & Marshall,2027-02-13,2027-W06,confirmed,official,scheduled,10
+eiwa-033,eiwa,hofstra,Hofstra,franklin-marshall,Franklin & Marshall,2027-02-13,2027-W06,confirmed,official,scheduled,10
+eiwa-034,eiwa,liu,LIU,drexel,Drexel,,2027-W06,tbd,projected,scheduled,10
+eiwa-035,eiwa,liu,LIU,hofstra,Hofstra,,2027-W06,tbd,projected,scheduled,10
+eiwa-036,eiwa,bucknell,Bucknell,lehigh,Lehigh,,2027-W06,tbd,projected,scheduled,10
+eiwa-037,eiwa,american,American,bucknell,Bucknell,,2027-W06,tbd,projected,scheduled,10
+eiwa-038,eiwa,sacred-heart,Sacred Heart,morgan-state,Morgan State,,2027-W06,tbd,projected,scheduled,10
+eiwa-039,eiwa,army,Army West Point,navy,Navy,2027-02-19,2027-W07,confirmed,projected,scheduled,10
+eiwa-040,eiwa,american,American,franklin-marshall,Franklin & Marshall,2027-02-20,2027-W07,confirmed,official,scheduled,10
+eiwa-041,eiwa,sacred-heart,Sacred Heart,liu,LIU,,2027-W07,tbd,projected,scheduled,10
+eiwa-042,eiwa,drexel,Drexel,american,American,,2027-W07,tbd,projected,scheduled,10
+mac-001,mac,lock-haven,Lock Haven,kent-state,Kent State,2026-12-03,2026-W49,confirmed,official,scheduled,10
+mac-002,mac,buffalo,Buffalo,edinboro,Edinboro,2026-12-13,2026-W50,confirmed,official,scheduled,10
+mac-003,mac,clarion,Clarion,lock-haven,Lock Haven,2026-12-18,2026-W51,confirmed,official,scheduled,10
+mac-004,mac,lock-haven,Lock Haven,rider,Rider,2026-12-19,2026-W51,confirmed,official,scheduled,10
+mac-005,mac,ohio,Ohio,lock-haven,Lock Haven,2027-01-03,2026-W53,confirmed,official,scheduled,10
+mac-006,mac,edinboro,Edinboro,george-mason,George Mason,2027-01-07,2027-W01,confirmed,official,scheduled,10
+mac-007,mac,clarion,Clarion,edinboro,Edinboro,2027-01-14,2027-W02,confirmed,official,scheduled,10
+mac-008,mac,central-michigan,Central Michigan,lock-haven,Lock Haven,2027-01-21,2027-W03,confirmed,official,scheduled,10
+mac-009,mac,edinboro,Edinboro,rider,Rider,2027-01-21,2027-W03,confirmed,official,scheduled,10
+mac-010,mac,george-mason,George Mason,lock-haven,Lock Haven,2027-01-28,2027-W04,confirmed,official,scheduled,10
+mac-011,mac,edinboro,Edinboro,kent-state,Kent State,2027-01-28,2027-W04,confirmed,official,scheduled,10
+mac-012,mac,lock-haven,Lock Haven,bloomsburg,Bloomsburg,2027-02-04,2027-W05,confirmed,official,scheduled,10
+mac-013,mac,lock-haven,Lock Haven,siue,SIU Edwardsville,2027-02-05,2027-W05,confirmed,official,scheduled,10
+mac-014,mac,edinboro,Edinboro,ohio,Ohio,2027-02-11,2027-W06,confirmed,official,scheduled,10
+mac-015,mac,lock-haven,Lock Haven,edinboro,Edinboro,2027-02-18,2027-W07,confirmed,official,scheduled,10
+mac-016,mac,bloomsburg,Bloomsburg,edinboro,Edinboro,2027-02-19,2027-W07,confirmed,official,scheduled,10
+mac-017,mac,buffalo,Buffalo,bloomsburg,Bloomsburg,,2026-W49,tbd,projected,scheduled,10
+mac-018,mac,kent-state,Kent State,buffalo,Buffalo,,2026-W50,tbd,projected,scheduled,10
+mac-019,mac,clarion,Clarion,rider,Rider,,2026-W51,tbd,projected,scheduled,10
+mac-020,mac,buffalo,Buffalo,george-mason,George Mason,,2026-W51,tbd,projected,scheduled,10
+mac-021,mac,bloomsburg,Bloomsburg,ohio,Ohio,,2026-W53,tbd,projected,scheduled,10
+mac-022,mac,kent-state,Kent State,rider,Rider,,2027-W01,tbd,projected,scheduled,10
+mac-023,mac,siue,SIU Edwardsville,ohio,Ohio,,2027-W02,tbd,projected,scheduled,10
+mac-024,mac,buffalo,Buffalo,clarion,Clarion,,2027-W02,tbd,projected,scheduled,10
+mac-025,mac,george-mason,George Mason,bloomsburg,Bloomsburg,,2027-W02,tbd,projected,scheduled,10
+mac-026,mac,kent-state,Kent State,siue,SIU Edwardsville,,2027-W03,tbd,projected,scheduled,10
+mac-027,mac,bloomsburg,Bloomsburg,clarion,Clarion,,2027-W04,tbd,projected,scheduled,10
+mac-028,mac,ohio,Ohio,central-michigan,Central Michigan,,2027-W04,tbd,projected,scheduled,10
+mac-029,mac,rider,Rider,george-mason,George Mason,,2027-W04,tbd,projected,scheduled,10
+mac-030,mac,clarion,Clarion,kent-state,Kent State,,2027-W04,tbd,projected,scheduled,10
+mac-031,mac,buffalo,Buffalo,central-michigan,Central Michigan,,2027-W05,tbd,projected,scheduled,10
+mac-032,mac,central-michigan,Central Michigan,siue,SIU Edwardsville,,2027-W05,tbd,projected,scheduled,10
+mac-033,mac,ohio,Ohio,kent-state,Kent State,,2027-W05,tbd,projected,scheduled,10
+mac-034,mac,bloomsburg,Bloomsburg,rider,Rider,,2027-W05,tbd,projected,scheduled,10
+mac-035,mac,siue,SIU Edwardsville,buffalo,Buffalo,,2027-W06,tbd,projected,scheduled,10
+mac-036,mac,clarion,Clarion,george-mason,George Mason,,2027-W06,tbd,projected,scheduled,10
+mac-037,mac,central-michigan,Central Michigan,kent-state,Kent State,,2027-W06,tbd,projected,scheduled,10
+mac-038,mac,ohio,Ohio,clarion,Clarion,,2027-W07,tbd,projected,scheduled,10
+mac-039,mac,george-mason,George Mason,central-michigan,Central Michigan,,2027-W07,tbd,projected,scheduled,10
+mac-040,mac,buffalo,Buffalo,ohio,Ohio,,2027-W07,tbd,projected,scheduled,10
+mac-041,mac,buffalo,Buffalo,lock-haven,Lock Haven,,,tbd,projected,unlikely,10
+mac-042,mac,central-michigan,Central Michigan,edinboro,Edinboro,,,tbd,projected,unlikely,10
+mac-043,mac,edinboro,Edinboro,siue,SIU Edwardsville,,,tbd,projected,unlikely,10
+mac-044,mac,central-michigan,Central Michigan,bloomsburg,Bloomsburg,,,tbd,projected,unlikely,10
+mac-045,mac,bloomsburg,Bloomsburg,kent-state,Kent State,,,tbd,projected,unlikely,10
+mac-046,mac,siue,SIU Edwardsville,bloomsburg,Bloomsburg,,,tbd,projected,unlikely,10
+mac-047,mac,rider,Rider,buffalo,Buffalo,,,tbd,projected,unlikely,10
+mac-048,mac,clarion,Clarion,central-michigan,Central Michigan,,,tbd,projected,unlikely,10
+mac-049,mac,rider,Rider,central-michigan,Central Michigan,,,tbd,projected,unlikely,10
+mac-050,mac,siue,SIU Edwardsville,clarion,Clarion,,,tbd,projected,unlikely,10
+mac-051,mac,kent-state,Kent State,george-mason,George Mason,,,tbd,projected,unlikely,10
+mac-052,mac,george-mason,George Mason,ohio,Ohio,,,tbd,projected,unlikely,10
+mac-053,mac,siue,SIU Edwardsville,george-mason,George Mason,,,tbd,projected,unlikely,10
+mac-054,mac,rider,Rider,ohio,Ohio,,,tbd,projected,unlikely,10
+mac-055,mac,rider,Rider,siue,SIU Edwardsville,,,tbd,projected,unlikely,10
+pac-12-001,pac-12,cal-poly,Cal Poly,cal-state-bakersfield,Cal State Bakersfield,,2026-W49,tbd,projected,scheduled,10
+pac-12-002,pac-12,cal-state-bakersfield,Cal State Bakersfield,northern-illinois,Northern Illinois,,2026-W50,tbd,projected,scheduled,10
+pac-12-003,pac-12,oregon-state,Oregon State,northern-illinois,Northern Illinois,,2026-W51,tbd,projected,scheduled,10
+pac-12-004,pac-12,cal-poly,Cal Poly,northern-illinois,Northern Illinois,,2026-W51,tbd,projected,scheduled,10
+pac-12-005,pac-12,air-force,Air Force,oregon-state,Oregon State,,2027-W01,tbd,projected,scheduled,10
+pac-12-006,pac-12,cal-poly,Cal Poly,north-dakota-state,North Dakota State,,2027-W01,tbd,projected,scheduled,10
+pac-12-007,pac-12,cal-state-bakersfield,Cal State Bakersfield,north-dakota-state,North Dakota State,,2027-W01,tbd,projected,scheduled,10
+pac-12-008,pac-12,cal-poly,Cal Poly,south-dakota-state,South Dakota State,,2027-W01,tbd,projected,scheduled,10
+pac-12-009,pac-12,cal-state-bakersfield,Cal State Bakersfield,south-dakota-state,South Dakota State,,2027-W01,tbd,projected,scheduled,10
+pac-12-010,pac-12,oregon-state,Oregon State,cal-state-bakersfield,Cal State Bakersfield,,2027-W02,tbd,projected,scheduled,10
+pac-12-011,pac-12,northern-illinois,Northern Illinois,little-rock,Little Rock,,2027-W02,tbd,projected,scheduled,10
+pac-12-012,pac-12,air-force,Air Force,little-rock,Little Rock,,2027-W02,tbd,projected,scheduled,10
+pac-12-013,pac-12,oregon-state,Oregon State,cal-poly,Cal Poly,,2027-W03,tbd,projected,scheduled,10
+pac-12-014,pac-12,northern-illinois,Northern Illinois,north-dakota-state,North Dakota State,,2027-W03,tbd,projected,scheduled,10
+pac-12-015,pac-12,northern-illinois,Northern Illinois,south-dakota-state,South Dakota State,,2027-W03,tbd,projected,scheduled,10
+pac-12-016,pac-12,little-rock,Little Rock,northern-colorado,Northern Colorado,,2027-W03,tbd,projected,scheduled,10
+pac-12-017,pac-12,north-dakota-state,North Dakota State,northern-colorado,Northern Colorado,,2027-W04,tbd,projected,scheduled,10
+pac-12-018,pac-12,south-dakota-state,South Dakota State,air-force,Air Force,,2027-W04,tbd,projected,scheduled,10
+pac-12-019,pac-12,little-rock,Little Rock,north-dakota-state,North Dakota State,,2027-W04,tbd,projected,scheduled,10
+pac-12-020,pac-12,little-rock,Little Rock,south-dakota-state,South Dakota State,,2027-W04,tbd,projected,scheduled,10
+pac-12-021,pac-12,northern-colorado,Northern Colorado,cal-poly,Cal Poly,,2027-W04,tbd,projected,scheduled,10
+pac-12-022,pac-12,air-force,Air Force,cal-poly,Cal Poly,,2027-W04,tbd,projected,scheduled,10
+pac-12-023,pac-12,north-dakota-state,North Dakota State,air-force,Air Force,,2027-W05,tbd,projected,scheduled,10
+pac-12-024,pac-12,south-dakota-state,South Dakota State,northern-colorado,Northern Colorado,,2027-W05,tbd,projected,scheduled,10
+pac-12-025,pac-12,oregon-state,Oregon State,little-rock,Little Rock,,2027-W05,tbd,projected,scheduled,10
+pac-12-026,pac-12,northern-colorado,Northern Colorado,oregon-state,Oregon State,,2027-W05,tbd,projected,scheduled,10
+pac-12-027,pac-12,northern-illinois,Northern Illinois,northern-colorado,Northern Colorado,,2027-W06,tbd,projected,scheduled,10
+pac-12-028,pac-12,northern-illinois,Northern Illinois,air-force,Air Force,,2027-W06,tbd,projected,scheduled,10
+pac-12-029,pac-12,south-dakota-state,South Dakota State,oregon-state,Oregon State,,2027-W06,tbd,projected,scheduled,10
+pac-12-030,pac-12,north-dakota-state,North Dakota State,oregon-state,Oregon State,,2027-W06,tbd,projected,scheduled,10
+pac-12-031,pac-12,cal-state-bakersfield,Cal State Bakersfield,little-rock,Little Rock,,2027-W06,tbd,projected,scheduled,10
+pac-12-032,pac-12,north-dakota-state,North Dakota State,south-dakota-state,South Dakota State,,2027-W07,tbd,projected,scheduled,10
+pac-12-033,pac-12,northern-colorado,Northern Colorado,air-force,Air Force,,2027-W07,tbd,projected,scheduled,10
+pac-12-034,pac-12,cal-poly,Cal Poly,little-rock,Little Rock,,2027-W07,tbd,projected,scheduled,10
+pac-12-035,pac-12,northern-colorado,Northern Colorado,cal-state-bakersfield,Cal State Bakersfield,,2027-W07,tbd,projected,scheduled,10
+pac-12-036,pac-12,air-force,Air Force,cal-state-bakersfield,Cal State Bakersfield,,2027-W07,tbd,projected,scheduled,10
+socon-001,socon,campbell,Campbell,presbyterian,Presbyterian,,2026-W46,tbd,projected,scheduled,10
+socon-002,socon,presbyterian,Presbyterian,davidson,Davidson,,2026-W51,tbd,projected,scheduled,10
+socon-003,socon,appalachian-state,App State,presbyterian,Presbyterian,,2027-W01,tbd,projected,scheduled,10
+socon-004,socon,vmi,VMI,appalachian-state,App State,,2027-W02,tbd,projected,scheduled,10
+socon-005,socon,the-citadel,The Citadel,campbell,Campbell,,2027-W02,tbd,projected,scheduled,10
+socon-006,socon,chattanooga,Chattanooga,gardner-webb,Gardner-Webb,,2027-W02,tbd,projected,scheduled,10
+socon-007,socon,presbyterian,Presbyterian,bellarmine,Bellarmine,,2027-W02,tbd,projected,scheduled,10
+socon-008,socon,presbyterian,Presbyterian,the-citadel,The Citadel,,2027-W03,tbd,projected,scheduled,10
+socon-009,socon,gardner-webb,Gardner-Webb,campbell,Campbell,,2027-W03,tbd,projected,scheduled,10
+socon-010,socon,bellarmine,Bellarmine,vmi,VMI,,2027-W03,tbd,projected,scheduled,10
+socon-011,socon,davidson,Davidson,chattanooga,Chattanooga,,2027-W03,tbd,projected,scheduled,10
+socon-012,socon,appalachian-state,App State,campbell,Campbell,,2027-W04,tbd,projected,scheduled,10
+socon-013,socon,the-citadel,The Citadel,chattanooga,Chattanooga,,2027-W04,tbd,projected,scheduled,10
+socon-014,socon,gardner-webb,Gardner-Webb,davidson,Davidson,,2027-W04,tbd,projected,scheduled,10
+socon-015,socon,bellarmine,Bellarmine,davidson,Davidson,,2027-W04,tbd,projected,scheduled,10
+socon-016,socon,vmi,VMI,presbyterian,Presbyterian,,2027-W04,tbd,projected,scheduled,10
+socon-017,socon,bellarmine,Bellarmine,appalachian-state,App State,,2027-W05,tbd,projected,scheduled,10
+socon-018,socon,the-citadel,The Citadel,appalachian-state,App State,,2027-W05,tbd,projected,scheduled,10
+socon-019,socon,the-citadel,The Citadel,gardner-webb,Gardner-Webb,,2027-W05,tbd,projected,scheduled,10
+socon-020,socon,campbell,Campbell,bellarmine,Bellarmine,,2027-W05,tbd,projected,scheduled,10
+socon-021,socon,chattanooga,Chattanooga,campbell,Campbell,,2027-W05,tbd,projected,scheduled,10
+socon-022,socon,gardner-webb,Gardner-Webb,bellarmine,Bellarmine,,2027-W05,tbd,projected,scheduled,10
+socon-023,socon,chattanooga,Chattanooga,vmi,VMI,,2027-W05,tbd,projected,scheduled,10
+socon-024,socon,davidson,Davidson,vmi,VMI,,2027-W05,tbd,projected,scheduled,10
+socon-025,socon,presbyterian,Presbyterian,chattanooga,Chattanooga,,2027-W05,tbd,projected,scheduled,10
+socon-026,socon,appalachian-state,App State,davidson,Davidson,,2027-W06,tbd,projected,scheduled,10
+socon-027,socon,appalachian-state,App State,chattanooga,Chattanooga,,2027-W06,tbd,projected,scheduled,10
+socon-028,socon,bellarmine,Bellarmine,the-citadel,The Citadel,,2027-W06,tbd,projected,scheduled,10
+socon-029,socon,davidson,Davidson,the-citadel,The Citadel,,2027-W06,tbd,projected,scheduled,10
+socon-030,socon,campbell,Campbell,vmi,VMI,,2027-W06,tbd,projected,scheduled,10
+socon-031,socon,gardner-webb,Gardner-Webb,presbyterian,Presbyterian,,2027-W06,tbd,projected,scheduled,10
+socon-032,socon,vmi,VMI,gardner-webb,Gardner-Webb,,2027-W06,tbd,projected,scheduled,10
+socon-033,socon,gardner-webb,Gardner-Webb,appalachian-state,App State,,2027-W07,tbd,projected,scheduled,10
+socon-034,socon,vmi,VMI,the-citadel,The Citadel,,2027-W07,tbd,projected,scheduled,10
+socon-035,socon,campbell,Campbell,davidson,Davidson,,2027-W07,tbd,projected,scheduled,10
+socon-036,socon,chattanooga,Chattanooga,bellarmine,Bellarmine,,2027-W07,tbd,projected,scheduled,10
+ivy-001,ivy,columbia,Columbia,princeton,Princeton,,2027-W03,tbd,projected,scheduled,10
+ivy-002,ivy,columbia,Columbia,penn,Penn,,2027-W03,tbd,projected,scheduled,10
+ivy-003,ivy,brown,Brown,cornell,Cornell,,2027-W03,tbd,projected,scheduled,10
+ivy-004,ivy,harvard,Harvard,cornell,Cornell,,2027-W03,tbd,projected,scheduled,10
+ivy-005,ivy,columbia,Columbia,cornell,Cornell,,2027-W04,tbd,projected,scheduled,10
+ivy-006,ivy,penn,Penn,brown,Brown,,2027-W04,tbd,projected,scheduled,10
+ivy-007,ivy,princeton,Princeton,harvard,Harvard,,2027-W04,tbd,projected,scheduled,10
+ivy-008,ivy,penn,Penn,harvard,Harvard,,2027-W04,tbd,projected,scheduled,10
+ivy-009,ivy,princeton,Princeton,brown,Brown,,2027-W04,tbd,projected,scheduled,10
+ivy-010,ivy,cornell,Cornell,princeton,Princeton,,2027-W05,tbd,projected,scheduled,10
+ivy-011,ivy,cornell,Cornell,penn,Penn,,2027-W05,tbd,projected,scheduled,10
+ivy-012,ivy,harvard,Harvard,columbia,Columbia,,2027-W06,tbd,projected,scheduled,10
+ivy-013,ivy,princeton,Princeton,penn,Penn,,2027-W06,tbd,projected,scheduled,10
+ivy-014,ivy,brown,Brown,columbia,Columbia,,2027-W06,tbd,projected,scheduled,10
+ivy-015,ivy,harvard,Harvard,brown,Brown,,2027-W07,tbd,projected,scheduled,10

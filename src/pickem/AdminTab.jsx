@@ -3,9 +3,11 @@ import { useState } from "react";
 import {
   createEvent, updateEvent, deleteEvent,
   addDual, deleteDual, updateDual, updateMatch,
+  savePoolSettings,
 } from "./pickemService";
 import { PICK_MODES, WIN_TYPES } from "./pickemConstants";
 import { isEventLocked } from "./pickemScoring";
+import ConferencePicker from "./ConferencePicker";
 
 const label = { display: "block", fontSize: 10, letterSpacing: ".16em", color: "#6a5a30", marginBottom: 5 };
 
@@ -289,6 +291,86 @@ function EventAdminCard({ event, onChanged, showToast }) {
   );
 }
 
+// ── Pool scope: conference selection + default pick mode ─────────────────────
+function PoolScopeCard({ poolId, settings, showToast }) {
+  const [expanded, setExpanded] = useState(false);
+  const [conferences, setConferences] = useState(settings?.conferences || []);
+  const [mode, setMode] = useState(settings?.defaultPickMode || "matches");
+  const [saving, setSaving] = useState(false);
+  // Dirty-tracking baseline is local — the settings prop is fetched once on
+  // page load and doesn't refresh after a save.
+  const [baseline, setBaseline] = useState({
+    conferences: settings?.conferences || [],
+    mode: settings?.defaultPickMode || "matches",
+  });
+  const dirty = mode !== baseline.mode
+    || JSON.stringify([...conferences].sort()) !== JSON.stringify([...baseline.conferences].sort());
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await savePoolSettings(poolId, { conferences, defaultPickMode: mode });
+      setBaseline({ conferences, mode });
+      showToast("Pool scope saved", "ok");
+    } catch {
+      showToast("Failed to save pool scope", "err");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="pk-card" style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "12px 18px", background: "#0a1018", cursor: "pointer",
+        borderBottom: expanded ? "1px solid #1a1f26" : "none" }}
+        onClick={() => setExpanded(x => !x)}>
+        <div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#e0d8b4", letterSpacing: ".06em" }}>
+            POOL SCOPE
+          </span>
+          <span style={{ marginLeft: 10, fontSize: 12, color: "#6a7480",
+            fontFamily: "'Barlow Condensed',sans-serif" }}>
+            {conferences.length || "no"} conference{conferences.length !== 1 ? "s" : ""} selected
+            · {PICK_MODES[mode]?.label} default{dirty ? " · unsaved" : ""}
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: "#6a5a30" }}>{expanded ? "▲" : "▼"}</div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding: "16px 18px 18px" }}>
+          <span style={label}>DEFAULT PICK MODE <span style={{ color: "#3a4250" }}>(RE-PRICES EVERYTHING BELOW)</span></span>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {Object.entries(PICK_MODES).map(([m, info]) => (
+              <button key={m} className="pk-btn" onClick={() => setMode(m)}
+                style={{ flex: 1, background: mode === m ? "#c9a84c14" : "#070a0e",
+                  border: mode === m ? "1px solid #c9a84c" : "1px solid #1e2530",
+                  color: mode === m ? "#c9a84c" : "#7a8a9a",
+                  borderRadius: 6, padding: "8px 10px", fontSize: 12, fontWeight: 700, letterSpacing: ".06em" }}>
+                {info.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <ConferencePicker selected={conferences} onChange={setConferences} pickMode={mode} />
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+            marginTop: 14, gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, color: "#5a6470", fontFamily: "'Barlow Condensed',sans-serif" }}>
+              Scope sizes the pool and will drive auto-built weekly slates once schedules publish.
+            </div>
+            <button className="pk-btn" disabled={saving || !dirty} onClick={handleSave}
+              style={{ background: dirty ? "#c9a84c" : "#1e2530", color: dirty ? "#070a0e" : "#5a6470",
+                borderRadius: 6, padding: "9px 20px", fontSize: 12, fontWeight: 700,
+                letterSpacing: ".08em", opacity: saving ? 0.6 : 1 }}>
+              {saving ? "SAVING..." : "SAVE SCOPE"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main admin tab ───────────────────────────────────────────────────────────
 export default function AdminTab({ poolId, events, settings, onChanged, showToast }) {
   const nextWeek = events.length > 0 ? Math.max(...events.map(e => e.week_number)) + 1 : 1;
@@ -329,6 +411,8 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
           {showCreate ? "CANCEL" : "+ NEW WEEK"}
         </button>
       </div>
+
+      <PoolScopeCard poolId={poolId} settings={settings} showToast={showToast} />
 
       {showCreate && (
         <div className="pk-card" style={{ padding: "18px 18px 20px", marginBottom: 20 }}>
