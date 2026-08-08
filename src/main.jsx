@@ -6,6 +6,8 @@ import CreateLeaguePage from './CreateLeaguePage'
 import LeaguePage from './LeaguePage'
 import AuthCallback from './AuthCallback'
 import LandingPage from './LandingPage'
+import CreatePoolPage from './pickem/CreatePoolPage'
+import PoolPage from './pickem/PoolPage'
 import { isSessionStorageAvailable } from './session'
 
 if (!isSessionStorageAvailable()) {
@@ -35,6 +37,8 @@ if (!isSessionStorageAvailable()) {
           <Route path="/" element={<LandingPage />} />
           <Route path="/create" element={<CreateLeaguePage />} />
           <Route path="/join/:joinCode" element={<LeaguePage />} />
+          <Route path="/pickem/create" element={<CreatePoolPage />} />
+          <Route path="/pickem/:joinCode" element={<PoolPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={
             <div style={{ color: 'white', padding: '40px', fontFamily: 'Arial' }}>

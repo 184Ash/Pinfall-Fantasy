@@ -27,6 +27,17 @@ const css = `
   .lp-hero-subtitle { position: relative; z-index: 2; margin-top: 28px; font-size: 19px; font-weight: 400; line-height: 1.75; color: #B8C0C8; max-width: 480px; opacity: 0; animation: lpFadeUp 0.8s ease 0.5s forwards; }
   .lp-hero-subtitle strong { color: #E8E4DC; font-weight: 500; }
   .lp-hero-cta-group { position: relative; z-index: 2; margin-top: 52px; display: flex; flex-direction: column; align-items: center; gap: 16px; opacity: 0; animation: lpFadeUp 0.8s ease 0.65s forwards; }
+  .lp-format-grid { display: grid; grid-template-columns: repeat(2, minmax(260px, 340px)); gap: 18px; justify-content: center; }
+  .lp-format-card { position: relative; background: #16191F; border: 1px solid rgba(201,168,76,0.18); padding: 28px 26px 26px; text-align: left; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.2s, transform 0.15s; }
+  .lp-format-card:hover { border-color: rgba(201,168,76,0.45); transform: translateY(-2px); }
+  .lp-format-eyebrow { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: #8C6E2A; }
+  .lp-format-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 0.04em; color: #E8E4DC; line-height: 1; }
+  .lp-format-desc { font-size: 14px; color: #9EA8B0; line-height: 1.65; flex: 1; }
+  .lp-format-new { position: absolute; top: -10px; right: 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #1E2128; background: #C9A84C; padding: 4px 10px; border-radius: 2px; }
+  .lp-format-cta { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #C9A84C; color: #1E2128; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 13px 20px; border: none; cursor: pointer; transition: background 0.2s; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+  .lp-format-cta:hover { background: #E2C06A; }
+  .lp-format-cta.lp-cta-ghost { background: transparent; color: #C9A84C; border: 1px solid rgba(201,168,76,0.5); clip-path: none; }
+  .lp-format-cta.lp-cta-ghost:hover { background: rgba(201,168,76,0.1); }
   .lp-btn-create { display: inline-flex; align-items: center; gap: 12px; background: #C9A84C; color: #1E2128; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; padding: 18px 44px; border: none; cursor: pointer; transition: background 0.2s, transform 0.15s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
   .lp-btn-create:hover { background: #E2C06A; transform: translateY(-2px); }
   .lp-btn-learn { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #9EA8B0; text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
@@ -76,6 +87,7 @@ const css = `
   @keyframes lpMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
   @media (max-width: 900px) {
     .lp-nav { padding: 18px 24px; }
+    .lp-format-grid { grid-template-columns: minmax(0, 400px); }
     .lp-features { padding: 80px 24px; }
     .lp-features-grid { grid-template-columns: 1fr; }
     .lp-steps-row { grid-template-columns: repeat(2, 1fr); gap: 40px; }
@@ -93,7 +105,7 @@ const css = `
   }
 `;
 
-const marqueeItems = ["125 LB","133 LB","141 LB","149 LB","157 LB","165 LB","174 LB","184 LB","197 LB","285 LB","NCAA WRESTLING","FANTASY DRAFT","SNAKE DRAFT","LIVE SCORING"];
+const marqueeItems = ["125 LB","133 LB","141 LB","149 LB","157 LB","165 LB","174 LB","184 LB","197 LB","285 LB","NCAA WRESTLING","FANTASY DRAFT","SNAKE DRAFT","LIVE SCORING","DUAL MEET PICK'EM","WEEKLY PICKS"];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -138,12 +150,37 @@ export default function LandingPage() {
           Draft your roster, compete all tournament long, and settle the debate on who knows wrestling best.
         </p>
         <div className="lp-hero-cta-group">
-          <a onClick={()=>navigate("/create")} className="lp-btn-create" style={{cursor:"pointer"}}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Create a League
-          </a>
+          <div className="lp-format-grid">
+            <div className="lp-format-card">
+              <div className="lp-format-eyebrow">March · Live Fantasy Draft</div>
+              <div className="lp-format-title">NCAA Championship Draft</div>
+              <p className="lp-format-desc">
+                Snake-draft wrestlers across all 10 weight classes, then watch standings
+                update live as the national tournament unfolds.
+              </p>
+              <a onClick={()=>navigate("/create")} className="lp-format-cta" style={{cursor:"pointer"}}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Create a Draft League
+              </a>
+            </div>
+            <div className="lp-format-card">
+              <span className="lp-format-new">New</span>
+              <div className="lp-format-eyebrow">2026-27 Season · Weekly Picks</div>
+              <div className="lp-format-title">Dual Meet Pick&apos;em</div>
+              <p className="lp-format-desc">
+                Pick the winner of every match in the week&apos;s big duals — or just call
+                the team winners. Season-long standings crown the sharpest fan.
+              </p>
+              <a onClick={()=>navigate("/pickem/create")} className="lp-format-cta" style={{cursor:"pointer"}}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Start a Pick&apos;em Pool
+              </a>
+            </div>
+          </div>
           <a href="#how" className="lp-btn-learn">How it works ↓</a>
           <p className="lp-hero-note">Free to use &nbsp;·&nbsp; No account required &nbsp;·&nbsp; Share a link to invite your league</p>
         </div>
@@ -218,12 +255,20 @@ export default function LandingPage() {
             Free to use. Free to host your league.<br />
             No account. Just a link.
           </p>
-          <a onClick={()=>navigate("/create")} className="lp-btn-create" style={{cursor:"pointer"}}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Create a League
-          </a>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <a onClick={()=>navigate("/create")} className="lp-btn-create" style={{cursor:"pointer"}}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Create a Draft League
+            </a>
+            <a onClick={()=>navigate("/pickem/create")} className="lp-format-cta lp-cta-ghost" style={{cursor:"pointer", fontSize: 15, padding: "16px 30px"}}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              Start a Pick&apos;em Pool
+            </a>
+          </div>
         </div>
       </section>
 
