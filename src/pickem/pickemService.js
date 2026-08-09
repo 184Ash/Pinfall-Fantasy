@@ -6,7 +6,7 @@ import { DEFAULT_SCORING, PICKEM_SEASON, WEIGHT_CLASSES } from './pickemConstant
 
 // ── Pool lifecycle ───────────────────────────────────────────────────────────
 
-export async function createPool({ poolName, commissionerName, recoveryEmail, defaultPickMode, conferences }) {
+export async function createPool({ poolName, commissionerName, recoveryEmail, defaultPickMode, conferences, teamScope }) {
   // 1. Unique join code (same retry pattern as createLeague)
   let joinCode
   let attempts = 0
@@ -35,6 +35,8 @@ export async function createPool({ poolName, commissionerName, recoveryEmail, de
         defaultPickMode: defaultPickMode || 'matches',
         // Conference ids scoping this pool's slate (see src/pickem/conferences.js)
         conferences: conferences || [],
+        // Optional per-conference followed-team lists (see src/pickem/schedule.js)
+        teamScope: teamScope || {},
       },
     })
   if (poolError) throw new Error(poolError.message)

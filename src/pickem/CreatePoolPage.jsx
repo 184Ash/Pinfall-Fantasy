@@ -35,6 +35,7 @@ export default function CreatePoolPage() {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [defaultPickMode, setDefaultPickMode] = useState("matches");
   const [conferences, setConferences] = useState(["big-ten"]);
+  const [teamScope, setTeamScope] = useState({});
 
   const handleCreate = async () => {
     if (!poolName.trim() || !commissionerName.trim()) {
@@ -51,6 +52,7 @@ export default function CreatePoolPage() {
         recoveryEmail: recoveryEmail.trim() || null,
         defaultPickMode,
         conferences,
+        teamScope,
       });
       setResult(data);
       setPhase("done");
@@ -194,7 +196,8 @@ export default function CreatePoolPage() {
             POOL SCOPE <span style={{ color: "#3a4250" }}>(WHICH CONFERENCES ARE IN PLAY)</span>
           </label>
           <div style={{ marginBottom: 24 }}>
-            <ConferencePicker selected={conferences} onChange={setConferences} pickMode={defaultPickMode} />
+            <ConferencePicker selected={conferences} onChange={setConferences} pickMode={defaultPickMode}
+              teamScope={teamScope} onTeamScopeChange={setTeamScope} />
           </div>
 
           <div style={{ background: "#070a0e", border: "1px solid #1e2530", borderRadius: 8,

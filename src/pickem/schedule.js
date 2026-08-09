@@ -13,6 +13,8 @@
 //   - status:'confirmed' + a date means a real announced dual; everything
 //     else is projected and the UI must say so.
 
+import { CONFERENCE_BY_ID, WEEK_AXIS, BOUTS_PER_DUAL, bandFor } from './conferences';
+
 let cache = null;
 
 export async function loadSchedule() {
@@ -30,30 +32,114 @@ export function teamName(schedule, teamId) {
   return schedule.teamById[teamId]?.name || teamId;
 }
 
+// ─── TEAM SCOPE ───────────────────────────────────────────────────────────────
+// teamScope is settings_json.teamScope: { [conferenceId]: [teamId, ...] }.
+// A conference with no entry follows ALL its teams. A dual stays in scope when
+// it features at least one followed team — unfollowing Maryland never hides an
+// Iowa-at-Maryland dual from an Iowa fan; what disappears are duals between
+// two unfollowed teams.
+
+export function teamsForConference(schedule, conferenceId) {
+  return schedule.teams
+    .filter(t => t.conference === conferenceId)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function dualInTeamScope(dual, teamScope) {
+  const followed = teamScope?.[dual.conference];
+  if (!followed) return true;
+  return followed.includes(dual.home) || followed.includes(dual.away);
+}
+
+/** Per-conference { kept, total } dual counts under the current team scope. */
+export function keptDualStats(schedule, conferenceIds, teamScope) {
+  const stats = Object.fromEntries(conferenceIds.map(id => [id, { kept: 0, total: 0 }]));
+  schedule.duals.forEach(d => {
+    const s = stats[d.conference];
+    if (!s) return;
+    s.total++;
+    if (dualInTeamScope(d, teamScope)) s.kept++;
+  });
+  return stats;
+}
+
+// Mirrors conferences.js summarizeSelection() but scales each conference's
+// weeklyDuals histogram by its kept-dual fraction. That keeps the numbers
+// honest for team-filtered selections even where individual duals carry no
+// week yet (all of the Big Ten until the Sept release) — the trim is applied
+// proportionally, which is why callers should present these as ~estimates.
+const PEAK_RANGE = ['2027-W01', '2027-W07']; // same peak window as conferences.js
+export function summarizeScopedSelection(schedule, conferenceIds, teamScope, pickMode = 'duals') {
+  const picked = conferenceIds.map(id => CONFERENCE_BY_ID[id]).filter(Boolean);
+  const per = pickMode === 'matches' ? BOUTS_PER_DUAL : 1;
+  if (!picked.length) {
+    return { conferences: 0, teams: 0, duals: 0, bouts: 0, weeks: 0,
+             typicalPerWeek: 0, peakPerWeek: 0, peakWeek: null,
+             picksTypical: 0, picksPeak: 0, picksSeason: 0, band: bandFor(0), filtered: false };
+  }
+
+  const stats = keptDualStats(schedule, conferenceIds, teamScope);
+  const fraction = (c) => {
+    const s = stats[c.id];
+    return s && s.total > 0 ? s.kept / s.total : 1;
+  };
+
+  const weekly = WEEK_AXIS.map((_, i) =>
+    picked.reduce((sum, c) => sum + c.weeklyDuals[i] * fraction(c), 0));
+  const duals = picked.reduce((s, c) => s + (stats[c.id]?.kept ?? c.dualCount), 0);
+  const teams = picked.reduce((s, c) =>
+    s + (teamScope?.[c.id] ? teamScope[c.id].length : c.teamCount), 0);
+  const peak = Math.max(...weekly);
+  const peakIdx = WEEK_AXIS
+    .map((w, i) => (w.tag >= PEAK_RANGE[0] && w.tag <= PEAK_RANGE[1] ? i : -1))
+    .filter(i => i >= 0);
+  const busy = peakIdx.filter(i => weekly[i] > 0);
+  const typical = busy.length ? busy.reduce((s, i) => s + weekly[i], 0) / busy.length : 0;
+  const filtered = picked.some(c => teamScope?.[c.id]);
+
+  return {
+    conferences: picked.length,
+    teams,
+    duals,
+    bouts: duals * BOUTS_PER_DUAL,
+    weeks: weekly.filter(w => w >= 0.5).length,
+    weekly,
+    typicalPerWeek: Math.round(typical * 10) / 10,
+    peakPerWeek: Math.round(peak),
+    peakWeek: peak > 0 ? WEEK_AXIS[weekly.indexOf(peak)].tag : null,
+    picksTypical: Math.round(typical * per),
+    picksPeak: Math.round(peak * per),
+    picksSeason: duals * per,
+    band: bandFor(Math.round(typical * per)),
+    filtered,
+  };
+}
+
 // ─── SLATE QUERIES ────────────────────────────────────────────────────────────
 
-/** Scheduled duals for one ISO-week tag, limited to the pool's conferences. */
-export function dualsForWeek(schedule, weekTag, conferenceIds) {
+/** Scheduled duals for one ISO-week tag, limited to the pool's conference + team scope. */
+export function dualsForWeek(schedule, weekTag, conferenceIds, teamScope = null) {
   const scope = new Set(conferenceIds);
   return schedule.duals
-    .filter(d => d.week === weekTag && scope.has(d.conference))
+    .filter(d => d.week === weekTag && scope.has(d.conference) && dualInTeamScope(d, teamScope))
     .sort((a, b) => a.conference.localeCompare(b.conference) || a.id.localeCompare(b.id));
 }
 
 /** In-scope duals the dataset couldn't place on a week yet (Big Ten, mostly). */
-export function unscheduledDuals(schedule, conferenceIds) {
+export function unscheduledDuals(schedule, conferenceIds, teamScope = null) {
   const scope = new Set(conferenceIds);
   return schedule.duals
-    .filter(d => !d.week && scope.has(d.conference))
+    .filter(d => !d.week && scope.has(d.conference) && dualInTeamScope(d, teamScope))
     .sort((a, b) => a.conference.localeCompare(b.conference) || a.id.localeCompare(b.id));
 }
 
 /** Per-week in-scope dual counts across the whole axis, for the week selector. */
-export function weekCounts(schedule, conferenceIds) {
+export function weekCounts(schedule, conferenceIds, teamScope = null) {
   const scope = new Set(conferenceIds);
   const counts = Object.fromEntries(schedule.weekAxis.map(w => [w.tag, 0]));
   schedule.duals.forEach(d => {
-    if (d.week && scope.has(d.conference)) counts[d.week] = (counts[d.week] || 0) + 1;
+    if (d.week && scope.has(d.conference) && dualInTeamScope(d, teamScope))
+      counts[d.week] = (counts[d.week] || 0) + 1;
   });
   return counts;
 }

@@ -28,6 +28,16 @@ follows the pick mode, a running load-band total (icon + label, not color
 alone), a projected-schedule caveat, and a hard warning on Full Card +
 3-plus conferences (peak weeks blow past 250 picks).
 
+Each conference row also breaks out into a **team follow list** (chevron on
+the right): `settings_json.teamScope` maps conference id → followed team ids
+(no entry = all teams). A dual stays in scope when it features **at least one
+followed team**, so unfollowing teams drops only their head-to-heads with
+other unfollowed teams. Team-filtered load numbers are ~estimates — each
+conference's weekly histogram is scaled by its kept-dual fraction
+(`summarizeScopedSelection` in `schedule.js`), which also keeps undated Big
+Ten duals priced honestly. The slate builder applies the same filter to its
+week counts and dual lists.
+
 ## Slate builder (Manage → New Week → From Schedule)
 
 `SlateBuilder` builds a week straight from the dataset: pick a season week

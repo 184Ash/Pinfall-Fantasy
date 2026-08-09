@@ -46,7 +46,10 @@ export default function PicksTab({ events, myPicks, pickMatch, pickDual }) {
     return events.length > 0 ? events[events.length - 1].id : null;
   }, [events]);
   const [selectedId, setSelectedId] = useState(null);
-  const event = events.find(e => e.id === (selectedId || defaultEventId));
+  // Fall back to the default when the selected week no longer exists
+  // (commissioner deleted it while this device was on it).
+  const event = events.find(e => e.id === selectedId)
+    ?? events.find(e => e.id === defaultEventId);
 
   if (events.length === 0) {
     return (

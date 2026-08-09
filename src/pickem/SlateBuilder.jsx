@@ -55,7 +55,7 @@ function DualRow({ dual, schedule, checked, onToggle }) {
   );
 }
 
-export default function SlateBuilder({ poolId, scopeConferences, defaultPickMode, nextWeek, onCreated, showToast }) {
+export default function SlateBuilder({ poolId, scopeConferences, teamScope = {}, defaultPickMode, nextWeek, onCreated, showToast }) {
   const [schedule, setSchedule] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [weekTag, setWeekTag] = useState(null);
@@ -75,8 +75,8 @@ export default function SlateBuilder({ poolId, scopeConferences, defaultPickMode
   }, []);
 
   const counts = useMemo(
-    () => (schedule ? weekCounts(schedule, scopeConferences) : {}),
-    [schedule, scopeConferences]);
+    () => (schedule ? weekCounts(schedule, scopeConferences, teamScope) : {}),
+    [schedule, scopeConferences, teamScope]);
 
   // Default to the first week that has in-scope duals
   useEffect(() => {
@@ -87,11 +87,11 @@ export default function SlateBuilder({ poolId, scopeConferences, defaultPickMode
 
   const axisEntry = schedule?.weekAxis.find(w => w.tag === weekTag);
   const weekDuals = useMemo(
-    () => (schedule && weekTag ? dualsForWeek(schedule, weekTag, scopeConferences) : []),
-    [schedule, weekTag, scopeConferences]);
+    () => (schedule && weekTag ? dualsForWeek(schedule, weekTag, scopeConferences, teamScope) : []),
+    [schedule, weekTag, scopeConferences, teamScope]);
   const floating = useMemo(
-    () => (schedule ? unscheduledDuals(schedule, scopeConferences) : []),
-    [schedule, scopeConferences]);
+    () => (schedule ? unscheduledDuals(schedule, scopeConferences, teamScope) : []),
+    [schedule, scopeConferences, teamScope]);
 
   // Changing week: select all of that week's duals, keep any unscheduled picks
   useEffect(() => {

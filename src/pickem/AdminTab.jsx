@@ -368,26 +368,33 @@ function ScoringCard({ poolId, settings, onChanged, showToast }) {
   );
 }
 
-// ── Pool scope: conference selection + default pick mode ─────────────────────
+// ── Pool scope: conference selection, team follow lists, default pick mode ───
+// Normalized form so dirty-checking ignores key/array ordering.
+const normScope = (scope) => JSON.stringify(
+  Object.keys(scope || {}).sort().map(k => [k, [...scope[k]].sort()]));
+
 function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
   const [expanded, setExpanded] = useState(false);
   const [conferences, setConferences] = useState(settings?.conferences || []);
+  const [teamScope, setTeamScope] = useState(settings?.teamScope || {});
   const [mode, setMode] = useState(settings?.defaultPickMode || "matches");
   const [saving, setSaving] = useState(false);
   // Dirty-tracking baseline is local — the settings prop is fetched once on
   // page load and doesn't refresh after a save.
   const [baseline, setBaseline] = useState({
     conferences: settings?.conferences || [],
+    teamScope: settings?.teamScope || {},
     mode: settings?.defaultPickMode || "matches",
   });
   const dirty = mode !== baseline.mode
-    || JSON.stringify([...conferences].sort()) !== JSON.stringify([...baseline.conferences].sort());
+    || JSON.stringify([...conferences].sort()) !== JSON.stringify([...baseline.conferences].sort())
+    || normScope(teamScope) !== normScope(baseline.teamScope);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await savePoolSettings(poolId, { conferences, defaultPickMode: mode });
-      setBaseline({ conferences, mode });
+      await savePoolSettings(poolId, { conferences, teamScope, defaultPickMode: mode });
+      setBaseline({ conferences, teamScope, mode });
       onChanged();
       showToast("Pool scope saved", "ok");
     } catch {
@@ -408,6 +415,7 @@ function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
           <span style={{ marginLeft: 10, fontSize: 12, color: "#6a7480",
             fontFamily: "'Barlow Condensed',sans-serif" }}>
             {conferences.length || "no"} conference{conferences.length !== 1 ? "s" : ""} selected
+            {Object.keys(teamScope).length > 0 ? ` · team filters on ${Object.keys(teamScope).length}` : ""}
             · {PICK_MODES[mode]?.label} default{dirty ? " · unsaved" : ""}
           </span>
         </div>
@@ -429,7 +437,8 @@ function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
             ))}
           </div>
 
-          <ConferencePicker selected={conferences} onChange={setConferences} pickMode={mode} />
+          <ConferencePicker selected={conferences} onChange={setConferences} pickMode={mode}
+            teamScope={teamScope} onTeamScopeChange={setTeamScope} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
             marginTop: 14, gap: 10, flexWrap: "wrap" }}>
@@ -452,7 +461,9 @@ function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
 // ── Main admin tab ───────────────────────────────────────────────────────────
 export default function AdminTab({ poolId, events, settings, onChanged, showToast }) {
   const nextWeek = events.length > 0 ? Math.max(...events.map(e => e.week_number)) + 1 : 1;
-  const [weekNumber, setWeekNumber] = useState(null); // null = auto (nextWeek)
+  // Raw input string so clearing the field doesn't coerce to 0/NaN — parsed
+  // (with a nextWeek fallback) at submit. null = auto.
+  const [weekNumber, setWeekNumber] = useState(null);
   const [title, setTitle] = useState("");
   const [pickMode, setPickMode] = useState(settings?.defaultPickMode || "matches");
   const [lockAt, setLockAt] = useState("");
@@ -464,8 +475,9 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
     if (!title.trim()) { showToast("Give the week a title", "err"); return; }
     setCreating(true);
     try {
+      const parsedWeek = parseInt(weekNumber, 10);
       await createEvent(poolId, {
-        weekNumber: weekNumber ?? nextWeek,
+        weekNumber: Number.isFinite(parsedWeek) && parsedWeek > 0 ? parsedWeek : nextWeek,
         title: title.trim(),
         pickMode,
         lockAt: lockAt ? new Date(lockAt).toISOString() : null,
@@ -513,6 +525,7 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
           {source === "schedule" && (
             <SlateBuilder poolId={poolId}
               scopeConferences={settings?.conferences || []}
+              teamScope={settings?.teamScope || {}}
               defaultPickMode={settings?.defaultPickMode}
               nextWeek={nextWeek}
               onCreated={() => { setShowCreate(false); onChanged(); }}
@@ -523,8 +536,8 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             <div style={{ width: 90 }}>
               <span style={label}>WEEK #</span>
-              <input className="pk-inp" type="number" value={weekNumber ?? nextWeek}
-                onChange={e => setWeekNumber(Number(e.target.value))} />
+              <input className="pk-inp" type="number" min="1" value={weekNumber ?? nextWeek}
+                onChange={e => setWeekNumber(e.target.value)} />
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
               <span style={label}>TITLE</span>
