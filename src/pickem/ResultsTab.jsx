@@ -1,4 +1,5 @@
 // src/pickem/ResultsTab.jsx — week-by-week results with your pick outcomes
+import { useMemo } from "react";
 import { scoreEventForMember, isEventLocked } from "./pickemScoring";
 import { WIN_TYPES } from "./pickemConstants";
 
@@ -15,9 +16,31 @@ function PickMark({ mine, winner }) {
   );
 }
 
-export default function ResultsTab({ events, myPicks, scoring }) {
+export default function ResultsTab({ events, myPicks, scoring, members = [], picks = [] }) {
   // Newest first; only show weeks that are at least locked (results in progress)
   const visible = [...events].reverse().filter(e => isEventLocked(e));
+
+  // Per-member pick indexes, for computing each finalized week's winner
+  const picksByMember = useMemo(() => {
+    const map = {};
+    picks.forEach(p => {
+      if (!map[p.member_id]) map[p.member_id] = { byMatch: {}, byDual: {} };
+      if (p.match_id) map[p.member_id].byMatch[p.match_id] = p.pick;
+      if (p.dual_id) map[p.member_id].byDual[p.dual_id] = p.pick;
+    });
+    return map;
+  }, [picks]);
+
+  const weekWinners = (event) => {
+    if (event.status !== "final" || members.length === 0) return null;
+    const scored = members.map(m => ({
+      name: m.name,
+      points: scoreEventForMember(event, picksByMember[m.id] || {}, scoring).points,
+    }));
+    const top = Math.max(...scored.map(s => s.points));
+    if (top <= 0) return null;
+    return { points: top, names: scored.filter(s => s.points === top).map(s => s.name) };
+  };
 
   if (visible.length === 0) {
     return (
@@ -35,6 +58,7 @@ export default function ResultsTab({ events, myPicks, scoring }) {
     <div>
       {visible.map(event => {
         const myScore = scoreEventForMember(event, myPicks, scoring);
+        const winners = weekWinners(event);
         return (
           <div key={event.id} style={{ marginBottom: 26 }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between",
@@ -59,6 +83,14 @@ export default function ResultsTab({ events, myPicks, scoring }) {
                 </div>
               )}
             </div>
+
+            {winners && (
+              <div style={{ background: "#0a1018", border: "1px solid #c9a84c33", borderRadius: 8,
+                padding: "8px 14px", marginBottom: 10, fontSize: 13,
+                fontFamily: "'Barlow Condensed',sans-serif", color: "#c9a84c", fontWeight: 700 }}>
+                🏆 Week won by {winners.names.join(" & ")} · {winners.points} pts
+              </div>
+            )}
 
             {event.duals.map(dual => (
               <div key={dual.id} className="pk-card" style={{ marginBottom: 12 }}>

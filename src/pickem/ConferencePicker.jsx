@@ -6,19 +6,20 @@ import {
   CONFERENCES, CONFERENCE_PRESETS, summarizeSelection, conferenceBlurb,
 } from "./conferences";
 
-const BAND_COLORS = {
-  light: "#34d399",
-  standard: "#c9a84c",
-  heavy: "#d97706",
-  veryHeavy: "#f87171",
-  extreme: "#ef4444",
+// Icon + color per load band — the verdict must read without color alone.
+const BAND_STYLE = {
+  light:     { color: "#34d399", icon: "✓" },
+  standard:  { color: "#c9a84c", icon: "●" },
+  heavy:     { color: "#d97706", icon: "▲" },
+  veryHeavy: { color: "#f87171", icon: "⚠" },
+  extreme:   { color: "#ef4444", icon: "⛔" },
 };
 
 const sameSet = (a, b) => a.length === b.length && a.every(id => b.includes(id));
 
 export default function ConferencePicker({ selected, onChange, pickMode }) {
   const summary = useMemo(() => summarizeSelection(selected, pickMode), [selected, pickMode]);
-  const bandColor = BAND_COLORS[summary.band.key] || "#c9a84c";
+  const band = BAND_STYLE[summary.band.key] || BAND_STYLE.standard;
   // Guardrail from the scale analysis: Full Card beyond 2 conferences peaks
   // at 280+ picks in one week — warn loudly before someone builds that pool.
   const fullCardOverload = pickMode === "matches" && selected.length > 2;
@@ -93,7 +94,7 @@ export default function ConferencePicker({ selected, onChange, pickMode }) {
 
       {/* ── Running total + load verdict ── */}
       <div style={{ background: "#070a0e", border: "1px solid #1e2530",
-        borderLeft: `3px solid ${bandColor}`, borderRadius: 8, padding: "12px 16px" }}>
+        borderLeft: `3px solid ${band.color}`, borderRadius: 8, padding: "12px 16px" }}>
         {summary.duals === 0 ? (
           <div style={{ fontSize: 13, color: "#6a7480", fontFamily: "'Barlow Condensed',sans-serif" }}>
             Pick at least one conference to build a slate.
@@ -101,9 +102,9 @@ export default function ConferencePicker({ selected, onChange, pickMode }) {
         ) : (
           <>
             <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".12em", color: bandColor,
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".12em", color: band.color,
                 fontFamily: "'Oswald',sans-serif" }}>
-                {summary.band.label.toUpperCase()}
+                {band.icon} {summary.band.label.toUpperCase()}
               </span>
               <span style={{ fontSize: 13, color: "#9aa4ae", fontFamily: "'Barlow Condensed',sans-serif" }}>
                 Typical week: <b style={{ color: "#e0d8b4" }}>{summary.picksTypical} picks</b>
@@ -129,6 +130,15 @@ export default function ConferencePicker({ selected, onChange, pickMode }) {
           that size — switch to Duals Only, or trim the list.
         </div>
       )}
+
+      {/* Data confidence: the schedule dataset is largely projected until the
+          fall releases land — never imply these numbers are locked. */}
+      <div style={{ marginTop: 10, fontSize: 11, color: "#4a5260",
+        fontFamily: "'Barlow Condensed',sans-serif", lineHeight: 1.6 }}>
+        Sizing is based on the projected 2026-27 schedule (built Aug 2026 — most
+        conference dates publish in the fall; Pac-12 is the least certain). Weekly
+        slates always show which duals are confirmed vs. projected.
+      </div>
     </div>
   );
 }

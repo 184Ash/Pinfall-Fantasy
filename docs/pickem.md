@@ -24,8 +24,27 @@ array of conference ids from `src/pickem/conferences.js` (the 2026-27 schedule
 dataset — see `docs/dual-schedule-scale.md` for the full scale analysis).
 `ConferencePicker` renders the selection UI on the create page and in the
 Manage tab's Pool Scope card: presets, per-conference picks/week pricing that
-follows the pick mode, a running load-band total, and a hard warning on
-Full Card + 3-plus conferences (peak weeks blow past 250 picks).
+follows the pick mode, a running load-band total (icon + label, not color
+alone), a projected-schedule caveat, and a hard warning on Full Card +
+3-plus conferences (peak weeks blow past 250 picks).
+
+## Slate builder (Manage → New Week → From Schedule)
+
+`SlateBuilder` builds a week straight from the dataset: pick a season week
+(each shows its in-scope dual count), duals pre-select with CONFIRMED /
+PROJECTED badges and real dates where they exist, undated duals (all of the
+Big Ten until the September release) live in a "not yet scheduled" bucket,
+and title + Friday-6pm lock prefill from the week. Creation bulk-inserts the
+event, duals (tagged `conference` + `source_dual_id` for later re-sync), and
+scaffolded matches in Full Card mode. `src/pickem/schedule.js` dynamic-imports
+the 108 KB JSON so it never ships in the main bundle. Manual week entry
+remains as a fallback tab.
+
+Scoring is commissioner-editable in the Manage tab (Scoring card); standings
+recompute from raw picks, so changes apply retroactively. Pool settings load
+with pool state and refresh over Realtime, so scope/scoring edits propagate
+to every device without a reload. Finalized weeks show a "Week won by" banner
+in Results.
 
 ## Data model (`supabase/pickem_schema.sql`)
 
@@ -68,11 +87,12 @@ persists only via the creating device's localStorage).
 ## Not built yet / ideas parking lot
 
 - Win-type prediction bonus ("call the pin")
-- Weekly winner highlight + season week-win counts
-- Commissioner-editable scoring values in the Manage tab
+- Season week-win counts on the standings tab (per-week winners already show
+  in Results)
 - Auto-import dual results (Flo API, like the draft's sync pipeline)
-- Auto-build weekly slates from the schedule dataset once real dates publish
-  (needs a `conference` column + `source_dual_id` on `pickem_duals`; re-scrape
-  late Sept 2026 per dual-schedule-scale.md)
+- Dataset regeneration in late Sept / early Oct 2026 when real schedules
+  publish (see dual-schedule-scale.md); `source_dual_id` on pool duals lets
+  built slates re-sync to updated dates
+- Locking picks per-dual instead of per-week (staggered start times)
 - Locking picks per-dual instead of per-week (staggered start times)
 - Hide others' picks until lock (currently only your own picks render anyway)

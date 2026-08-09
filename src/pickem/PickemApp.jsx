@@ -41,11 +41,15 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
   const [members, setMembers] = useState(initialMembers || []);
   const [events, setEvents] = useState([]);
   const [picks, setPicks] = useState([]);
+  // Kept in state (seeded from the page-load fetch) so commissioner edits to
+  // scope/scoring propagate to every device without a refresh.
+  const [poolSettings, setPoolSettings] = useState(settings || {});
   const [stateLoading, setStateLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("picks");
   const [toast, setToast] = useState(null);
 
-  const scoring = useMemo(() => ({ ...DEFAULT_SCORING, ...(settings?.scoring || {}) }), [settings]);
+  const scoring = useMemo(
+    () => ({ ...DEFAULT_SCORING, ...(poolSettings?.scoring || {}) }), [poolSettings]);
 
   const showToast = useCallback((msg, type = "ok") => {
     setToast({ msg, type });
@@ -57,6 +61,7 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
   const reload = useCallback(async () => {
     try {
       const state = await loadPoolState(poolId);
+      setPoolSettings(state.settings);
       setMembers(state.members);
       setEvents(state.events);
       setPicks(state.picks);
@@ -69,6 +74,7 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
     let cancelled = false;
     loadPoolState(poolId).then(state => {
       if (cancelled) return;
+      setPoolSettings(state.settings);
       setMembers(state.members);
       setEvents(state.events);
       setPicks(state.picks);
@@ -91,6 +97,7 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
       .on("postgres_changes", { event: "*", schema: "public", table: "pickem_picks", filter: `pool_id=eq.${poolId}` }, scheduleReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "pickem_events", filter: `pool_id=eq.${poolId}` }, scheduleReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "pickem_members", filter: `pool_id=eq.${poolId}` }, scheduleReload)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "pickem_pools", filter: `id=eq.${poolId}` }, scheduleReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "pickem_duals" }, scheduleReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "pickem_matches" }, scheduleReload)
       .subscribe();
@@ -221,10 +228,11 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
             myMemberId={session.memberId} />
         )}
         {activeTab === "results" && (
-          <ResultsTab events={events} myPicks={myPicks} scoring={scoring} />
+          <ResultsTab events={events} myPicks={myPicks} scoring={scoring}
+            members={members} picks={picks} />
         )}
         {activeTab === "admin" && isCommissioner && (
-          <AdminTab poolId={poolId} events={events} settings={settings}
+          <AdminTab poolId={poolId} events={events} settings={poolSettings}
             onChanged={reload} showToast={showToast} />
         )}
       </div>

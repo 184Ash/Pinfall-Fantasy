@@ -55,16 +55,19 @@ CREATE TABLE IF NOT EXISTS pickem_events (
 CREATE INDEX IF NOT EXISTS pickem_events_pool_id_idx ON pickem_events(pool_id);
 
 CREATE TABLE IF NOT EXISTS pickem_duals (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id   UUID NOT NULL REFERENCES pickem_events(id) ON DELETE CASCADE,
-  dual_order INT  NOT NULL DEFAULT 1,
-  home_team  TEXT NOT NULL,
-  away_team  TEXT NOT NULL,
-  home_score INT,                                -- final team score (display)
-  away_score INT,
-  winner     TEXT                                -- home | away | tie | NULL = no result yet
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id       UUID NOT NULL REFERENCES pickem_events(id) ON DELETE CASCADE,
+  dual_order     INT  NOT NULL DEFAULT 1,
+  home_team      TEXT NOT NULL,
+  away_team      TEXT NOT NULL,
+  home_score     INT,                            -- final team score (display)
+  away_score     INT,
+  winner         TEXT,                           -- home | away | tie | NULL = no result yet
+  conference     TEXT,                           -- conference id when built from the schedule dataset
+  source_dual_id TEXT                            -- dataset dual id (e.g. 'big-ten-013') for re-sync
 );
 CREATE INDEX IF NOT EXISTS pickem_duals_event_id_idx ON pickem_duals(event_id);
+CREATE INDEX IF NOT EXISTS pickem_duals_source_dual_id_idx ON pickem_duals(source_dual_id);
 
 -- Individual bouts within a dual ('matches' mode). One per weight class.
 CREATE TABLE IF NOT EXISTS pickem_matches (

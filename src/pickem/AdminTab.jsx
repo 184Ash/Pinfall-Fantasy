@@ -5,9 +5,10 @@ import {
   addDual, deleteDual, updateDual, updateMatch,
   savePoolSettings,
 } from "./pickemService";
-import { PICK_MODES, WIN_TYPES } from "./pickemConstants";
+import { PICK_MODES, WIN_TYPES, DEFAULT_SCORING } from "./pickemConstants";
 import { isEventLocked } from "./pickemScoring";
 import ConferencePicker from "./ConferencePicker";
+import SlateBuilder from "./SlateBuilder";
 
 const label = { display: "block", fontSize: 10, letterSpacing: ".16em", color: "#6a5a30", marginBottom: 5 };
 
@@ -291,8 +292,84 @@ function EventAdminCard({ event, onChanged, showToast }) {
   );
 }
 
+// ── Scoring editor ───────────────────────────────────────────────────────────
+function ScoringCard({ poolId, settings, onChanged, showToast }) {
+  const [expanded, setExpanded] = useState(false);
+  const current = { ...DEFAULT_SCORING, ...(settings?.scoring || {}) };
+  const [values, setValues] = useState(current);
+  const [saving, setSaving] = useState(false);
+  const dirty = Object.keys(DEFAULT_SCORING).some(k => Number(values[k]) !== current[k]);
+
+  const fields = [
+    { key: "matchWin", label: "CORRECT MATCH PICK", hint: "Full Card mode, per bout" },
+    { key: "perfectCard", label: "PERFECT 10-MATCH CARD", hint: "bonus per dual" },
+    { key: "dualWin", label: "CORRECT DUAL WINNER", hint: "Duals Only mode" },
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const scoring = Object.fromEntries(
+        Object.keys(DEFAULT_SCORING).map(k => [k, Math.max(0, Number(values[k]) || 0)]));
+      await savePoolSettings(poolId, { scoring });
+      onChanged();
+      showToast("Scoring updated — standings recalculate instantly", "ok");
+    } catch {
+      showToast("Failed to save scoring", "err");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="pk-card" style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "12px 18px", background: "#0a1018", cursor: "pointer",
+        borderBottom: expanded ? "1px solid #1a1f26" : "none" }}
+        onClick={() => setExpanded(x => !x)}>
+        <div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#e0d8b4", letterSpacing: ".06em" }}>
+            SCORING
+          </span>
+          <span style={{ marginLeft: 10, fontSize: 12, color: "#6a7480",
+            fontFamily: "'Barlow Condensed',sans-serif" }}>
+            match {current.matchWin} · perfect card +{current.perfectCard} · dual {current.dualWin}
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: "#6a5a30" }}>{expanded ? "▲" : "▼"}</div>
+      </div>
+      {expanded && (
+        <div style={{ padding: "16px 18px 18px" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+            {fields.map(f => (
+              <div key={f.key} style={{ minWidth: 150, flex: 1 }}>
+                <span style={label}>{f.label}</span>
+                <input className="pk-inp" type="number" min="0" value={values[f.key]}
+                  onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))} />
+                <div style={{ fontSize: 11, color: "#4a5260", marginTop: 4,
+                  fontFamily: "'Barlow Condensed',sans-serif" }}>{f.hint}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+            gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, color: "#5a6470", fontFamily: "'Barlow Condensed',sans-serif" }}>
+              Applies to all weeks, including already-finalized ones — standings are
+              recomputed from raw picks every time.
+            </div>
+            <button className="pk-btn" disabled={saving || !dirty} onClick={handleSave}
+              style={{ background: dirty ? "#c9a84c" : "#1e2530", color: dirty ? "#070a0e" : "#5a6470",
+                borderRadius: 6, padding: "9px 20px", fontSize: 12, fontWeight: 700,
+                letterSpacing: ".08em", opacity: saving ? 0.6 : 1 }}>
+              {saving ? "SAVING..." : "SAVE SCORING"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Pool scope: conference selection + default pick mode ─────────────────────
-function PoolScopeCard({ poolId, settings, showToast }) {
+function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
   const [expanded, setExpanded] = useState(false);
   const [conferences, setConferences] = useState(settings?.conferences || []);
   const [mode, setMode] = useState(settings?.defaultPickMode || "matches");
@@ -311,6 +388,7 @@ function PoolScopeCard({ poolId, settings, showToast }) {
     try {
       await savePoolSettings(poolId, { conferences, defaultPickMode: mode });
       setBaseline({ conferences, mode });
+      onChanged();
       showToast("Pool scope saved", "ok");
     } catch {
       showToast("Failed to save pool scope", "err");
@@ -380,6 +458,7 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
   const [lockAt, setLockAt] = useState("");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(events.length === 0);
+  const [source, setSource] = useState("schedule"); // schedule | manual
 
   const handleCreate = async () => {
     if (!title.trim()) { showToast("Give the week a title", "err"); return; }
@@ -412,10 +491,35 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
         </button>
       </div>
 
-      <PoolScopeCard poolId={poolId} settings={settings} showToast={showToast} />
+      <PoolScopeCard poolId={poolId} settings={settings} onChanged={onChanged} showToast={showToast} />
+      <ScoringCard poolId={poolId} settings={settings} onChanged={onChanged} showToast={showToast} />
 
       {showCreate && (
         <div className="pk-card" style={{ padding: "18px 18px 20px", marginBottom: 20 }}>
+          {/* ── Source toggle: build from the schedule dataset, or by hand ── */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {[["schedule", "FROM SCHEDULE"], ["manual", "MANUAL"]].map(([s, text]) => (
+              <button key={s} className="pk-btn" onClick={() => setSource(s)}
+                style={{ background: source === s ? "#c9a84c14" : "transparent",
+                  border: source === s ? "1px solid #c9a84c" : "1px solid #1e2530",
+                  color: source === s ? "#c9a84c" : "#7a8a9a",
+                  borderRadius: 6, padding: "7px 16px", fontSize: 11, fontWeight: 700,
+                  letterSpacing: ".08em" }}>
+                {text}
+              </button>
+            ))}
+          </div>
+
+          {source === "schedule" && (
+            <SlateBuilder poolId={poolId}
+              scopeConferences={settings?.conferences || []}
+              defaultPickMode={settings?.defaultPickMode}
+              nextWeek={nextWeek}
+              onCreated={() => { setShowCreate(false); onChanged(); }}
+              showToast={showToast} />
+          )}
+
+          {source === "manual" && (<>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             <div style={{ width: 90 }}>
               <span style={label}>WEEK #</span>
@@ -448,6 +552,7 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
               CREATE WEEK
             </button>
           </div>
+          </>)}
         </div>
       )}
 

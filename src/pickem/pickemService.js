@@ -109,8 +109,16 @@ export async function savePoolSettings(poolId, partialSettings) {
 
 // ── Events (weekly slates), duals, matches ──────────────────────────────────
 
-// Full nested load: events → duals → matches, plus all picks and members.
+// Full nested load: events → duals → matches, plus all picks, members, and
+// the pool's current settings (so scope/scoring edits propagate live).
 export async function loadPoolState(poolId) {
+  const { data: pool, error: poolError } = await supabase
+    .from('pickem_pools')
+    .select('settings_json')
+    .eq('id', poolId)
+    .single()
+  if (poolError) throw new Error(poolError.message)
+
   const { data: members, error: membersError } = await supabase
     .from('pickem_members')
     .select('id, name, role, created_at')
@@ -168,6 +176,7 @@ export async function loadPoolState(poolId) {
   })
 
   return {
+    settings: pool?.settings_json ?? {},
     members: members || [],
     events: (events || []).map(e => ({ ...e, duals: dualsByEvent[e.id] || [] })),
     picks: picks || [],
@@ -204,6 +213,44 @@ export async function deleteEvent(eventId) {
     .delete()
     .eq('id', eventId)
   if (error) throw new Error(error.message)
+}
+
+// Build a whole week from the schedule dataset in one shot: the event, all
+// selected duals (tagged with conference + source_dual_id for later re-sync),
+// and — in 'matches' mode — the 10 scaffolded bouts per dual, bulk-inserted.
+// duals: [{ sourceDualId, conference, homeTeam, awayTeam }]
+export async function createWeekFromSchedule(poolId, { weekNumber, title, pickMode, lockAt, duals }) {
+  const eventId = await createEvent(poolId, { weekNumber, title, pickMode, lockAt })
+
+  const dualRows = duals.map((d, i) => ({
+    event_id: eventId,
+    dual_order: i + 1,
+    home_team: d.homeTeam,
+    away_team: d.awayTeam,
+    conference: d.conference ?? null,
+    source_dual_id: d.sourceDualId ?? null,
+  }))
+  const { data: inserted, error: dualsError } = await supabase
+    .from('pickem_duals')
+    .insert(dualRows)
+    .select('id')
+  if (dualsError) {
+    await supabase.from('pickem_events').delete().eq('id', eventId) // cascades duals
+    throw new Error(dualsError.message)
+  }
+
+  if (pickMode === 'matches') {
+    const matchRows = inserted.flatMap(dual =>
+      WEIGHT_CLASSES.map((w, i) => ({ dual_id: dual.id, match_order: i + 1, weight: w })))
+    const { error: matchesError } = await supabase
+      .from('pickem_matches')
+      .insert(matchRows)
+    if (matchesError) {
+      await supabase.from('pickem_events').delete().eq('id', eventId)
+      throw new Error(matchesError.message)
+    }
+  }
+  return eventId
 }
 
 // Adds a dual; in 'matches' mode also scaffolds one bout per weight class so
