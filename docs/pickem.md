@@ -203,11 +203,16 @@ gostanford.com: 125: #2 Troy Spratley (OSU) tech. fall Adam Mattin (STAN), 21-5 
   Strip rank tokens first, then normalize the type verb to our WIN_TYPES.
 - Winner **team side** comes from the parenthesized abbreviation — only two
   appear per dual; map to home/away by matching against the team names.
-- **A real conflict found in the wild**: OSU listed the 125 bout as 20-5,
+- **A real score delta found in the wild**: OSU listed the 125 bout as 20-5,
   Stanford as 21-5 (ranks disagreed too — polls move week to week). Both
-  agreed on weight, winner, side, win type, and the 33-7 dual score. So:
-  reconcile on (weight, winner side, win type) + dual score; treat bout
-  scores and ranks as display-only and never let them block agreement.
+  agreed on weight, winner, side, win type, and the 33-7 dual score. Note:
+  off-by-one tech-fall scores like this are *common and benign* — a tech
+  fall ends the moment the 15-point margin is reached, and a riding-time
+  point tallied at the conclusion may or may not make one site's final
+  score. It changes nothing about the result. So: reconcile on
+  (weight, winner side, win type) + dual score; treat bout scores and ranks
+  as display-only and never let them block agreement — especially on TF
+  lines, where a one-point spread between sources is expected noise.
 - Sidearm has at least two generations in the wild (OSU's Nuxt build vs
   Stanford's older platform with different URL schemes — e.g.
   `/sports/wrestling/schedule/2025-26` 404s on Stanford). Plan for a thin
