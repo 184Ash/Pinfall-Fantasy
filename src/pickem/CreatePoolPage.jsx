@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPool } from "./pickemService";
 import { PICKEM_CREATION_OPEN, PICKEM_SEASON, PICK_MODES, DEFAULT_SCORING } from "./pickemConstants";
+import { validatePasscode, generatePasscode } from "./passcode";
 import ConferencePicker from "./ConferencePicker";
 
 const css = `
@@ -33,6 +34,7 @@ export default function CreatePoolPage() {
   const [poolName, setPoolName] = useState("");
   const [commissionerName, setCommissionerName] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [passcode, setPasscode] = useState("");
   const [defaultPickMode, setDefaultPickMode] = useState("matches");
   const [conferences, setConferences] = useState(["big-ten"]);
   const [teamScope, setTeamScope] = useState({});
@@ -40,6 +42,11 @@ export default function CreatePoolPage() {
   const handleCreate = async () => {
     if (!poolName.trim() || !commissionerName.trim()) {
       setError("Pool name and your name are both required.");
+      return;
+    }
+    const codeCheck = validatePasscode(passcode);
+    if (!codeCheck.ok) {
+      setError(`Access code: ${codeCheck.reason}`);
       return;
     }
     if (!PICKEM_CREATION_OPEN) { setPhase("closed"); return; }
@@ -50,6 +57,7 @@ export default function CreatePoolPage() {
         poolName: poolName.trim(),
         commissionerName: commissionerName.trim(),
         recoveryEmail: recoveryEmail.trim() || null,
+        passcode: codeCheck.code,
         defaultPickMode,
         conferences,
         teamScope,
@@ -163,14 +171,38 @@ export default function CreatePoolPage() {
           <label style={{ display: "block", fontSize: 10, letterSpacing: ".18em", color: "#6a5a30", marginBottom: 6 }}>
             YOUR NAME (COMMISSIONER)
           </label>
-          <input className="pk-inp" placeholder="e.g. Jake"
+          <input className="pk-inp" placeholder="e.g. Jake" maxLength={60}
             value={commissionerName} onChange={e => setCommissionerName(e.target.value)} style={{ marginBottom: 18 }} />
 
           <label style={{ display: "block", fontSize: 10, letterSpacing: ".18em", color: "#6a5a30", marginBottom: 6 }}>
-            RECOVERY EMAIL <span style={{ color: "#3a4250" }}>(OPTIONAL)</span>
+            RECOVERY EMAIL <span style={{ color: "#3a4250" }}>(RECOMMENDED — RECEIVES MEMBER ACCESS-CODE BACKUPS)</span>
           </label>
           <input className="pk-inp" placeholder="you@email.com" type="email"
-            value={recoveryEmail} onChange={e => setRecoveryEmail(e.target.value)} style={{ marginBottom: 22 }} />
+            value={recoveryEmail} onChange={e => setRecoveryEmail(e.target.value)} style={{ marginBottom: 18 }} />
+
+          <label style={{ display: "block", fontSize: 10, letterSpacing: ".18em", color: "#6a5a30", marginBottom: 6 }}>
+            YOUR ACCESS CODE
+          </label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+            <input className="pk-inp" placeholder="At least 4 characters"
+              value={passcode} onChange={e => setPasscode(e.target.value)} />
+            <button className="pk-btn" onClick={() => setPasscode(generatePasscode())}
+              style={{ background: "transparent", color: "#c9a84c", border: "1px solid #c9a84c44",
+                borderRadius: 6, padding: "0 14px", fontSize: 11, fontWeight: 700,
+                letterSpacing: ".08em", whiteSpace: "nowrap" }}>
+              GENERATE
+            </button>
+          </div>
+          <div style={{ fontSize: 12, color: "#4a5260", fontFamily: "'Barlow Condensed',sans-serif",
+            lineHeight: 1.5, marginBottom: 22 }}>
+            You&apos;ll use this to get back into the pool from any device. Don&apos;t reuse a real
+            password — access codes are backed up by email for recovery.
+            {!recoveryEmail.trim() && (
+              <span style={{ color: "#8a7040" }}>
+                {" "}Without a recovery email above, no backup copies of anyone&apos;s codes are sent.
+              </span>
+            )}
+          </div>
 
           <label style={{ display: "block", fontSize: 10, letterSpacing: ".18em", color: "#6a5a30", marginBottom: 8 }}>
             DEFAULT PICK MODE <span style={{ color: "#3a4250" }}>(CHANGEABLE PER WEEK)</span>

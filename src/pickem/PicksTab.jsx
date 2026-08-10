@@ -147,6 +147,13 @@ export default function PicksTab({ events, myPicks, pickMatch, pickDual }) {
 
               {event.pick_mode === "matches" ? (
                 <div style={{ padding: "10px 14px" }}>
+                  {!locked && (
+                    <div style={{ fontSize: 11, color: "#4a5260", fontFamily: "'Barlow Condensed',sans-serif",
+                      padding: "0 2px 6px", lineHeight: 1.5 }}>
+                      Lineups are projected — you&apos;re picking the <b style={{ color: "#6a7480" }}>team side</b> at
+                      each weight, and your pick stands even if a different wrestler steps in.
+                    </div>
+                  )}
                   {(dual.matches || []).map(mt => {
                     const mine = myPicks.byMatch[mt.id];
                     const decided = !!mt.winner;

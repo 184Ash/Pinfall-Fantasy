@@ -2,12 +2,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "../supabase";
 import { loadPoolState, saveMatchPick, saveDualPick } from "./pickemService";
+import { clearPickemSession } from "./pickemSession";
 import { DEFAULT_SCORING } from "./pickemConstants";
 import { isEventLocked } from "./pickemScoring";
 import PicksTab from "./PicksTab";
 import StandingsTab from "./StandingsTab";
 import ResultsTab from "./ResultsTab";
 import AdminTab from "./AdminTab";
+import AccountModal from "./AccountModal";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
@@ -35,7 +37,7 @@ select.pk-inp{cursor:pointer;}
 @keyframes pkSlideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 `;
 
-export default function PickemApp({ poolId, session, poolName, season, settings, initialMembers }) {
+export default function PickemApp({ poolId, session, poolName, season, settings, initialMembers, commissionerEmail = null }) {
   const isCommissioner = session?.role === "commissioner";
 
   const [members, setMembers] = useState(initialMembers || []);
@@ -45,8 +47,10 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
   // scope/scoring propagate to every device without a refresh.
   const [poolSettings, setPoolSettings] = useState(settings || {});
   const [stateLoading, setStateLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeTab, setActiveTab] = useState("picks");
   const [toast, setToast] = useState(null);
+  const [showAccount, setShowAccount] = useState(false);
 
   const scoring = useMemo(
     () => ({ ...DEFAULT_SCORING, ...(poolSettings?.scoring || {}) }), [poolSettings]);
@@ -70,6 +74,10 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
     }
   }, [poolId]);
 
+  // Retry resets loading/error state in the click handler (not the effect) so
+  // the effect body stays purely async work.
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const retryLoad = () => { setStateLoading(true); setLoadError(false); setLoadAttempt(a => a + 1); };
   useEffect(() => {
     let cancelled = false;
     loadPoolState(poolId).then(state => {
@@ -80,11 +88,12 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
       setPicks(state.picks);
     }).catch(err => {
       console.error("Failed to load pool state:", err);
+      if (!cancelled) setLoadError(true);
     }).finally(() => {
       if (!cancelled) setStateLoading(false);
     });
     return () => { cancelled = true; };
-  }, [poolId]);
+  }, [poolId, loadAttempt]);
 
   useEffect(() => {
     const scheduleReload = () => {
@@ -164,6 +173,51 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
     );
   }
 
+  // Initial load failed — show a real error instead of an empty pool.
+  if (loadError) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#070a0e", display: "flex", alignItems: "center",
+        justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Oswald',sans-serif",
+        padding: 24, textAlign: "center" }}>
+        <style>{css}</style>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#b04040" }}>Couldn&apos;t load the pool</div>
+        <div style={{ fontSize: 14, color: "#7a8a9a", fontFamily: "'Barlow Condensed',sans-serif",
+          lineHeight: 1.7, maxWidth: 380 }}>
+          Something went wrong talking to the server. Check your connection and try again.
+        </div>
+        <button className="pk-btn" onClick={retryLoad}
+          style={{ background: "#c9a84c", color: "#070a0e", borderRadius: 6,
+            padding: "11px 26px", fontSize: 13, fontWeight: 700, letterSpacing: ".08em" }}>
+          RETRY
+        </button>
+      </div>
+    );
+  }
+
+  // Session points at a member that no longer exists (row deleted outside the
+  // app) — offer a clean sign-out instead of a ghost UI with a dead Account
+  // button. Only after members have actually loaded.
+  if (members.length > 0 && !me) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#070a0e", display: "flex", alignItems: "center",
+        justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Oswald',sans-serif",
+        padding: 24, textAlign: "center" }}>
+        <style>{css}</style>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#e0d8b4" }}>This account no longer exists</div>
+        <div style={{ fontSize: 14, color: "#7a8a9a", fontFamily: "'Barlow Condensed',sans-serif",
+          lineHeight: 1.7, maxWidth: 380 }}>
+          Your saved sign-in points at a member who was removed from the pool.
+        </div>
+        <button className="pk-btn"
+          onClick={() => { clearPickemSession(poolId); window.location.reload(); }}
+          style={{ background: "#c9a84c", color: "#070a0e", borderRadius: 6,
+            padding: "11px 26px", fontSize: 13, fontWeight: 700, letterSpacing: ".08em" }}>
+          BACK TO THE JOIN SCREEN
+        </button>
+      </div>
+    );
+  }
+
   const tabs = [
     { id: "picks", label: "MAKE PICKS" },
     { id: "standings", label: "STANDINGS" },
@@ -174,6 +228,12 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
   return (
     <div style={{ minHeight: "100vh", background: "#070a0e", color: "#d0c8b4", fontFamily: "'Oswald',sans-serif" }}>
       <style>{css}</style>
+
+      {showAccount && me && (
+        <AccountModal poolId={poolId} member={me} onClose={() => setShowAccount(false)}
+          onChanged={reload} showToast={showToast}
+          hasCommissionerBackup={!!commissionerEmail} />
+      )}
 
       {toast && (
         <div className="slide-down" style={{ position: "fixed", top: 14, right: 14, zIndex: 9999,
@@ -198,12 +258,20 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
                 {poolName}
               </h1>
             </div>
-            <div style={{ fontSize: 13, color: "#7a8a9a", fontFamily: "'Barlow Condensed',sans-serif" }}>
-              Picking as <span style={{ color: "#e0d8b4", fontWeight: 700 }}>{me?.name || "…"}</span>
-              {isCommissioner && (
-                <span style={{ marginLeft: 8, fontSize: 10, color: "#6a5a30", letterSpacing: ".14em",
-                  fontFamily: "'Oswald',sans-serif" }}>COMMISSIONER</span>
-              )}
+            <div style={{ fontSize: 13, color: "#7a8a9a", fontFamily: "'Barlow Condensed',sans-serif",
+              display: "flex", alignItems: "center", gap: 10 }}>
+              <span>
+                Picking as <span style={{ color: "#e0d8b4", fontWeight: 700 }}>{me?.name || "…"}</span>
+                {isCommissioner && (
+                  <span style={{ marginLeft: 8, fontSize: 10, color: "#6a5a30", letterSpacing: ".14em",
+                    fontFamily: "'Oswald',sans-serif" }}>COMMISSIONER</span>
+                )}
+              </span>
+              <button className="pk-btn" onClick={() => setShowAccount(true)}
+                style={{ background: "none", border: "1px solid #1e2530", borderRadius: 5,
+                  color: "#6a7480", fontSize: 10, letterSpacing: ".1em", padding: "4px 10px" }}>
+                ACCOUNT ⚙
+              </button>
             </div>
           </div>
           <div style={{ display: "flex", gap: 2, marginTop: 8, overflowX: "auto" }}>

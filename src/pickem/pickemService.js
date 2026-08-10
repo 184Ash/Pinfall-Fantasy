@@ -3,10 +3,28 @@ import { supabase } from '../supabase'
 import { generateJoinCode } from '../session'
 import { savePickemSession } from './pickemSession'
 import { DEFAULT_SCORING, PICKEM_SEASON, WEIGHT_CLASSES } from './pickemConstants'
+import { hashPasscode, passcodeMatches, generateSalt } from './passcode'
+
+// ── Access-code backup notifications ─────────────────────────────────────────
+// Fire-and-forget: emails the plaintext code to the commissioner via
+// api/pickem-notify.js. The server authenticates the payload (member must
+// exist in the pool and the code must match the stored hash — which is why
+// every caller fires this only AFTER the hash write). Failure or missing
+// email config never blocks the member action — the DB write is the source
+// of truth, the email is backup.
+function notifyCommissioner(poolId, memberId, passcode, kind) {
+  try {
+    fetch('/api/pickem-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poolId, memberId, passcode, kind }),
+    }).catch(() => {})
+  } catch { /* older browsers / SSR — backup email is best-effort only */ }
+}
 
 // ── Pool lifecycle ───────────────────────────────────────────────────────────
 
-export async function createPool({ poolName, commissionerName, recoveryEmail, defaultPickMode, conferences, teamScope }) {
+export async function createPool({ poolName, commissionerName, recoveryEmail, defaultPickMode, conferences, teamScope, passcode }) {
   // 1. Unique join code (same retry pattern as createLeague)
   let joinCode
   let attempts = 0
@@ -41,16 +59,26 @@ export async function createPool({ poolName, commissionerName, recoveryEmail, de
     })
   if (poolError) throw new Error(poolError.message)
 
-  // 3. Insert the commissioner as the first member
+  // 3. Insert the commissioner as the first member (with their access code)
+  const salt = generateSalt()
   const { data: member, error: memberError } = await supabase
     .from('pickem_members')
-    .insert({ pool_id: joinCode, name: commissionerName, role: 'commissioner' })
+    .insert({
+      pool_id: joinCode,
+      name: commissionerName,
+      role: 'commissioner',
+      email: recoveryEmail ?? null,
+      passcode_salt: salt,
+      passcode_hash: passcode ? await hashPasscode(passcode, salt) : null,
+      passcode_set_at: passcode ? new Date().toISOString() : null,
+    })
     .select('id')
     .single()
   if (memberError) {
     await supabase.from('pickem_pools').delete().eq('id', joinCode)
     throw new Error(memberError.message)
   }
+  if (passcode && recoveryEmail) notifyCommissioner(joinCode, member.id, passcode, 'created')
 
   // 4. Save session on this device
   savePickemSession(joinCode, member.id, 'commissioner')
@@ -69,7 +97,7 @@ export async function fetchPool(joinCode) {
 
   const { data: members, error: membersError } = await supabase
     .from('pickem_members')
-    .select('id, name, role, created_at')
+    .select('id, name, role, created_at, email, passcode_hash')
     .eq('pool_id', joinCode)
     .order('created_at', { ascending: true })
   if (membersError) return null
@@ -79,19 +107,130 @@ export async function fetchPool(joinCode) {
     season: pool.season,
     settings: pool.settings_json ?? {},
     commissionerEmail: pool.commissioner_email ?? null,
-    members: members ?? [],
+    // One canonical member shape everywhere (must match loadPoolState):
+    // emails are anon-readable by design in this trust model; hashes never
+    // leave the service layer.
+    members: (members ?? []).map(m => ({
+      id: m.id, name: m.name, role: m.role, created_at: m.created_at,
+      email: m.email ?? null, hasPasscode: !!m.passcode_hash,
+    })),
   }
 }
 
-export async function joinPool(poolId, displayName) {
+export async function joinPool(poolId, { name, email, passcode }) {
+  const salt = generateSalt()
   const { data: member, error } = await supabase
     .from('pickem_members')
-    .insert({ pool_id: poolId, name: displayName, role: 'member' })
+    .insert({
+      pool_id: poolId,
+      name,
+      role: 'member',
+      email: email || null,
+      passcode_salt: salt,
+      passcode_hash: await hashPasscode(passcode, salt),
+      passcode_set_at: new Date().toISOString(),
+    })
     .select('id')
     .single()
   if (error) throw new Error(error.message)
+  notifyCommissioner(poolId, member.id, passcode, 'created')
   savePickemSession(poolId, member.id, 'member')
   return { memberId: member.id, role: 'member' }
+}
+
+// ── Member accounts (access codes) ───────────────────────────────────────────
+
+// Returns 'ok' | 'wrong' | 'legacy' (no code set yet — pre-accounts member).
+export async function verifyMemberPasscode(memberId, passcode) {
+  const { data: member, error } = await supabase
+    .from('pickem_members')
+    .select('passcode_hash, passcode_salt')
+    .eq('id', memberId)
+    .single()
+  if (error) throw new Error(error.message)
+  if (!member.passcode_hash) return 'legacy'
+  return (await passcodeMatches(passcode, member.passcode_salt, member.passcode_hash)) ? 'ok' : 'wrong'
+}
+
+export async function setMemberPasscode(poolId, memberId, passcode, kind) {
+  const salt = generateSalt()
+  const { error } = await supabase
+    .from('pickem_members')
+    .update({
+      passcode_salt: salt,
+      passcode_hash: await hashPasscode(passcode, salt),
+      passcode_set_at: new Date().toISOString(),
+    })
+    .eq('id', memberId)
+  if (error) throw new Error(error.message)
+  notifyCommissioner(poolId, memberId, passcode, kind)
+}
+
+// Legacy claim: sets a code ONLY if the member still has none — the .is()
+// guard makes the claim race-safe when a stale device shows "SET UP CODE"
+// for a member who already claimed theirs elsewhere. Returns false then.
+export async function claimLegacyPasscode(poolId, memberId, passcode) {
+  const salt = generateSalt()
+  const { data, error } = await supabase
+    .from('pickem_members')
+    .update({
+      passcode_salt: salt,
+      passcode_hash: await hashPasscode(passcode, salt),
+      passcode_set_at: new Date().toISOString(),
+    })
+    .eq('id', memberId)
+    .is('passcode_hash', null)
+    .select('id')
+  if (error) throw new Error(error.message)
+  const claimed = (data ?? []).length > 0
+  if (claimed) notifyCommissioner(poolId, memberId, passcode, 'created')
+  return claimed
+}
+
+export async function updateMemberEmail(memberId, email) {
+  const { error } = await supabase
+    .from('pickem_members')
+    .update({ email: email || null })
+    .eq('id', memberId)
+  if (error) throw new Error(error.message)
+}
+
+// ── Forgot-code recovery (Supabase Auth email OTP) ───────────────────────────
+// Same email rails as the draft product's magic-link recovery: Supabase sends
+// a 6-digit code proving address ownership; on success the client writes a new
+// access-code hash. NOTE: the Supabase "Magic Link" email template must
+// include {{ .Token }} for the code to appear (see docs/pickem.md).
+
+export async function requestPasscodeReset(email) {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function confirmPasscodeReset(email, token) {
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+  if (error) throw new Error(error.message)
+  // The OTP proved address ownership; we don't keep the auth session around —
+  // pick'em identity lives in pickem_members, not Supabase Auth.
+  await supabase.auth.signOut()
+}
+
+// Members in this pool whose recovery email matches (several are possible —
+// e.g. a parent managing two entries). Caller lets the user choose which one.
+// LIKE wildcards in the address (_ and % are legal email characters) are
+// escaped so this is a case-insensitive EXACT match — otherwise verifying
+// a_b@x.com could surface (and let you reset) a.b@x.com's account.
+export async function membersByEmail(poolId, email) {
+  const exact = email.replace(/([\\%_])/g, '\\$1')
+  const { data, error } = await supabase
+    .from('pickem_members')
+    .select('id, name, role')
+    .eq('pool_id', poolId)
+    .ilike('email', exact)
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
 export async function savePoolSettings(poolId, partialSettings) {
@@ -121,12 +260,19 @@ export async function loadPoolState(poolId) {
     .single()
   if (poolError) throw new Error(poolError.message)
 
-  const { data: members, error: membersError } = await supabase
+  const { data: memberRows, error: membersError } = await supabase
     .from('pickem_members')
-    .select('id, name, role, created_at')
+    .select('id, name, role, created_at, email, passcode_hash')
     .eq('pool_id', poolId)
     .order('created_at', { ascending: true })
   if (membersError) throw new Error(membersError.message)
+  // One canonical member shape everywhere (must match fetchPool): emails are
+  // anon-readable by design in this trust model; hashes never leave the
+  // service layer.
+  const members = (memberRows ?? []).map(m => ({
+    id: m.id, name: m.name, role: m.role, created_at: m.created_at,
+    email: m.email ?? null, hasPasscode: !!m.passcode_hash,
+  }))
 
   const { data: events, error: eventsError } = await supabase
     .from('pickem_events')

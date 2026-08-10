@@ -30,14 +30,22 @@ CREATE TABLE IF NOT EXISTS pickem_pools (
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Members join by opening the pool link and entering a display name — a row is
--- created on join (no pre-created slots like the draft product's teams table).
+-- Members join by opening the pool link, entering a display name, and creating
+-- an ACCESS CODE — a row is created on join (no pre-created slots like the
+-- draft product's teams table). Only a salted SHA-256 hash of the code is
+-- stored; the plaintext is emailed to the commissioner as an out-of-band
+-- backup (api/pickem-notify.js). NULL hash = legacy member, prompted to set a
+-- code on next rejoin. Email enables forgot-code recovery via Supabase OTP.
 CREATE TABLE IF NOT EXISTS pickem_members (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pool_id    TEXT NOT NULL REFERENCES pickem_pools(id) ON DELETE CASCADE,
-  name       TEXT NOT NULL,
-  role       TEXT NOT NULL DEFAULT 'member',      -- commissioner | member
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pool_id         TEXT NOT NULL REFERENCES pickem_pools(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  role            TEXT NOT NULL DEFAULT 'member', -- commissioner | member
+  email           TEXT,                           -- optional, for forgot-code recovery
+  passcode_hash   TEXT,                           -- salted SHA-256 of the access code
+  passcode_salt   TEXT,
+  passcode_set_at TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS pickem_members_pool_id_idx ON pickem_members(pool_id);
 
@@ -123,4 +131,5 @@ CREATE POLICY "pickem_picks_rw"   ON pickem_picks   FOR ALL USING (true) WITH CH
 
 -- ── Realtime ─────────────────────────────────────────────────────────────────
 -- Enable via Supabase Dashboard → Database → Replication, or uncomment:
--- ALTER PUBLICATION supabase_realtime ADD TABLE pickem_events, pickem_duals, pickem_matches, pickem_picks, pickem_members;
+-- (pickem_pools is required for live settings/scope/scoring propagation)
+-- ALTER PUBLICATION supabase_realtime ADD TABLE pickem_pools, pickem_events, pickem_duals, pickem_matches, pickem_picks, pickem_members;

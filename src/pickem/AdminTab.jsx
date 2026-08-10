@@ -113,6 +113,14 @@ function DualEditor({ event, dual, onChanged, showToast }) {
           </div>
 
           {/* Match grid ('matches' mode only) */}
+          {event.pick_mode === "matches" && (dual.matches || []).length > 0 && (
+            <div style={{ fontSize: 11, color: "#4a5260", fontFamily: "'Barlow Condensed',sans-serif",
+              marginBottom: 4, lineHeight: 1.5 }}>
+              Wrestler names are the <b style={{ color: "#6a7480" }}>expected matchup</b> — update them
+              freely for injuries and substitutions, before or after lock. Members pick team sides,
+              so lineup edits never change anyone&apos;s picks.
+            </div>
+          )}
           {event.pick_mode === "matches" && (dual.matches || []).map(mt => {
             const edit = names[mt.id] || {};
             return (

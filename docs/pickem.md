@@ -87,12 +87,85 @@ pickem_picks    pool_id · member_id · (match_id XOR dual_id) · pick (home|awa
 - Sessions: `pinfall_pickem_<POOLID>` in localStorage — independent of the
   draft session, and a user can be in multiple pools at once.
 
+## Member accounts (access codes)
+
+Unlike the one-weekend draft, a pick'em pool runs Nov–Feb, so members have
+lightweight accounts:
+
+- **Join** = name + optional recovery email + an **access code** the member
+  creates (min 4 chars, generate button). Only a salted SHA-256 hash is stored
+  (`passcode_hash`/`passcode_salt` on `pickem_members`, hashed client-side via
+  Web Crypto in `src/pickem/passcode.js`).
+- **Commissioner backup**: on every code create/change/reset, the plaintext is
+  emailed to the pool's commissioner email via `api/pickem-notify.js`
+  (Resend REST; needs `RESEND_API_KEY` + `PICKEM_EMAIL_FROM`, degrades to a
+  no-op without them). The endpoint **authenticates the payload server-side**
+  (member must exist in the pool and the submitted code must match the stored
+  hash) so the recovery channel can't be spammed or poisoned with forged
+  codes by anyone holding the pool URL. This backup is the product's recovery
+  model — which is why the UI tells members not to reuse a real password. The
+  commissioner has **no in-UI controls** over other members' accounts; their
+  power is the inbox. If the pool has no commissioner email, the UI drops the
+  backup promise and pushes members toward recovery emails instead.
+- **Returning device**: pick your name → enter your code (verifies against the
+  hash; restores your real role, including commissioner). Sessions stay in
+  per-pool localStorage as the convenience layer.
+- **Forgot code**: Supabase Auth email OTP (`signInWithOtp` → `verifyOtp`,
+  then sign-out — pick'em identity lives in `pickem_members`, not Auth). The
+  Supabase **Magic Link email template must include `{{ .Token }}`** for the
+  6-digit code to appear. Multiple members on one email (parent + kid) get a
+  chooser after verification. No email on file → commissioner backup.
+- **Legacy members** (rows predating accounts, NULL hash) claim a code on
+  their next rejoin; the Account modal (header ⚙) lets anyone change their
+  code or recovery email later.
+
 ## Security model
 
-Identical to the draft product (permissive RLS, join-code-as-credential) — fine
-for private groups, with the same hardening roadmap. Known soft spot: the
-rejoin list restores any member by tap (member role only; commissioner access
-persists only via the creating device's localStorage).
+Permissive RLS and client-side enforcement, same as the draft product — fine
+for private groups, with the same hardening roadmap (server-side writes, RLS
+per role). Access codes stop casual identity mixups; they are not hardened
+auth: the DB is writable with the anon key, so codes are advisory against a
+motivated attacker with the pool URL. The legacy-claim step is a one-time
+trust window during migration.
+
+## Lineups are projected; picks are team sides
+
+Decision (Aug 2026): in Full Card mode a pick is stored as `home`/`away` per
+weight — the wrestler names on `pickem_matches` are the **expected matchup**,
+shown as guidance and editable by the commissioner at any time (injuries,
+substitutions, before or after lock). Lineup edits never touch picks: if the
+projected starter doesn't wrestle, members are still locked into the team
+side they chose. The picks UI and the admin match editor both say this
+explicitly.
+
+## Results ingestion — designed, not yet built
+
+The plan for automating results (buildable once real 2026-27 duals exist to
+test against, ~Nov 2026):
+
+1. **Sources**: every program posts dual results on its athletics site (the
+   large majority run on Sidearm Sports, which has fairly consistent
+   schedule/result markup). The October dataset regen should add a per-team
+   `resultsUrl` to the dataset — that's the scrape registry.
+2. **Two-sided reconciliation** (the accuracy idea): every dual appears on
+   BOTH teams' sites. A server function fetches both pages for duals in
+   locked non-final events (matched via `source_dual_id`), parses team scores
+   and per-bout lines (weight, winning side, win type), and compares:
+   both agree → staged as confirmed; partial agreement → staged with gaps;
+   disagreement → flagged conflict showing both versions.
+3. **Commissioner review queue**: nothing auto-finalizes. Staged results
+   appear in Manage with one-click apply per dual; conflicts render side by
+   side. The commissioner stays the source of truth — the scraper is an
+   assistant, same philosophy as the accounts model.
+4. **Storage**: a pool-agnostic `pickem_result_staging` table keyed by
+   `source_dual_id` (one scrape serves every pool, like the draft's
+   `global_scores`), written server-side with the service role, read-only to
+   clients.
+5. **Why it's robust**: because picks are team sides per weight, scoring only
+   needs (weight, winner side, win type) — not wrestler-name matching. The
+   draft's Levenshtein matcher (`src/fuzzyMatch.js`) can still assist for
+   displaying actual-vs-expected wrestlers, but scraping fragility never
+   blocks scoring.
 
 ## Not built yet / ideas parking lot
 
