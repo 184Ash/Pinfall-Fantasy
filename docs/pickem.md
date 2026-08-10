@@ -167,6 +167,53 @@ test against, ~Nov 2026):
    displaying actual-vs-expected wrestlers, but scraping fragility never
    blocks scoring.
 
+### Field notes — validated Aug 2026 against okstate.com + gostanford.com (2025-26)
+
+Scanned Oklahoma State's Stanford dual (Nov 7, 2025) end to end on both
+schools' sites. Findings that shape the scraper:
+
+**Where the data lives (Sidearm sites):**
+
+1. **Schedule page = dual-level source of truth.** okstate.com is Sidearm's
+   Nuxt platform; the schedule page embeds a serialized state object (also
+   served as `_payload.json`) with, per event: date, opponent (id, title, and
+   the opponent's own athletics **website URL** — the two-source registry
+   builds itself), home/away/neutral, status (including postponements), a
+   result object `{status: "W", team_score: "33", opponent_score: "7"}`, and
+   the recap URL. This alone fully powers **Duals Only** scoring.
+2. **Recap articles = the only bout-level source.** No box scores for
+   wrestling (Game Center is empty; `boxscore` is null in the state). Every
+   recap ends with a structured block, one line per weight, server-rendered
+   in the HTML. Home wrestlers carry `rel="smarttag"` roster links with
+   stable IDs.
+3. **Recap gaps are real**: OSU published no recap for its only loss (Iowa).
+   The loser's site often skips the article — but the *winner's* site has it,
+   which is why two sources per dual isn't just accuracy, it's coverage.
+
+**The per-line format and its dialects** (same bout, two sites):
+
+```
+okstate.com:   125: No. 2 Troy Spratley (OSU) TF Adam Mattin (STAN), 20-5, 5:21
+gostanford.com: 125: #2 Troy Spratley (OSU) tech. fall Adam Mattin (STAN), 21-5 (5:21)
+```
+
+- Shape: `WEIGHT: [rank] Winner (ABBR) TYPE [rank] Loser (ABBR), score[, time]`
+- Dialects observed: `No. 2` vs `#2`; `TF`/`MD`/`dec.`/`fall` vs
+  `tech. fall`/`maj. dec.`; `HWT:` vs `285:`; time as `, 5:21` vs ` (5:21)`.
+  Strip rank tokens first, then normalize the type verb to our WIN_TYPES.
+- Winner **team side** comes from the parenthesized abbreviation — only two
+  appear per dual; map to home/away by matching against the team names.
+- **A real conflict found in the wild**: OSU listed the 125 bout as 20-5,
+  Stanford as 21-5 (ranks disagreed too — polls move week to week). Both
+  agreed on weight, winner, side, win type, and the 33-7 dual score. So:
+  reconcile on (weight, winner side, win type) + dual score; treat bout
+  scores and ranks as display-only and never let them block agreement.
+- Sidearm has at least two generations in the wild (OSU's Nuxt build vs
+  Stanford's older platform with different URL schemes — e.g.
+  `/sports/wrestling/schedule/2025-26` 404s on Stanford). Plan for a thin
+  per-site adapter that finds the schedule + recap URLs, with the line
+  parser shared.
+
 ## Not built yet / ideas parking lot
 
 - Win-type prediction bonus ("call the pin")
