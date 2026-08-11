@@ -10,6 +10,7 @@ import StandingsTab from "./StandingsTab";
 import ResultsTab from "./ResultsTab";
 import AdminTab from "./AdminTab";
 import AccountModal from "./AccountModal";
+import ResultsArchive from "./ResultsArchive";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
@@ -222,6 +223,7 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
     { id: "picks", label: "MAKE PICKS" },
     { id: "standings", label: "STANDINGS" },
     { id: "results", label: "RESULTS" },
+    { id: "archive", label: "ARCHIVE" },
     ...(isCommissioner ? [{ id: "admin", label: "MANAGE ⚙" }] : []),
   ];
 
@@ -299,6 +301,7 @@ export default function PickemApp({ poolId, session, poolName, season, settings,
           <ResultsTab events={events} myPicks={myPicks} scoring={scoring}
             members={members} picks={picks} />
         )}
+        {activeTab === "archive" && <ResultsArchive />}
         {activeTab === "admin" && isCommissioner && (
           <AdminTab poolId={poolId} events={events} settings={poolSettings}
             onChanged={reload} showToast={showToast} />

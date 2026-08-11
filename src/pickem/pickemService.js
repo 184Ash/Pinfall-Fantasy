@@ -457,6 +457,33 @@ export async function updateDual(dualId, fields) {
   if (error) throw new Error(error.message)
 }
 
+// ── Global results archive ───────────────────────────────────────────────────
+// pickem_dual_results is pool-agnostic: one row per real-world dual, keyed by
+// the schedule dataset's id. Read by the archive UI and slate pre-fill; written
+// server-side by api/pickem-publish-results.js.
+
+export async function loadDualResults() {
+  const { data, error } = await supabase
+    .from('pickem_dual_results')
+    .select('source_dual_id, conference, home_team, away_team, dual_date, week_tag, home_score, away_score, winner, bouts_json, source, report_count, disputed, updated_at')
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+// Fire-and-forget promotion of a finalized week into the shared archive.
+// Never blocks finalizing — the pool's own results are the source of truth.
+export function publishEventResults(poolId, eventId) {
+  try {
+    return fetch('/api/pickem-publish-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poolId, eventId }),
+    }).then(r => r.json()).catch(() => null)
+  } catch {
+    return Promise.resolve(null)
+  }
+}
+
 // ── Picks ────────────────────────────────────────────────────────────────────
 
 export async function saveMatchPick(poolId, memberId, matchId, pick) {

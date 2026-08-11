@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   createEvent, updateEvent, deleteEvent,
   addDual, deleteDual, updateDual, updateMatch,
-  savePoolSettings,
+  savePoolSettings, publishEventResults,
 } from "./pickemService";
 import { PICK_MODES, WIN_TYPES, DEFAULT_SCORING } from "./pickemConstants";
 import { isEventLocked } from "./pickemScoring";
@@ -168,7 +168,7 @@ function DualEditor({ event, dual, onChanged, showToast }) {
 }
 
 // ── Per-event admin card ─────────────────────────────────────────────────────
-function EventAdminCard({ event, onChanged, showToast }) {
+function EventAdminCard({ poolId, event, onChanged, showToast }) {
   const [awayTeam, setAwayTeam] = useState("");
   const [homeTeam, setHomeTeam] = useState("");
   const [adding, setAdding] = useState(false);
@@ -197,6 +197,15 @@ function EventAdminCard({ event, onChanged, showToast }) {
       await updateEvent(event.id, { status });
       onChanged();
       showToast(status === "final" ? "Week finalized — standings updated" : `Week ${status}`, "ok");
+      // Finalizing shares this week's results with the public archive (duals
+      // built from the schedule only). Best-effort — never blocks the finalize.
+      if (status === "final") {
+        publishEventResults(poolId, event.id).then(res => {
+          if (res?.published > 0) {
+            showToast(`${res.published} dual${res.published === 1 ? "" : "s"} added to the results archive`, "info");
+          }
+        });
+      }
     } catch { showToast("Failed to update week", "err"); }
   };
 
@@ -585,7 +594,7 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
       )}
 
       {[...events].reverse().map(event => (
-        <EventAdminCard key={event.id} event={event}
+        <EventAdminCard key={event.id} poolId={poolId} event={event}
           onChanged={onChanged} showToast={showToast} />
       ))}
     </div>

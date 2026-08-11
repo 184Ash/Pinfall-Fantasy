@@ -8,6 +8,7 @@ import AuthCallback from './AuthCallback'
 import LandingPage from './LandingPage'
 import CreatePoolPage from './pickem/CreatePoolPage'
 import PoolPage from './pickem/PoolPage'
+import ResultsArchive from './pickem/ResultsArchive'
 import { isSessionStorageAvailable } from './session'
 
 if (!isSessionStorageAvailable()) {
@@ -38,6 +39,8 @@ if (!isSessionStorageAvailable()) {
           <Route path="/create" element={<CreateLeaguePage />} />
           <Route path="/join/:joinCode" element={<LeaguePage />} />
           <Route path="/pickem/create" element={<CreatePoolPage />} />
+          {/* Public results archive — no pool membership required */}
+          <Route path="/results" element={<ResultsArchive standalone />} />
           <Route path="/pickem/:joinCode" element={<PoolPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={

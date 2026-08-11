@@ -113,6 +113,32 @@ CREATE UNIQUE INDEX IF NOT EXISTS pickem_picks_member_match_uq
 CREATE UNIQUE INDEX IF NOT EXISTS pickem_picks_member_dual_uq
   ON pickem_picks(member_id, dual_id);
 
+-- ── Global dual results archive (shared across all pools) ───────────────────
+-- pickem_duals is per-pool; this is ONE row per real-world dual, keyed by the
+-- schedule dataset id. Powers the public results archive, slate pre-fill, and
+-- the future scraper. Same idea as the draft product's global_scores.
+-- Precedence: source 'scrape' > 'manual' > 'pool'. Agreeing reports raise
+-- report_count; conflicting ones set disputed. See pickem_dual_results.sql.
+CREATE TABLE IF NOT EXISTS pickem_dual_results (
+  source_dual_id TEXT PRIMARY KEY,          -- dataset id, e.g. 'big-ten-013'
+  conference     TEXT,
+  home_team      TEXT,
+  away_team      TEXT,
+  dual_date      DATE,
+  week_tag       TEXT,                      -- ISO week tag from WEEK_AXIS
+  home_score     INT,
+  away_score     INT,
+  winner         TEXT,                      -- home | away | tie
+  bouts_json     JSONB,                     -- [{weight, winner, win_type, ...}]
+  source         TEXT NOT NULL DEFAULT 'pool',
+  reported_by    TEXT,
+  report_count   INT  NOT NULL DEFAULT 1,
+  disputed       BOOLEAN NOT NULL DEFAULT false,
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS pickem_dual_results_conference_idx ON pickem_dual_results(conference);
+CREATE INDEX IF NOT EXISTS pickem_dual_results_week_idx       ON pickem_dual_results(week_tag);
+
 -- ── Row-Level Security ───────────────────────────────────────────────────────
 
 ALTER TABLE pickem_pools   ENABLE ROW LEVEL SECURITY;
@@ -121,6 +147,7 @@ ALTER TABLE pickem_events  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pickem_duals   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pickem_matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pickem_picks   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pickem_dual_results ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "pickem_pools_rw"   ON pickem_pools   FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "pickem_members_rw" ON pickem_members FOR ALL USING (true) WITH CHECK (true);
@@ -128,6 +155,8 @@ CREATE POLICY "pickem_events_rw"  ON pickem_events  FOR ALL USING (true) WITH CH
 CREATE POLICY "pickem_duals_rw"   ON pickem_duals   FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "pickem_matches_rw" ON pickem_matches FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "pickem_picks_rw"   ON pickem_picks   FOR ALL USING (true) WITH CHECK (true);
+-- Read-only to anon: api/pickem-publish-results.js writes with the service role.
+CREATE POLICY "pickem_dual_results_read" ON pickem_dual_results FOR SELECT USING (true);
 
 -- ── Realtime ─────────────────────────────────────────────────────────────────
 -- Enable via Supabase Dashboard → Database → Replication, or uncomment:

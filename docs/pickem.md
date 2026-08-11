@@ -138,6 +138,48 @@ projected starter doesn't wrestle, members are still locked into the team
 side they chose. The picks UI and the admin match editor both say this
 explicitly.
 
+## Results archive (`/results` + Archive tab)
+
+A public, browsable archive of every 2026-27 D1 in-conference dual — the
+"one stop shop" alternative to digging through FloWrestling and eight
+athletics sites. `ResultsArchive.jsx` merges two sources:
+
+1. **the schedule dataset** — all 282 duals, so the page is a useful
+   *schedule browser* before any results exist (each row is badged
+   SCHEDULED vs PROJECTED), and
+2. **`pickem_dual_results`** — a **global, pool-agnostic** table with one
+   row per real-world dual, keyed by `source_dual_id`. Same idea as the
+   draft product's `global_scores`.
+
+Filters: conference, team (scoped to the chosen conference), week, and a
+results-only toggle. Rows expand to per-bout detail when bouts are known.
+Renders standalone at `/results` (no pool needed) and as the **Archive**
+tab inside a pool.
+
+### How results get into the archive
+
+`pickem_duals` is per-pool, so three pools running Iowa–Penn State hold
+three private copies. Finalizing a week calls
+`api/pickem-publish-results.js`, which reads that pool's rows server-side
+and upserts the duals that carry a `source_dual_id` into the global table.
+Every commissioner entering results therefore crowdsources the archive —
+and the same table later becomes the scraper's write target and a
+slate pre-fill source.
+
+Provenance rules (in the function):
+
+- **Precedence** `scrape` > `manual` > `pool` — a pool report never
+  overwrites a scraped row.
+- A second pool **agreeing** raises `report_count` (displayed as "3×"
+  confidence); a second pool **disagreeing** keeps the incumbent row and
+  sets `disputed` (displayed as ⚠).
+- Agreement is judged on **outcome only** (dual winner + per-bout winners),
+  never on scores — consistent with the tech-fall note below.
+- Writes use the service role; clients have read-only RLS.
+
+The archive degrades gracefully: if the results table is empty or
+unreachable, it still renders the full schedule with "0 with results".
+
 ## Results ingestion — designed, not yet built
 
 The plan for automating results (buildable once real 2026-27 duals exist to
