@@ -154,11 +154,12 @@ export default function CreateLeaguePage() {
           League creation is closed for the off-season
         </div>
         <div style={styles.errorMsg}>
-          New leagues open each spring for the NCAA Division I Championships. In the
-          meantime, explore the completed 2026 league to see Pinfall Fantasy in action.
+          Draft leagues open closer to the 2027 NCAA Division I Wrestling
+          Championships — March 18–20, 2027 in St. Louis. Check back as the
+          tournament approaches.
         </div>
-        <button style={styles.retryBtn} onClick={() => navigate("/join/W6S75")}>
-          Explore the 2026 League →
+        <button style={styles.retryBtn} onClick={() => navigate("/")}>
+          ← Back to Home
         </button>
       </div>
     );
