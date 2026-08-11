@@ -1,7 +1,6 @@
 // src/LandingPage.jsx
 import { useEffect, useState } from "react";
 import logoImg from "../public/pinfall-fantasy-logo.png";
-import { useNavigate } from "react-router-dom";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap');
@@ -117,7 +116,6 @@ const css = `
 const marqueeItems = ["125 LB","133 LB","141 LB","149 LB","157 LB","165 LB","174 LB","184 LB","197 LB","285 LB","NCAA WRESTLING","FANTASY DRAFT","SNAKE DRAFT","LIVE SCORING","DUAL MEET PICK'EM","COMING 2026-27"];
 
 export default function LandingPage() {
-  const navigate = useNavigate();
   const [showDraftModal, setShowDraftModal] = useState(false);
   useEffect(() => {
     const reveals = document.querySelectorAll('.lp-reveal');
@@ -149,11 +147,6 @@ export default function LandingPage() {
               Championships. Check back as the tournament approaches.
             </p>
             <div className="lp-modal-dates">March 18–20, 2027 · Enterprise Center · St. Louis</div>
-            <div>
-              <a className="lp-modal-link" onClick={() => navigate("/join/W6S75")}>
-                Explore the completed 2026 league →
-              </a>
-            </div>
           </div>
         </div>
       )}
