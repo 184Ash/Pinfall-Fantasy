@@ -180,6 +180,18 @@ Provenance rules (in the function):
 The archive degrades gracefully: if the results table is empty or
 unreachable, it still renders the full schedule with "0 with results".
 
+### Pulling archive results into a pool
+
+The flow also runs in reverse: in Manage, a week whose schedule-linked
+duals already have archive results shows a **⇩ Pull Known Results** banner
+(and each dual editor gets its own per-dual button, with the "3×"
+report-count when several pools agree). Semantics are **fill-the-blanks**
+(`archiveApply.js`, pure + unit-tested): the dual winner, team scores,
+per-bout winners/win types and expected-lineup names each apply only where
+the local value is empty — nothing a commissioner typed is ever
+overwritten. One archive lookup covers all weeks; if the archive is
+unreachable the buttons simply don't appear.
+
 ## Results ingestion — designed, not yet built
 
 The plan for automating results (buildable once real 2026-27 duals exist to

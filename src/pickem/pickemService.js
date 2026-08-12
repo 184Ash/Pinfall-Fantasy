@@ -4,6 +4,7 @@ import { generateJoinCode } from '../session'
 import { savePickemSession } from './pickemSession'
 import { DEFAULT_SCORING, PICKEM_SEASON, WEIGHT_CLASSES } from './pickemConstants'
 import { hashPasscode, passcodeMatches, generateSalt } from './passcode'
+import { planArchivePull } from './archiveApply'
 
 // ── Access-code backup notifications ─────────────────────────────────────────
 // Fire-and-forget: emails the plaintext code to the commissioner via
@@ -468,6 +469,32 @@ export async function loadDualResults() {
     .select('source_dual_id, conference, home_team, away_team, dual_date, week_tag, home_score, away_score, winner, bouts_json, source, report_count, disputed, updated_at')
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+// Targeted archive lookup for the Manage tab's "pull known results" button —
+// returns a { source_dual_id: row } map for just the given dataset ids.
+export async function loadDualResultsByIds(sourceDualIds) {
+  if (!sourceDualIds || sourceDualIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('pickem_dual_results')
+    .select('source_dual_id, home_score, away_score, winner, bouts_json, report_count, disputed')
+    .in('source_dual_id', sourceDualIds)
+  if (error) throw new Error(error.message)
+  return Object.fromEntries((data ?? []).map(r => [r.source_dual_id, r]))
+}
+
+// Applies archived results to the given pool duals, fill-the-blanks only
+// (see archiveApply.js). Returns how many duals were touched.
+export async function pullArchivedResults(duals, archivedById) {
+  let applied = 0
+  for (const dual of duals) {
+    const plan = planArchivePull(dual, archivedById[dual.source_dual_id])
+    if (!plan) continue
+    if (Object.keys(plan.dualFields).length > 0) await updateDual(dual.id, plan.dualFields)
+    for (const mu of plan.matchUpdates) await updateMatch(mu.matchId, mu.fields)
+    applied++
+  }
+  return applied
 }
 
 // Fire-and-forget promotion of a finalized week into the shared archive.

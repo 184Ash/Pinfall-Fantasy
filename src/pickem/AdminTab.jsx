@@ -1,10 +1,12 @@
 // src/pickem/AdminTab.jsx — commissioner tools: weeks, duals, matches, results
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   createEvent, updateEvent, deleteEvent,
   addDual, deleteDual, updateDual, updateMatch,
   savePoolSettings, publishEventResults,
+  loadDualResultsByIds, pullArchivedResults,
 } from "./pickemService";
+import { hasPullableResult } from "./archiveApply";
 import { PICK_MODES, WIN_TYPES, DEFAULT_SCORING } from "./pickemConstants";
 import { isEventLocked } from "./pickemScoring";
 import ConferencePicker from "./ConferencePicker";
@@ -33,7 +35,7 @@ function WinnerToggle({ value, onPick, awayLabel, homeLabel, small }) {
 }
 
 // ── Per-dual editor: wrestler names + results ────────────────────────────────
-function DualEditor({ event, dual, onChanged, showToast }) {
+function DualEditor({ event, dual, onChanged, showToast, archived, onPull }) {
   const [expanded, setExpanded] = useState(false);
   const [names, setNames] = useState({}); // matchId → {away, home} local edits
   const [scores, setScores] = useState({ away: dual.away_score ?? "", home: dual.home_score ?? "" });
@@ -96,7 +98,17 @@ function DualEditor({ event, dual, onChanged, showToast }) {
         <div style={{ padding: "14px 14px 16px" }}>
           {/* Dual-level result (always editable; drives 'duals' mode scoring + display) */}
           <div style={{ marginBottom: 14 }}>
-            <span style={label}>DUAL RESULT</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <span style={label}>DUAL RESULT</span>
+              {hasPullableResult(dual, archived) && (
+                <button className="pk-btn" onClick={() => onPull([dual])}
+                  style={{ background: "transparent", color: "#c9a84c", border: "1px solid #c9a84c44",
+                    borderRadius: 5, padding: "3px 10px", fontSize: 10, fontWeight: 700,
+                    letterSpacing: ".08em", marginBottom: 5 }}>
+                  ⇩ PULL FROM ARCHIVE{archived?.report_count > 1 ? ` (${archived.report_count}×)` : ""}
+                </button>
+              )}
+            </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <WinnerToggle value={dual.winner} awayLabel={`${dual.away_team} won`} homeLabel={`${dual.home_team} won`}
                 onPick={(w) => saveDualResult({ winner: w })} />
@@ -168,11 +180,15 @@ function DualEditor({ event, dual, onChanged, showToast }) {
 }
 
 // ── Per-event admin card ─────────────────────────────────────────────────────
-function EventAdminCard({ poolId, event, onChanged, showToast }) {
+function EventAdminCard({ poolId, event, onChanged, showToast, archivedByDual, onPull }) {
   const [awayTeam, setAwayTeam] = useState("");
   const [homeTeam, setHomeTeam] = useState("");
   const [adding, setAdding] = useState(false);
   const locked = isEventLocked(event);
+
+  // Schedule-linked duals where the shared archive knows something we don't
+  const pullable = event.duals.filter(d =>
+    d.source_dual_id && hasPullableResult(d, archivedByDual[d.source_dual_id]));
 
   const handleAddDual = async () => {
     if (!awayTeam.trim() || !homeTeam.trim()) { showToast("Enter both team names", "err"); return; }
@@ -269,8 +285,27 @@ function EventAdminCard({ poolId, event, onChanged, showToast }) {
       </div>
 
       <div style={{ padding: "14px 18px" }}>
+        {pullable.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 10, flexWrap: "wrap", marginBottom: 12, padding: "10px 14px",
+            background: "#c9a84c0d", border: "1px solid #c9a84c33", borderRadius: 8 }}>
+            <div style={{ fontSize: 13, color: "#9aa4ae", fontFamily: "'Barlow Condensed',sans-serif" }}>
+              The results archive already has {pullable.length === 1 ? "a result" : "results"} for{" "}
+              <b style={{ color: "#c9a84c" }}>{pullable.length} dual{pullable.length === 1 ? "" : "s"}</b>{" "}
+              in this week — no need to retype {pullable.length === 1 ? "it" : "them"}.
+            </div>
+            <button className="pk-btn" onClick={() => onPull(pullable)}
+              style={{ background: "#c9a84c", color: "#070a0e", borderRadius: 6,
+                padding: "7px 16px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em",
+                whiteSpace: "nowrap" }}>
+              ⇩ PULL KNOWN RESULTS
+            </button>
+          </div>
+        )}
         {event.duals.map(dual => (
-          <DualEditor key={dual.id} event={event} dual={dual} onChanged={onChanged} showToast={showToast} />
+          <DualEditor key={dual.id} event={event} dual={dual} onChanged={onChanged} showToast={showToast}
+            archived={dual.source_dual_id ? archivedByDual[dual.source_dual_id] : undefined}
+            onPull={onPull} />
         ))}
 
         {/* Add dual */}
@@ -478,6 +513,36 @@ function PoolScopeCard({ poolId, settings, onChanged, showToast }) {
 // ── Main admin tab ───────────────────────────────────────────────────────────
 export default function AdminTab({ poolId, events, settings, onChanged, showToast }) {
   const nextWeek = events.length > 0 ? Math.max(...events.map(e => e.week_number)) + 1 : 1;
+
+  // One archive lookup for every schedule-linked dual across all weeks —
+  // powers the "pull known results" buttons. Refetches only when the set of
+  // linked duals actually changes (idsKey), not on every reload.
+  const [archivedByDual, setArchivedByDual] = useState({});
+  const idsKey = useMemo(() =>
+    events.flatMap(e => e.duals.map(d => d.source_dual_id).filter(Boolean)).sort().join(","),
+    [events]);
+  useEffect(() => {
+    if (!idsKey) { setArchivedByDual({}); return; }
+    let cancelled = false;
+    loadDualResultsByIds(idsKey.split(","))
+      .then(map => { if (!cancelled) setArchivedByDual(map); })
+      .catch(() => { /* archive unreachable — buttons simply don't appear */ });
+    return () => { cancelled = true; };
+  }, [idsKey]);
+
+  const handlePull = async (duals) => {
+    try {
+      const applied = await pullArchivedResults(duals, archivedByDual);
+      if (applied > 0) {
+        onChanged();
+        showToast(`Pulled archive results into ${applied} dual${applied === 1 ? "" : "s"} — review, then finalize`, "ok");
+      } else {
+        showToast("Nothing new to pull for this week", "info");
+      }
+    } catch {
+      showToast("Failed to pull results from the archive", "err");
+    }
+  };
   // Raw input string so clearing the field doesn't coerce to 0/NaN — parsed
   // (with a nextWeek fallback) at submit. null = auto.
   const [weekNumber, setWeekNumber] = useState(null);
@@ -595,7 +660,8 @@ export default function AdminTab({ poolId, events, settings, onChanged, showToas
 
       {[...events].reverse().map(event => (
         <EventAdminCard key={event.id} poolId={poolId} event={event}
-          onChanged={onChanged} showToast={showToast} />
+          onChanged={onChanged} showToast={showToast}
+          archivedByDual={archivedByDual} onPull={handlePull} />
       ))}
     </div>
   );
