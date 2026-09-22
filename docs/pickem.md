@@ -285,3 +285,29 @@ gostanford.com: 125: #2 Troy Spratley (OSU) tech. fall Adam Mattin (STAN), 21-5 
 - Locking picks per-dual instead of per-week (staggered start times)
 - Locking picks per-dual instead of per-week (staggered start times)
 - Hide others' picks until lock (currently only your own picks render anyway)
+
+### Field notes, Sept 21 2026 — schedule sources beyond school sites
+
+- **FloArena `event-hub` is per-event only.** `GET /api/event-hub/{coreId}`
+  returns one event object (title, start/end, location, `scheduleHtml`,
+  `subEventDescriptions`, meta `hasBrackets`/`hasSeeding`/`hasTeamDivisions`);
+  brackets hang off `/brackets/{weightId}`. No events list or search surfaced
+  (`/schedule`, `/teams`, `/event-hub?page=` all 404), so it cannot discover
+  2026-27 duals on its own. Usable only when a dual's Flo event id is already
+  known — not a results index for Phase 4.
+- **Conference composite feeds.** Sidearm-template conference sites expose an
+  ICS subscription per sport: `/services/responsive-calendar-subscription.ashx/
+  calendar.ics?sport_id=N` (ACC 33, MAC 16, Big 12 21, Pac-12 32). ACC and MAC
+  were populated for 2026-27 in September; Big 12 and Pac-12 feeds existed but
+  were empty. Entries read "Wrestling {member} at|vs {opponent}", one per
+  member, so conference duals appear twice.
+- **Big Ten / SoCon composites are Next.js sites** with the season in the
+  path (`bigten.org/wrest/schedule/2027/`, `soconsports.com/wrest/schedule/
+  2027/`). The 2027 pages existed but held 0 games on Sept 21. Their game
+  objects carry team-level results once played (`results.away_points` /
+  `home_points`, `results.status`, plus recap links) — a dual-result source
+  worth wiring into Phase 4 for those two conferences, though not bout-level.
+- **EIWA** publishes no 2026-27 composite (404). Ivy has none.
+- The scraper (`scripts/schedules/scrape-duals.mjs`) has `composites` and
+  `compare` stages that pull these feeds and print a three-way view:
+  school-site scrape vs projection vs composite.

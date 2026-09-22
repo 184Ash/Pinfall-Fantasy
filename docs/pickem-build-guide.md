@@ -1,218 +1,302 @@
 # Pick'em Build Guide — from branch to finished product
 
 The roadmap for taking the `pickem-pool` branch to a live 2026-27 season.
-Written Aug 2026. Companion docs: [pickem.md](pickem.md) (architecture +
-decisions), [dual-schedule-scale.md](dual-schedule-scale.md) (schedule data
-analysis).
+Written Aug 2026, **updated Sept 21, 2026**. Companion docs:
+[pickem.md](pickem.md) (architecture, decisions, field notes),
+[dual-schedule-scale.md](dual-schedule-scale.md) (August schedule analysis),
+[pickem-dashboard-brief.md](pickem-dashboard-brief.md) (dashboard design brief).
 
 ---
 
-## Where things stand
+## Where things stand (Sept 21)
 
-**Built and pushed** (8 commits on `pickem-pool`):
+**Built and pushed** (12 commits on `pickem-pool`):
 
-- Core product: pools as URLs, weekly events → duals → matches, two pick
-  modes (Full Card / Duals Only), optimistic picks with realtime sync,
-  standings, results with week winners, commissioner Manage tab
+- Core product: pools as URLs, weekly events → duals → matches, Full Card /
+  Duals Only pick modes, optimistic picks with realtime sync, standings,
+  results with week winners, commissioner Manage tab
 - Conference scoping with per-conference **team follow lists**, load-band
   pricing, presets, Full Card guardrails
-- **Slate builder**: build a week straight from the 297-dual schedule
-  dataset, confirmed/projected badges, unscheduled bucket for the Big Ten
+- **Slate builder**: build a week from the schedule dataset with
+  confirmed/projected badges and an unscheduled bucket
 - **Member accounts**: access codes (salted hashes), commissioner email
-  backups, email OTP reset, legacy claim, account modal — hardened by a
-  20-agent adversarial review (15 findings fixed)
-- Landing page with both league types
+  backups via `api/pickem-notify.js`, email OTP reset, legacy claim, account
+  modal — hardened by a 20-agent adversarial review (15 findings fixed)
+- **Global results archive** (`pickem_dual_results`, one row per real-world
+  dual, provenance `scrape > manual > pool`, `report_count`, `disputed`),
+  the public `/results` page + Archive tab, and **pull-known-results** in
+  Manage (fill-the-blanks, unit-tested planner in `archiveApply.js`)
 
-**Designed, not built**: results scraping + reconciliation (validated
-against okstate.com/gostanford.com — see field notes in pickem.md).
+**Live on `main`**: the landing page teaser — Dual Meet Pick'em "Coming Soon"
+card and the draft card's Stay Tuned modal (March 18–20, 2027, St. Louis).
+No 2026-league references remain anywhere.
 
-**Pending infrastructure**: Supabase tables, Realtime, email template,
-Resend key. That's Phase 1.
+**Infrastructure — done this month** (production Supabase project
+`ftmggbebgvxwuuucptpb`, now on Pro):
+
+- All 7 `pickem_*` tables created; columns verified over REST
+- Realtime enabled on the six live tables (archive correctly excluded)
+- Magic Link email template carries `{{ .Token }}`
+- Legacy JWT keys were disabled by the Pro upgrade → publishable key set in
+  `.env.local` and all three Vercel environments; new secret key in
+  production + preview; production redeployed and its bundle verified
+- Database-layer smoke test passed (pool + hashed member round trip;
+  archive rejects anonymous writes; cascade cleanup)
+- Vercel CLI installed and logged in; `pickem-pool` preview deploys with the
+  new keys (previews sit behind Vercel's login wall — see Phase 2)
+
+**Schedule tooling** (in `scripts/schedules/`, not yet committed):
+`scrape-duals.mjs` with `fetch` / `parse` / `composites` / `compare` stages.
+Sept 21 run: 34 of 77 programs posted, 325 distinct duals, 166 in-conference,
+every site parsed through a structured source (Sidearm-Nuxt, WMT, classic
+Sidearm, JSON-LD — no text fallback). Findings are in Phase 3 below.
+
+**Still open**: Resend key + custom SMTP (optional), the UI dry-run week,
+the October dataset regeneration, and the results pipeline.
 
 ---
 
-## Phase 1 — Stand up the backend (~30 min, do anytime)
+## Phase 1 — Backend — DONE
 
-Everything on the branch runs against Supabase infrastructure that doesn't
-exist yet. In order:
+Only the optional email piece remains:
 
-1. **Create the tables.** Supabase dashboard → SQL editor → paste and run
-   [supabase/pickem_schema.sql](../supabase/pickem_schema.sql) (the
-   consolidated file — it already includes the conference/source columns
-   and the account columns, so fresh setups skip the two migration files).
-2. **Enable Realtime.** Dashboard → Database → Replication → add all six:
-   `pickem_pools`, `pickem_events`, `pickem_duals`, `pickem_matches`,
-   `pickem_picks`, `pickem_members`. (Forgetting `pickem_pools` silently
-   breaks live scope/scoring propagation.)
-3. **Email OTP template.** Dashboard → Authentication → Email Templates →
-   Magic Link → make sure the body includes `{{ .Token }}` (the 6-digit
-   code the forgot-code flow asks for). Keep the link too if you want.
-4. **Resend key (optional but recommended).** Free account at resend.com →
-   API key → set `RESEND_API_KEY` (and optionally `PICKEM_EMAIL_FROM`) in
-   Vercel → Project → Settings → Environment Variables, and in `.env.local`
-   for local testing. Without it everything works except commissioner
-   backup emails — the UI copy adjusts automatically.
-5. **Smoke test locally.** `npm run dev` → create a pool → open the pool
-   link in a private window → join as a second member → make picks both
-   ways → confirm they appear live on the other window.
+- **Resend** (free tier): API key → `vercel env add RESEND_API_KEY
+  production` and `… preview` (paste at the prompt; the value never needs
+  to pass through a chat), plus `.env.local`. Then Supabase → Authentication
+  → Emails → **SMTP Settings** → host `smtp.resend.com`, port `465`, user
+  `resend`, password = the API key. One account then serves both the
+  commissioner backup emails and the OTP codes, and the built-in mailer's
+  few-per-hour limit disappears. Until the `pinfallfantasy.com` domain is
+  verified in Resend, it only delivers to your own address — fine for
+  testing, do the verification before real members join.
 
-## Phase 2 — Dry-run a full fake week (~1 hour, right after Phase 1)
+## Phase 2 — Dry-run a full fake week (~1 hour) — PENDING
 
-Prove the whole loop before real duals exist. In a throwaway pool:
+Prove the whole loop on real infrastructure. Two ways to run it:
 
-1. Manage → New Week → **From Schedule** → pick a January week → build it
-   (Full Card).
+- **Locally** (`npm run dev`) against production — test pools are cheap to
+  delete afterward.
+- **On the preview deployment** — realistic (phones, other people), but
+  Deployment Protection means members hit a Vercel login. Either disable
+  "Vercel Authentication" for previews in Settings → Deployment Protection
+  (the URLs are unguessable anyway) or use a per-deployment Share link.
+
+The script, in a throwaway pool:
+
+1. Manage → New Week → **From Schedule** → a January week → build (Full Card).
 2. Make picks as two members; change a pick; confirm the lock countdown.
-3. Lock the week manually → verify members can no longer pick.
-4. Enter results in the admin dual editor (winners + win types + dual
-   score) → Finalize → check Standings points, Results ✓/✗ marks, and the
-   "Week won by" banner.
-5. Test the account loop: sign out (Account modal) → rejoin by name + code
-   → forgot-code email reset (needs a real email on the member).
-6. Test the scoring editor: change `matchWin` → standings recompute.
-7. Delete the test week and pool data when done.
+3. Lock manually → verify members can no longer pick.
+4. Enter results (winners, win types, dual score) → Finalize → check
+   Standings, Results ✓/✗, and the "Week won by" banner.
+5. **Archive loop**: `/results` should show the finalized duals. Create a
+   second test pool, build the same week, and confirm the ⇩ Pull Known
+   Results banner fills it — the one flow that couldn't be exercised from
+   the sandbox.
+6. Account loop: sign out → rejoin by name + code → forgot-code email reset
+   (needs a real email on the member).
+7. Scoring editor: change `matchWin` → standings recompute.
+8. Delete the test pools.
 
-Anything that feels wrong here is a bug worth fixing before November —
-file it while it's cheap.
+## Phase 3 — Schedule data: now through October
 
-## Phase 3 — Late Sept/Oct 2026: real schedule data
+### What the Sept 21 scrape established
 
-The dataset was built in August when only 28 of 282 duals had dates
-([dual-schedule-scale.md](dual-schedule-scale.md) has per-conference
-release timing — Big Ten dates drop ~Sept 23-29).
+| Conf | Posted | In-conf duals | Pairings vs projection | Venue flips | Composite |
+|---|---|---|---|---|---|
+| ACC | 3 (+ composite has UNC, VT) | 15 | 15/15 | 0 | partial (2 of 7 members) |
+| Big 12 | 3 (+UNI partial) | 21 | 21/21 | 2 | feed empty |
+| Pac-12 | 5 | 30 | 30/30 | **11** | feed empty |
+| SoCon | 3 | 22 | 22/22 | 0 | 2027 page empty |
+| Ivy | 1 | 5 | 5/5 | 0 | none |
+| EIWA | 5 | 27 | 25/27 (+2 crossovers, −2) | 1 | none (404) |
+| MAC | 6 | 38 | 38/38 | 4 | **full** (40 duals) |
+| Big Ten | 7 partial | 8 (Purdue, placeholder dates) | 8/8 | 0 | 2027 page empty |
 
-1. **Re-scrape and regenerate** `src/pickem/data/ncaa-d1-duals-2026-27.json`
-   and `src/pickem/conferences.js` (generated file — never hand-edit).
-   Priorities from the analysis: Pac-12 (weakest block — verify the round
-   robin actually happened), the 14 derived Big Ten pairings, MAC counts.
-2. **Add a per-team `resultsUrl`** (athletics-site wrestling page) to the
-   dataset — this becomes the scraper registry in Phase 4.
-3. A second pass in **early November** catches BTN/ESPN broadcast
-   assignments, which is what makes the "Televised" preset honest.
-4. Sanity-check the slate builder afterward: the Big Ten "not yet
-   scheduled" bucket should drain into dated weeks.
+- **Pairings are right.** 160 of 162 in-conference duals were in the
+  projection; the round-robin inference held everywhere it applied.
+- **Pac-12 is a full 9-team round robin** — five posted teams each list
+  exactly 8 conference duals against the other 8 members; 30 distinct duals
+  is exactly 5×8 − 10. The composite feed exists but is empty, so this rests
+  on school pages — which the MAC composite validated at 100% on venues.
+- **Venues are the projection's weak spot**, concentrated in the Pac-12
+  (11 of 30 flipped: the "flip last year's venue" heuristic had nothing to
+  flip for a rebuilt league). Elsewhere: MAC 4, Big 12 2, EIWA 1, others 0.
+  The MAC composite confirmed every flip the scrape reported.
+- **MAC is fuller than projected**: five "unlikely" pairings are scheduled
+  (George Mason at SIUE, GMU at Kent State, Bloomsburg at SIUE, SIUE at
+  Rider, Clarion at CMU); posted MAC schools show 8–9 conference duals each.
+  Five projected pairings are absent (Ohio at Bloomsburg, GMU at Rider, GMU
+  at Clarion, CMU at GMU; SIUE at CMU is on SIUE's page but not the composite).
+- **EIWA crossovers moved**: Navy–Drexel and Bucknell–Binghamton exist but
+  weren't projected; Morgan State's projected duals at Drexel and Hofstra
+  aren't on its schedule.
+- **Projected weeks were guesses** where no dates existed (Big 12 3/21,
+  Pac-12 7/30 in the projected week) and decent where they did (EIWA 18/25,
+  Ivy 5/5). Real dates now exist for 166 in-conference duals vs 28 in August.
+- **Big Ten**: Purdue's 8 conference duals carry placeholder dates Jan 1–8
+  (one per day) — pairings and venues match the June rotation; ignore the
+  dates. The conference's composite 2027 page exists but held 0 games.
+- Two school-page disagreements to resolve by hand: Little Rock–Air Force
+  Nov 20 (each lists itself away) and NDSU–Air Force (Jan 29 vs Jan 30).
+- **Big 12 announced a Nov 7 start** — the dataset's week axis begins with
+  the week of Nov 9 (2026-W46). The regen must extend `WEEK_AXIS` back one
+  week (2026-W45, Nov 2–8) or early duals fall off the slate builder.
+
+### The weekly loop (5 minutes, until the season starts)
+
+```
+cd scripts/schedules
+node scrape-duals.mjs fetch --only=<slug>   # for each newly UPDATED school
+node scrape-duals.mjs parse
+node scrape-duals.mjs composites --refetch  # ACC/MAC feeds; Big 12/Pac-12 when they populate
+node scrape-duals.mjs compare
+```
+
+New schools come from the Flo tracker's row-by-row UPDATED markers
+(flowrestling.org/articles/16117397); add a line to `SCHOOLS`, using the
+dataset team id as the slug where it differs. Watch for: Big Ten dates (the
+partial flags flip to UPDATED), the Big 12 and Pac-12 composite feeds
+populating, and the SoCon/Big Ten 2027 pages filling in.
+
+### The regeneration script — to build (JS, alongside the scraper)
+
+`scripts/schedules/regen-dataset.mjs` merges scrape + composite into a new
+`ncaa-d1-duals-2026-27.json` and regenerates `conferences.js`. Rules:
+
+1. **Preserve dual ids.** `source_dual_id` links pool duals and the archive
+   to the dataset — never renumber. Match scraped duals to existing rows by
+   unordered pairing; only genuinely new pairings get new ids.
+2. Per matched row: set `home`/`away` from the best source (composite >
+   school scrape), `date`, `week` (ISO tag), `status: 'confirmed'`,
+   `confidence: 'official'`. Flip `probability: 'unlikely'` → `'scheduled'`
+   when seen. Leave unseen rows as projected; mark projected pairings that a
+   fully-posted school contradicts as `'unlikely'`.
+3. Add a per-team `resultsUrl` (the athletics schedule page — the scraper's
+   `SCHOOLS` urls are the seed) for Phase 4.
+4. Rebuild each conference's `weeklyDuals` histogram from real dates where
+   they exist, projected placement otherwise; recompute `dualCount`,
+   `confirmedDateCount`, `scheduleMaturity`.
+5. Extend `WEEK_AXIS` to start at 2026-W45.
+6. Emit `conferences.js` from the same data (it is generated — never
+   hand-edit), then run `node scrape-duals.mjs compare` again: it should
+   report zero flips and zero missing pairings against the new dataset.
+
+Language note: the August plan put Python on the tooling side. The scraper
+grew in JS because it shares the canonical team-name logic and the
+per-CMS parsers, and the regen is a merge over that same data — keeping it
+JS avoids a second copy of the canonicalization. Python remains the right
+tool for any ad-hoc analysis (pandas over the CSV), not for the pipeline.
+
+### Early November
+
+A second pass catches BTN/ESPN broadcast assignments (what makes the
+"Televised" preset honest) and the final stragglers.
 
 ## Phase 4 — November: the results pipeline
 
-Build the scraper once real 2025-26-style results pages exist for 2026-27
-(first duals Nov 9). The design is validated — see the field notes in
-[pickem.md](pickem.md). Build order:
+Build once real 2026-27 results pages exist (first duals Nov 7). Design is
+validated — field notes in [pickem.md](pickem.md). Since the guide was
+written, two pieces already exist:
 
-1. **Staging table** — pool-agnostic, keyed by `source_dual_id` (one scrape
-   serves every pool, like the draft's `global_scores`):
-   ```sql
-   CREATE TABLE pickem_result_staging (
-     source_dual_id TEXT PRIMARY KEY,
-     home_score INT, away_score INT, winner TEXT,
-     bouts_json JSONB,          -- [{weight, winner, win_type}]
-     sources TEXT[],            -- which sites contributed
-     sources_agree BOOLEAN,
-     conflict_json JSONB,       -- both versions when they disagree
-     scraped_at TIMESTAMPTZ DEFAULT now()
-   );
-   -- service_role writes; anon read-only (policy like global_scores)
-   ```
-2. **Serverless function** `api/sync-pickem-results.js` — for duals in
-   locked, non-final events with a `source_dual_id`: fetch both teams'
-   pages, parse, reconcile, upsert staging rows.
-3. **Per-site adapters, shared parser.** Two Sidearm generations exist
-   (okstate = Nuxt with `_payload.json` schedule state; Stanford = older
-   platform, different URLs). Adapter finds the schedule + recap URLs;
-   one shared regex parses the per-weight lines. Normalization table:
-   `dec./dec → DEC`, `MD/maj. dec. → MD`, `TF/tech. fall → TD`,
-   `fall/pinned → F`, plus FFT/INJ/DQ. Strip rank tokens (`No. 2`, `#2`)
-   first. `HWT:` = 285.
-4. **Reconciliation rule** (from the field notes): agree on
-   (weight, winner side, win type) + dual score → auto-stage as confirmed.
-   Bout scores and rankings are display-only — off-by-one TF scores are
-   expected noise (riding time at the buzzer), never a conflict.
-5. **Commissioner review queue** in Manage: staged results per dual with
-   one-click Apply; conflicts render both versions side by side. Nothing
-   auto-finalizes — the commissioner stays the source of truth.
-6. Test live against the first real weekend, tune the parser, then wire a
-   Vercel cron (or keep it button-triggered like the draft's sync).
+- **The staging table is `pickem_dual_results`** with provenance
+  (`source: scrape > manual > pool`, `report_count`, `disputed`). The scraper
+  writes rows with `source: 'scrape'` and they automatically outrank
+  commissioner entries.
+- **The review/apply step is the pull-known-results banner** — staged
+  results reach a pool through it, fill-the-blanks, commissioner-confirmed.
+
+What's left to build, in order:
+
+1. `api/sync-pickem-results.js` — for duals in locked, non-final events with
+   a `source_dual_id`: fetch both teams' pages, parse, reconcile, upsert.
+2. **Sources.** Recap articles on school sites (the bout-level source — the
+   per-weight line format is documented with its dialects). Reuse the
+   scraper's per-CMS adapters to find recap links: Nuxt sites expose the
+   recap URL in their schedule state, WMT and classic Sidearm in markup.
+   For Big Ten and SoCon, the conference composite JSON carries team-level
+   results (`results.away_points/home_points`) — a clean dual-winner source
+   for Duals Only pools even before bout parsing works.
+3. **Reconciliation**: agree on (weight, winner side, win type) + dual score
+   → confirmed. Bout scores and rankings are display-only; off-by-one TF
+   scores are expected noise. Disagreement → `disputed`, both versions kept.
+4. Test on the first real weekend, then cron it (or keep it button-driven
+   like the draft's sync).
+
+FloArena's event-hub is **not** a discovery source (per-event objects only,
+no list/search) — don't spend time there.
 
 ## Phase 5 — Hardening (before opening beyond your own group)
 
-In priority order, from the code-review backlog:
+Unchanged, in priority order:
 
-1. **Server-side write authorization** — the big one. RLS is wide open, so
-   any client with the pool URL can technically write results or others'
-   picks. Move pick-writes and admin mutations behind serverless functions
-   that validate member id + lock state, then tighten RLS. (Same roadmap
-   item as the draft product.)
-2. **Lock enforcement in the DB** — a trigger or RPC rejecting pick writes
-   after `lock_at` closes the obvious cheat without waiting for #1.
-3. **Duplicate join names** — reject a second "Jake" per pool at join.
-4. **Scoring tests** — `pickemScoring.js`, `summarizeScopedSelection`, and
-   the future results parser are pure functions; a small vitest suite
-   prevents scoring disputes mid-season.
-5. **Code-split the two products** — `React.lazy` per route; the shared
-   bundle is ~675 KB because draft + pick'em load together.
-6. **Commissioner recovery parity** — the recovery email is stored but has
-   no magic-link flow like the draft side; wire it or drop the field.
+1. **Server-side write authorization** — RLS is wide open; move pick writes
+   and admin mutations behind serverless functions validating member id +
+   lock state, then tighten RLS.
+2. **Lock enforcement in the DB** — trigger or RPC rejecting picks after
+   `lock_at`.
+3. **Duplicate join names** — reject a second "Jake" per pool.
+4. **Scoring tests** — `pickemScoring.js`, `summarizeScopedSelection`,
+   `archiveApply.js` (already node-tested informally) → a small vitest suite.
+5. **Code-split the two products** — `React.lazy` per route (~715 KB bundle).
+6. **Commissioner recovery parity** — wire the stored recovery email to a
+   magic-link flow or drop the field.
 
 ## Phase 6 — Launch
 
-**Merge checklist** (merging to `main` puts the pick'em button on the live
-landing page — `PICKEM_CREATION_OPEN` is already `true`):
+**Merge checklist** (merging to `main` swaps the Coming Soon card for the
+live button — `PICKEM_CREATION_OPEN` is already `true`):
 
-- [ ] Phase 1 infrastructure done in the *production* Supabase project
-- [ ] Vercel env vars set (Resend key)
-- [ ] Dry-run week completed on the preview deployment
-- [ ] October dataset regen landed (or accept projected-only slates)
+- [x] Production Supabase tables, Realtime, email template, keys
+- [ ] Resend key in Vercel (optional)
+- [ ] Dry-run week completed
+- [ ] October dataset regen landed
+- [ ] **Resolve the `LandingPage.jsx` conflict** — `main` has the teaser
+      version, the branch has the live-CTA version. Keep the branch's live
+      pick'em card and `main`'s Stay Tuned modal on the draft card.
 - [ ] Open a PR from `pickem-pool` for a final full-diff review, merge
 
 **Season operating rhythm** (the commissioner's week):
 
 | Day | Action |
 |---|---|
-| Mon/Tue | Build next week's slate from the schedule (5 min with the builder) |
+| Mon/Tue | Build next week's slate from the schedule (5 min) |
 | Fri ~6pm | Picks lock (prefilled default; adjust for Thu MAC duals) |
 | Sat/Sun | Results land — scraper stages them (Phase 4) or enter manually (~2 min/dual) |
-| Sun/Mon | Finalize → standings update, week winner crowned |
+| Sun/Mon | Finalize → standings update, week winner crowned, archive updated |
 
-**Season calendar**: first duals Nov 9 · Nov/Dec is sparse (consider
-seeding non-conference marquees — Iowa–Iowa State, CKLV) · dead week Dec 21
-· the wall: **Jan 4 – Feb 21 is 89% of the season** · natural finale
-Feb 21 → flip the pool read-only and crown the champion (a season-archive
-state like the draft's off-season mode is a small build).
+**Season calendar**: first duals **Nov 7** (Big 12) · Nov/Dec is sparse ·
+dead week Dec 21 · the wall: **Jan 4 – Feb 21 is ~89% of the season** ·
+finale Feb 21 → flip the pool read-only and crown the champion (a
+season-archive state like the draft's off-season mode is a small build).
 
 ## Feature backlog (ideas, prioritized)
 
-**High value, low effort — do during the season:**
+**High value, low effort — during the season:**
 
 - **Pick deadline reminders** — Vercel cron emails members with missing
-  picks a few hours before lock. The #1 killer of season pools is silent
-  no-shows.
-- **Show the field after lock** — "7 of 9 took Iowa" per dual. Trash-talk
-  fuel; picks stay hidden before lock.
-- **Week-win counts on Standings** — the Results tab already crowns weekly
-  winners; tally them in a column.
-- **Best-pick-rate trophy** — accuracy % alongside total points, so a
-  missed week doesn't end someone's season.
+  picks before lock. The #1 killer of season pools is silent no-shows.
+- **Show the field after lock** — "7 of 9 took Iowa" per dual.
+- **Week-win counts on Standings** — Results already crowns weekly winners.
+- **Best-pick-rate trophy** — accuracy % alongside total points.
+- **League + member dashboards** — the design brief is written
+  ([pickem-dashboard-brief.md](pickem-dashboard-brief.md)); every metric in
+  it computes client-side from `loadPoolState()`.
 
 **Medium:**
 
-- **"Call the pin" bonus** — predict the win type for +1
-  (`predicted_win_type` column is already reserved on picks).
-- **Survivor side-pot** — one dual winner per week, can't reuse a team;
-  cheap to build on existing tables.
-- **Per-dual locks** — `lock_at` per dual instead of per week, for
-  Thursday MAC duals vs Sunday B1G duals in the same slate.
-- **Non-conference marquee support in the dataset** — fixes the empty
-  Nov/Dec problem properly.
+- **"Call the pin" bonus** (`predicted_win_type` is reserved on picks).
+- **Survivor side-pot** — one dual winner per week, no team reuse.
+- **Per-dual locks** — Thursday MAC duals vs Sunday B1G duals in one slate.
+- **Non-conference marquee duals in the dataset** — the scraper already
+  captures 141 non-conference D1 duals; the dataset is in-conference only.
 
 **Bigger swings:**
 
-- **March product** — the season ends Feb 21; conference tournaments and
-  NCAAs are bracket-shaped, and the draft product already owns March. A
-  "season pass" that chains pick'em → draft league is the natural arc.
-- **Multi-pool profiles** — one identity across pools (the per-pool
-  session/account design deliberately doesn't block this later).
+- **March product** — pick'em → draft league as a "season pass".
+- **Multi-pool profiles** — one identity across pools.
 
 ---
 
-*Everything referenced lives on the `pickem-pool` branch. Regenerate the
-schedule dataset before trusting any of its dates; the projected-vs-
-confirmed badges in the slate builder tell you which is which.*
+*Everything referenced lives on the `pickem-pool` branch. The dataset's
+dates are projections until the October regen lands; the slate builder's
+CONFIRMED/PROJECTED badges tell you which is which.*

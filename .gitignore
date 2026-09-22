@@ -34,3 +34,8 @@ docs/conference-pickem-context.md
 *.njsproj
 *.sln
 *.sw?
+
+# Schedule scraper working files (scripts/schedules)
+scripts/schedules/cache/
+scripts/schedules/duals-2026-27.csv
+scripts/schedules/duals-2026-27.json
